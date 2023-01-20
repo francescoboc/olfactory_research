@@ -28,8 +28,8 @@ class Simulation:
             self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length), ylim=(0, self.flow.heigth), title='time = 0')
 
             # add arrows for the velocity field
-            self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.25)
-            # plt.streamplot(np.arange(self.flow.length),np.arange(self.flow.heigth),self.flow.ux,self.flow.uy)
+            self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.15)
+            # self.axes.streamplot(np.arange(self.flow.length),np.arange(self.flow.heigth),self.flow.ux,self.flow.uy)
 
             # add source and spawn circle drawings
             plt.plot(*self.cloud.source_coordinates, c='k', marker='d')
@@ -78,7 +78,7 @@ class Simulation:
             # plot in real time
             if self.real_time_plot:
                 plt.title(f'time = {time+1}')
-                # update the arrows
+                # update the flow arrows
                 self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
                 plt.draw()
@@ -86,11 +86,7 @@ class Simulation:
 
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, measure_time,
-            decision_time, agent_speed, olfactory_radius, visual_radius, cloud):
-        # general parameters of the simulation
-        self.length = cloud.flow.length
-        self.heigth = cloud.flow.heigth
-
+            decision_time, agent_speed, olfactory_radius, visual_radius, cloud, flow):
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -103,6 +99,9 @@ class Swarm:
 
         # we also need the cloud object, to sniff the particles
         self.cloud = cloud
+
+        # and the flow, to estimate the wind velocity
+        self.flow = flow
 
         # initialize empty list for the swarm of agents
         self.agents = []
@@ -118,14 +117,24 @@ class Swarm:
 
     def update(self):
         removed = False
+        # determine behavior of the agents
         for agent in self.agents:
-            # determine behavior of the agents
             # find neighbors (i.e. other agents within visual_radius) of each agent in the swarm
             neighbors = self.detect_neighbors(agent)
 
+            # detect odor particles
             sniffed_particles = self.sniff_particles(agent)
 
-            agent.cast()
+            # SURGE
+            # 1. If the agent has detected at least one flow particle in the time interval Delta_t (measure time), it moves
+            # upwind by v_0*Delta_t units, v_0 being the speed of the agent. This phase is called "surging".  The agent 
+            # remains in the surging phase as long as it detects flow particles within every Delta_t time and after taking 
+            # every step in the surging phase the agent sets t'=0, a number that the agent keeps track of.
+
+            # TODO add measure_time interval!
+            if len(sniffed_particles)>0:
+                self.update_wind_estimate(agent)
+                agent.surge()
 
             # # print neighbors info in terminal
             # if len(neighbors)>0:
@@ -135,8 +144,8 @@ class Swarm:
             #     print()
 
             # if any of the agent is out of the simulation box, remove it
-            if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
-                agent.coordinates[1] > self.heigth -1 or agent.coordinates[1] < 0):
+            if (agent.coordinates[0] > self.flow.length-1 or agent.coordinates[0] < 0 or 
+                agent.coordinates[1] > self.flow.heigth-1 or agent.coordinates[1] < 0):
                 self.agents.remove(agent)
                 removed = True
         # return the removed flag
@@ -166,8 +175,13 @@ class Swarm:
                 # print(f'agent {agent.label} sniffed a particle!')
         return sniffed_particles
 
+    # TODO this will be a discounted running average
+    def update_wind_estimate(self, agent):
+        agent.wind_estimate[0], agent.wind_estimate[1] = self.flow.interpolate(agent.coordinates)
+
 class Moth:
     def __init__(self, label, coordinates, agent_speed, measure_time, olfactory_radius, visual_radius):
+        # parameters of the moth
         self.label = label
         self.coordinates = coordinates
         self.agent_speed = agent_speed
@@ -175,26 +189,25 @@ class Moth:
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
 
-        # SURGE
-        # 1. If the agent has detected at least one flow particle in the time interval Delta_t (measure time), it moves
-        # upwind by v_0*Delta_t units, v_0 being the speed of the agent. This phase is called "surging".  The agent 
-        # remains in the surging phase as long as it detects flow particles within every Delta_t time and after taking 
-        # every step in the surging phase the agent sets t'=0, a number that the agent keeps track of.
+        # moth estimate of the wind velocity along x and y
+        self.wind_estimate = [0, 0]
 
-        # CAST
-        # 2. In absence of any odors, the agent moves by v0*Delta_t units in a direction that forms an angle of +45◦ with 
-        # respect to the locally estimated upwind direction.
-        # 3. The agent updates t' as t' ← t'+2*Delta_t and then moves in the crosswind direction for time period t' with
-        # speed v_0.
-        # 4. The agent moves by v_0*Delta_t units in the direction that forms an angle of −45◦ with respect to the locally
-        # estimated upwind direction.
-        # 5. The agent updates t' ← t'+2*Delta_t and then moves with speed v_0 in the crosswind direction (opposite to the 
-        # one taken in step 3) for time period t' and resumes further from step 2.
-        # Steps 2-5 describe the "casting" phase, which is terminated as soon as the agent detects an flow particle. Then 
-        # the agent sets t' = 0 and starts the surging phase (step 1) from the next decision time.
-
+    # TODO the speed of movement should be self.agent_speed!
     def surge(self):
-        pass
+        self.coordinates[0] += -self.wind_estimate[0]*self.measure_time
+        self.coordinates[1] += -self.wind_estimate[1]*self.measure_time
+
+    # CAST
+    # 2. In absence of any odors, the agent moves by v0*Delta_t units in a direction that forms an angle of +45◦ with 
+    # respect to the locally estimated upwind direction.
+    # 3. The agent updates t' as t' ← t'+2*Delta_t and then moves in the crosswind direction for time period t' with
+    # speed v_0.
+    # 4. The agent moves by v_0*Delta_t units in the direction that forms an angle of −45◦ with respect to the locally
+    # estimated upwind direction.
+    # 5. The agent updates t' ← t'+2*Delta_t and then moves with speed v_0 in the crosswind direction (opposite to the 
+    # one taken in step 3) for time period t' and resumes further from step 2.
+    # Steps 2-5 describe the "casting" phase, which is terminated as soon as the agent detects an flow particle. Then 
+    # the agent sets t' = 0 and starts the surging phase (step 1) from the next decision time.
 
     def cast(self):
         pass
@@ -338,7 +351,7 @@ class Cloud:
             # if any of the particles is out of the simulation box, remove it
             if (particle.coordinates[0] > self.flow.length-1 or 
                 particle.coordinates[0] < 0 or 
-                particle.coordinates[1] > self.flow.heigth -1 or 
+                particle.coordinates[1] > self.flow.heigth-1 or 
                 particle.coordinates[1] < 0):
                 self.particles.remove(particle)
                 removed = True

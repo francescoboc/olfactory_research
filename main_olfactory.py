@@ -8,7 +8,7 @@ from olfactory_lib import *
 
 # space and time parameters of the simulation 
 length, heigth = 40, 20
-time_steps = 50
+time_steps = 100
 
 # parameters of the air flow
 flow_dt = 1 
@@ -24,7 +24,7 @@ particle_rate = 5
 source_coordinates = [1, heigth/2]
 
 # parameters of the swarm of agents
-n_agents = 0
+n_agents = 10
 olfactory_radius, visual_radius = 3, 3
 spawn_radius = 4
 spawn_center = [length-spawn_radius-1, heigth/2]
@@ -39,7 +39,7 @@ pause_time = 0.01
 flow = Flow(length, heigth, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity)
 cloud = Cloud(particle_dt, particle_rate, source_coordinates, flow)
 swarm = Swarm(n_agents, spawn_center, spawn_radius, measure_time, decision_time, 
-        agent_speed, olfactory_radius, visual_radius, cloud)
+        agent_speed, olfactory_radius, visual_radius, cloud, flow)
 sim = Simulation(time_steps, flow, swarm, cloud, real_time_plot, pause_time)
 
 # run simulation
