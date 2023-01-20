@@ -7,132 +7,90 @@ from scipy.interpolate import RegularGridInterpolator
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 class Simulation:
-    def __init__(self, time_steps, particle_rate, source_coordinates, flow, swarm, real_time_plot):
+    def __init__(self, time_steps, flow, swarm, cloud, real_time_plot, pause_time):
         # total time steps of the simulation
         self.time_steps = time_steps
 
-        # position of the odor source
-        self.source_coordinates = source_coordinates
-
-        # rate for the odor particle generation
-        self.particle_rate = particle_rate
-
-        # source and swarm objects
+        # flow, swarm and swarm oudbjects
         self.flow = flow
         self.swarm = swarm
+        self.cloud = cloud
 
         # flag to enable or disable real time plotting
         self.real_time_plot = real_time_plot
 
         # pause time between frames during plotting
-        self.__pause_time = 0.01
-
-        # initialize empty list for the odor particles
-        self.particles = []
+        self.pause_time = pause_time
 
         if self.real_time_plot:
             # create figure and axes for plotting
             plt.gca().remove()
-            plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length), ylim=(0, self.flow.heigth), title='time = 0')
+            self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length), ylim=(0, self.flow.heigth), title='time = 0')
 
             # add arrows for the velocity field
-            self.flow_arrows = plt.gca().quiver(self.flow.ux, self.flow.uy, alpha=0.25)
+            self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.25)
             # plt.streamplot(np.arange(self.flow.length),np.arange(self.flow.heigth),self.flow.ux,self.flow.uy)
 
             # add source and spawn circle drawings
-            plt.plot(*self.source_coordinates, c='b', marker='o')
+            plt.plot(*self.cloud.source_coordinates, c='k', marker='d')
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, ls='--', color='k', alpha=0.5)
-            plt.gca().add_patch(spawn_circle)
+            self.axes.add_patch(spawn_circle)
 
             # add agents points and visual circles
             m=0
             for agent in self.swarm.agents:
                 agent_point = plt.Circle(agent.coordinates, 0.25, color=colors[m], label=m)
                 visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[m], alpha=0.5)
-                plt.gca().add_patch(agent_point)
-                plt.gca().add_patch(visual_circle)
+                olfactory_circle = plt.Circle(agent.coordinates, agent.olfactory_radius, fill=False, color=colors[m], alpha=0.5, ls='--')
+                self.axes.add_patch(agent_point)
+                # self.axes.add_patch(visual_circle)
+                self.axes.add_patch(olfactory_circle)
                 m+=1
-            plt.legend(fancybox=False, loc=3)
+            # plt.legend(fancybox=False, loc=3)
 
-            plt.pause(self.__pause_time)
+            plt.pause(self.pause_time)
 
     def run(self):
-        # initialise counter for the generation of odor partices
-        stopwatch = 0
-        # get time for the generation of the first particle
-        next_time = int(self.__get_next_time())
         for time in range(self.time_steps):
-            # if the time for the generation of a particle (since last generation) has passed 
-            if stopwatch == next_time:
-                # create a new particle at the source position
-                self.particles.append(Particle(self.source_coordinates.copy()))
-                # and add a patch for plotting
-                if self.real_time_plot: plt.gca().add_patch( plt.Circle(self.particles[-1].coordinates, 0.2, color='b') ) 
-                # reset the counter
-                stopwatch = 0
-                # and extract a new time
-                next_time = int(self.__get_next_time())
-            else:
-                # otherwise, increase the counter
-                stopwatch += 1
-
-            # update particle positions according to the velocity field
-            removed = False
-            for particle in self.particles:
-                # interpolate the velocity field at the particle position
-                # TODO the dt for the particles is the same of the fluctuations (dt)?
-                ux_interp, uy_interp = self.flow.interpolate(particle.coordinates)     
-                particle.coordinates[0] += ux_interp*1
-                particle.coordinates[1] += uy_interp*1
-                # if any of the particles is out of the simulation box, remove it
-                if (particle.coordinates[0] > self.flow.length-1 or 
-                    particle.coordinates[0] < 0 or 
-                    particle.coordinates[1] > self.flow.heigth -1 or 
-                    particle.coordinates[1] < 0):
-                    self.particles.remove(particle)
-                    removed = True
-
-            # TODO what do we do with the agents that fly outside the box? remove them?
-
-            # and also remove its patch
-            if removed and self.real_time_plot:
-                for patch in plt.gca().patches:
-                    if (patch.center[0] > self.flow.length-1 or 
-                        patch.center[0] < 0 or 
-                        patch.center[1] > self.flow.heigth -1 or 
-                        patch.center[1] < 0):
-                        patch.remove()
-
             # update the flow
             self.flow.update()
 
-            # update the swarm
-            self.swarm.update()
+            # update the cloud
+            particle_removed, particle_added = self.cloud.update()
 
-            # # print neighbors info in terminal
-            # print(f'\ntime = {time}')
-            # for agent in self.swarm.agents:
-            #     print(f'neighbors of agent {agent.label}:', end=' ')
-            #     for neighbor in agent.neighbors:
-            #         print(neighbor.label, end=' ')
-            #     print()
+            # update the swarm
+            agent_removed = self.swarm.update()
+
+            # print('-----')
+
+            # if a particle was added to the cloud, add a patch to axes
+            if self.real_time_plot and particle_added: 
+                self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.15, color='b') ) 
+
+            # remove patches from axes in case an agent or a particle was removed
+            if self.real_time_plot and (particle_removed or agent_removed):
+                for patch in self.axes.patches:
+                    if (patch.center[0] > self.flow.length-1 or patch.center[0] < 0 or 
+                        patch.center[1] > self.flow.heigth -1 or patch.center[1] < 0):
+                        patch.remove()
+                # plt.legend(fancybox=False, loc=3)
 
             # plot in real time
             if self.real_time_plot:
                 plt.title(f'time = {time+1}')
                 # update the arrows
                 self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
-                # and redwar the patches
+                # and redraw the patches
                 plt.draw()
-                plt.pause(self.__pause_time)
-
-    # sample time for the generation of next particle from an exponential distribution
-    def __get_next_time(self):
-        return random.expovariate(self.particle_rate)
+                plt.pause(self.pause_time)
 
 class Swarm:
-    def __init__(self, n_agents, spawn_center, spawn_radius, measure_time, decision_time, 
-            agent_speed, olfactory_radius, visual_radius):
+    def __init__(self, n_agents, spawn_center, spawn_radius, measure_time,
+            decision_time, agent_speed, olfactory_radius, visual_radius, cloud):
+        # general parameters of the simulation
+        self.length = cloud.flow.length
+        self.heigth = cloud.flow.heigth
+
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -142,6 +100,9 @@ class Swarm:
         self.agent_speed = agent_speed
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
+
+        # we also need the cloud object, to sniff the particles
+        self.cloud = cloud
 
         # initialize empty list for the swarm of agents
         self.agents = []
@@ -156,24 +117,54 @@ class Swarm:
             self.agents.append(Moth(nn, coordinates, self.agent_speed, self.measure_time, self.olfactory_radius, self.visual_radius))
 
     def update(self):
-        # find neighbors (i.e. other agents within visual_radius) of each agent in the swarm
-        self.detect_neighbors()
-
-        # determine behavior of the agents
+        removed = False
         for agent in self.agents:
+            # determine behavior of the agents
+            # find neighbors (i.e. other agents within visual_radius) of each agent in the swarm
+            neighbors = self.detect_neighbors(agent)
+
+            sniffed_particles = self.sniff_particles(agent)
+
             agent.cast()
 
-    def detect_neighbors(self):
-        # count neighbors of each agent
-        for agent in self.agents:
-            # reset neighbors list
-            agent.neighbors = []
-            for candidate in self.agents:
-                if candidate != agent:
-                    x_trasl = candidate.coordinates[0]-agent.coordinates[0]
-                    y_trasl = candidate.coordinates[1]-agent.coordinates[1]
-                    if x_trasl**2 + y_trasl**2 < agent.visual_radius**2:
-                        agent.neighbors.append(candidate)
+            # # print neighbors info in terminal
+            # if len(neighbors)>0:
+            #     print(f'neighbors of agent {agent.label}:', end=' ')
+            #     for neighbor in neighbors:
+            #         print(neighbor.label, end=' ')
+            #     print()
+
+            # if any of the agent is out of the simulation box, remove it
+            if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
+                agent.coordinates[1] > self.heigth -1 or agent.coordinates[1] < 0):
+                self.agents.remove(agent)
+                removed = True
+        # return the removed flag
+        return removed
+
+    # function to detect other agents within the visual_radius
+    def detect_neighbors(self, agent):
+        # reset neighbors list
+        neighbors = []
+        for candidate in self.agents:
+            if candidate != agent:
+                x_trasl = candidate.coordinates[0]-agent.coordinates[0]
+                y_trasl = candidate.coordinates[1]-agent.coordinates[1]
+                if x_trasl**2 + y_trasl**2 < agent.visual_radius**2:
+                    neighbors.append(candidate)
+        return neighbors
+
+    # function to detect odor particles within the olfactoy_radius
+    def sniff_particles(self, agent):
+        # find neighboring particles of each agent
+        sniffed_particles = []
+        for candidate in self.cloud.particles:
+            x_trasl = candidate.coordinates[0]-agent.coordinates[0]
+            y_trasl = candidate.coordinates[1]-agent.coordinates[1]
+            if x_trasl**2 + y_trasl**2 < agent.olfactory_radius**2:
+                sniffed_particles.append(candidate)
+                # print(f'agent {agent.label} sniffed a particle!')
+        return sniffed_particles
 
 class Moth:
     def __init__(self, label, coordinates, agent_speed, measure_time, olfactory_radius, visual_radius):
@@ -183,9 +174,6 @@ class Moth:
         self.measure_time = measure_time
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
-
-        # initialize empty list that will be used to track the neighbors
-        self.neighbors = []
 
         # SURGE
         # 1. If the agent has detected at least one flow particle in the time interval Delta_t (measure time), it moves
@@ -209,17 +197,16 @@ class Moth:
         pass
 
     def cast(self):
-        self.coordinates[0] -= self.agent_speed*self.measure_time 
-        self.coordinates[1] += 2*(np.random.rand()-0.5)
+        pass
 
 class Flow:
-    def __init__(self, length, heigth, dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity):
+    def __init__(self, length, heigth, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity):
         # dimensions of the simulation box
         self.length = length
         self.heigth = heigth
 
         # time step
-        self.dt = dt
+        self.flow_dt = flow_dt
 
         # parameters of the stochastic flow
         self.constL = flow_lengthscale
@@ -230,7 +217,7 @@ class Flow:
         # calculate useful constants
         urms = self.fluct_intensity*(self.mean_wind[0]**2 + self.mean_wind[1]**2)**0.5
         ks = 2*np.pi/self.constL
-        self.__sqrtdt = self.dt**0.5
+        self.__sqrtdt = self.flow_dt**0.5
 
         # calculate wavevectors
         K1x = [ks, 0, -ks, 0]
@@ -285,7 +272,7 @@ class Flow:
                 for ki in range(len(self.__Kall)):
                     kvec = self.__Kall[ki]
                     # TODO qui o prima? (direi qui! altrimenti c'è periodicità perfetta)
-                    self.__amp[ki] = self.__amp[ki] - self.__amp[ki]*self.dt/self.tau + self.__diff_const[ki]*self.__get_deltaW()
+                    self.__amp[ki] = self.__amp[ki] - self.__amp[ki]*self.flow_dt/self.tau + self.__diff_const[ki]*self.__get_deltaW()
                     vx[y][x] += 2*self.__amp[ki] * np.sin(self.__dotprod[y][x]) * kvec[1]
                     vy[y][x] += -2*self.__amp[ki] * np.sin(self.__dotprod[y][x]) * kvec[0]
                     # the two forms are equivalent
@@ -306,6 +293,61 @@ class Flow:
         ux_interp = RegularGridInterpolator((self.__xc, self.__yc), self.ux.T) 
         uy_interp = RegularGridInterpolator((self.__xc, self.__yc), self.uy.T) 
         return ux_interp(position)[0], uy_interp(position)[0] 
+
+class Cloud:
+    def __init__(self, particle_dt, particle_rate, source_coordinates, flow):
+        # time step
+        self.particle_dt = particle_dt
+        # position of the odor source
+        self.source_coordinates = source_coordinates
+        # rate for the odor particle generation
+        self.particle_rate = particle_rate
+        # we need to access the flow object, to calculate velocities
+        self.flow = flow
+
+        # initialise counter for the generation of odor partices
+        self.stopwatch = 0
+        # initialise time for the generation of the first particle
+        self.next_time = int(self.__get_next_time())
+        # initialise empty list for the odor particles
+        self.particles = []
+
+    def update(self):
+        added = False
+        # if the time for the generation of a particle (since last generation) has passed 
+        if self.stopwatch == self.next_time:
+            # create a new particle at the source position
+            self.particles.append(Particle(self.source_coordinates.copy()))
+            # reset the counter
+            self.stopwatch = 0
+            # and extract a new time
+            self.next_time = int(self.__get_next_time())
+            added = True
+        else:
+            # otherwise, increase the counter
+            self.stopwatch += 1
+
+        removed = False
+        # update particle positions according to the velocity field 
+        for particle in self.particles:
+            # interpolate the velocity field at the particle position
+            # TODO the dt for the particles is the same of the fluctuations (dt)?
+            ux_interp, uy_interp = self.flow.interpolate(particle.coordinates)     
+            particle.coordinates[0] += ux_interp*self.particle_dt
+            particle.coordinates[1] += uy_interp*self.particle_dt
+            # if any of the particles is out of the simulation box, remove it
+            if (particle.coordinates[0] > self.flow.length-1 or 
+                particle.coordinates[0] < 0 or 
+                particle.coordinates[1] > self.flow.heigth -1 or 
+                particle.coordinates[1] < 0):
+                self.particles.remove(particle)
+                removed = True
+        # return flags
+        return removed, added
+
+    # sample time for the generation of next particle from an exponential distribution
+    def __get_next_time(self):
+        return random.expovariate(self.particle_rate)
 
 class Particle:
     def __init__(self, coordinates):
