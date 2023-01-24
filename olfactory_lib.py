@@ -11,7 +11,7 @@ class Simulation:
         # total time steps of the simulation
         self.time_steps = time_steps
 
-        # flow, swarm and swarm oudbjects
+        # flow, swarm and swarm objects
         self.flow = flow
         self.swarm = swarm
         self.cloud = cloud
@@ -27,9 +27,9 @@ class Simulation:
             plt.gca().remove()
             self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length), ylim=(0, self.flow.heigth), title='time = 0')
 
-            # add arrows for the velocity field
-            self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.15)
-            # self.axes.streamplot(np.arange(self.flow.length),np.arange(self.flow.heigth),self.flow.ux,self.flow.uy)
+            # # add arrows for the velocity field
+            # self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.3)
+            # # self.axes.streamplot(np.arange(self.flow.length),np.arange(self.flow.heigth),self.flow.ux,self.flow.uy)
 
             # add source and spawn circle drawings
             plt.plot(*self.cloud.source_coordinates, c='k', marker='d')
@@ -78,8 +78,10 @@ class Simulation:
             # plot in real time
             if self.real_time_plot:
                 plt.title(f'time = {time+1}')
-                # update the flow arrows
-                self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
+
+                # # update the flow arrows
+                # self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
+
                 # and redraw the patches
                 plt.draw()
                 plt.pause(self.pause_time)
@@ -143,7 +145,7 @@ class Swarm:
             #         print(neighbor.label, end=' ')
             #     print()
 
-            # if any of the agent is out of the simulation box, remove it
+            # if an agent is out of the simulation box, remove it
             if (agent.coordinates[0] > self.flow.length-1 or agent.coordinates[0] < 0 or 
                 agent.coordinates[1] > self.flow.heigth-1 or agent.coordinates[1] < 0):
                 self.agents.remove(agent)
@@ -243,26 +245,27 @@ class Flow:
             K1.append([K1x[ki], K1y[ki]])
             K2.append([K2x[ki], K2y[ki]])
 
-        self.__Kall = K1 + K2
+        self.Kall = K1 + K2
 
         # precalculate diffusion constant for different values of k
-        self.__diff_const = []
-        for kvec in self.__Kall:
+        self.diff_const = []
+        for kvec in self.Kall:
             if kvec in K1:
-                self.__diff_const.append( (urms / (3**0.5 * ks)) * (2 / self.tau)**0.5 )
+                self.diff_const.append( (urms / (3**0.5 * ks)) * (2 / self.tau)**0.5 )
             elif kvec in K2:
-                self.__diff_const.append( 0.5* (urms / (3**0.5 * ks)) * (2 / self.tau)**0.5 )
+                self.diff_const.append( 0.5* (urms / (3**0.5 * ks)) * (2 / self.tau)**0.5 )
 
         # precalculate all dotproducts
-        self.__dotprod = np.zeros([self.heigth,self.length])
+        self.dotprod = np.zeros([self.heigth,self.length,len(self.Kall)])
         for y in range(self.heigth):
             for x in range(self.length):
-                for kvec in self.__Kall:
-                    self.__dotprod[y][x] = kvec[0]*x + kvec[1]*y
+                for k in range(len(self.Kall)):
+                    kvec = self.Kall[k]
+                    self.dotprod[y][x][k] = kvec[0]*x + kvec[1]*y
 
         # initialise array for Fourier amplitudes
-        self.__amp = np.random.rand(len(self.__Kall))
-        # self.__amp = np.zeros(len(self.__Kall))
+        # self.amp = np.random.rand(len(self.Kall))
+        self.amp = np.zeros(len(self.Kall))
 
         # create arrays of coordinates for the interpolation of the velocity field
         self.__xc, self.__yc = np.arange(self.length), np.arange(self.heigth)
@@ -272,9 +275,9 @@ class Flow:
 
     def update(self):
         # # calculate increment of Fourier amplitudes
-        # for ki in range(len(__Kall)):
-        #     kvec = __Kall[ki]
-        #     __amp[ki] = __amp[ki] -__amp[ki]*dt/self.tau + self.__diff_const[ki]*self.__get_deltaW()
+        # for ki in range(len(Kall)):
+        #     kvec = Kall[ki]
+        #     amp[ki] = amp[ki] -amp[ki]*dt/self.tau + self.diff_const[ki]*self.__get_deltaW()
 
         # self.psi = np.zeros([self.heigth,self.length])
 
@@ -282,15 +285,18 @@ class Flow:
         vx, vy = np.zeros([self.heigth,self.length]), np.zeros([self.heigth,self.length])
         for y in range(self.heigth):
             for x in range(self.length):
-                for ki in range(len(self.__Kall)):
-                    kvec = self.__Kall[ki]
+                for k in range(len(self.Kall)):
+                    kvec = self.Kall[k]
                     # TODO qui o prima? (direi qui! altrimenti c'è periodicità perfetta)
-                    self.__amp[ki] = self.__amp[ki] - self.__amp[ki]*self.flow_dt/self.tau + self.__diff_const[ki]*self.__get_deltaW()
-                    vx[y][x] += 2*self.__amp[ki] * np.sin(self.__dotprod[y][x]) * kvec[1]
-                    vy[y][x] += -2*self.__amp[ki] * np.sin(self.__dotprod[y][x]) * kvec[0]
+                    self.amp[k] = self.amp[k] - self.amp[k]*self.flow_dt/self.tau + self.diff_const[k]*self.__get_deltaW()
+                    vx[y][x] += 2*self.amp[k] * np.sin(self.dotprod[y][x][k]) * kvec[1]
+                    vy[y][x] += -2*self.amp[k] * np.sin(self.dotprod[y][x][k]) * kvec[0]
                     # the two forms are equivalent
-                    # self.psi[y][x] += __amp[ki] * ( np.exp(1j*(kvec[0]*x+kvec[1]*y)) + np.exp(-1j*(kvec[0]*x+kvec[1]*y)) )
-                    # self.psi[y][x] += self.__amp[ki] * 2*np.cos(kvec[0]*x + kvec[1]*y)
+                    # self.psi[y][x] += amp[ki] * ( np.exp(1j*(kvec[0]*x+kvec[1]*y)) + np.exp(-1j*(kvec[0]*x+kvec[1]*y)) )
+                    # self.psi[y][x] += self.amp[ki] * 2*np.cos(kvec[0]*x + kvec[1]*y)
+
+        # print(self.dotprod[5][0])
+        # print()
 
         # velocity field is mean wind + noise
         self.ux = self.mean_wind[0] + vx

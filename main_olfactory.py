@@ -7,7 +7,7 @@ reload(sys.modules['olfactory_lib'])
 from olfactory_lib import *
 
 # space and time parameters of the simulation 
-length, heigth = 40, 20
+length, heigth = 30, 20
 time_steps = 100
 
 # parameters of the air flow
@@ -24,7 +24,7 @@ particle_rate = 5
 source_coordinates = [1, heigth/2]
 
 # parameters of the swarm of agents
-n_agents = 10
+n_agents = 3
 olfactory_radius, visual_radius = 3, 3
 spawn_radius = 4
 spawn_center = [length-spawn_radius-1, heigth/2]
