@@ -18,7 +18,6 @@ class Simulation:
 
         # flag to enable or disable real time plotting
         self.real_time_plot = real_time_plot
-
         # pause time between frames during plotting
         self.pause_time = pause_time
 
@@ -27,13 +26,13 @@ class Simulation:
             plt.gca().remove()
             self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length), ylim=(0, self.flow.heigth), title='time = 0')
 
-            # # add arrows for the velocity field
-            # self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.3)
-            # # self.axes.streamplot(np.arange(self.flow.length),np.arange(self.flow.heigth),self.flow.ux,self.flow.uy)
+            # add arrows for the velocity field
+            self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.2)
+            # self.axes.streamplot(np.arange(self.flow.length),np.arange(self.flow.heigth),self.flow.ux,self.flow.uy)
 
             # add source and spawn circle drawings
             plt.plot(*self.cloud.source_coordinates, c='k', marker='d')
-            spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, ls='--', color='k', alpha=0.5)
+            spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', alpha=0.2)
             self.axes.add_patch(spawn_circle)
 
             # add agents points and visual circles
@@ -43,7 +42,7 @@ class Simulation:
                 visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[m], alpha=0.5)
                 olfactory_circle = plt.Circle(agent.coordinates, agent.olfactory_radius, fill=False, color=colors[m], alpha=0.5, ls='--')
                 self.axes.add_patch(agent_point)
-                # self.axes.add_patch(visual_circle)
+                self.axes.add_patch(visual_circle)
                 self.axes.add_patch(olfactory_circle)
                 m+=1
             # plt.legend(fancybox=False, loc=3)
@@ -65,7 +64,7 @@ class Simulation:
 
             # if a particle was added to the cloud, add a patch to axes
             if self.real_time_plot and particle_added: 
-                self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.15, color='b') ) 
+                self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b') ) 
 
             # remove patches from axes in case an agent or a particle was removed
             if self.real_time_plot and (particle_removed or agent_removed):
@@ -78,10 +77,8 @@ class Simulation:
             # plot in real time
             if self.real_time_plot:
                 plt.title(f'time = {time+1}')
-
-                # # update the flow arrows
-                # self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
-
+                # update the flow arrows
+                self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
                 plt.draw()
                 plt.pause(self.pause_time)
@@ -101,10 +98,8 @@ class Swarm:
 
         # we also need the cloud object, to sniff the particles
         self.cloud = cloud
-
         # and the flow, to estimate the wind velocity
         self.flow = flow
-
         # initialize empty list for the swarm of agents
         self.agents = []
 
@@ -121,22 +116,16 @@ class Swarm:
         removed = False
         # determine behavior of the agents
         for agent in self.agents:
-            # find neighbors (i.e. other agents within visual_radius) of each agent in the swarm
-            neighbors = self.detect_neighbors(agent)
-
+            # update the local wind estimate of the agent
+            self.update_wind_estimate(agent)
+            # find neighbors (i.e. other agents within visual_radius) of the agent
+            self.detect_neighbors(agent)
             # detect odor particles
-            sniffed_particles = self.sniff_particles(agent)
-
-            # SURGE
-            # 1. If the agent has detected at least one flow particle in the time interval Delta_t (measure time), it moves
-            # upwind by v_0*Delta_t units, v_0 being the speed of the agent. This phase is called "surging".  The agent 
-            # remains in the surging phase as long as it detects flow particles within every Delta_t time and after taking 
-            # every step in the surging phase the agent sets t'=0, a number that the agent keeps track of.
-
-            # TODO add measure_time interval!
-            if len(sniffed_particles)>0:
-                self.update_wind_estimate(agent)
-                agent.surge()
+            self.sniff_particles(agent)
+            # start behaving only at the sniff of the first particle
+            if agent.sniffed_particles and not agent.go: agent.go = True
+            if agent.go:
+                agent.behave()
 
             # # print neighbors info in terminal
             # if len(neighbors)>0:
@@ -156,30 +145,30 @@ class Swarm:
     # function to detect other agents within the visual_radius
     def detect_neighbors(self, agent):
         # reset neighbors list
-        neighbors = []
+        agent.neighbors = []
         for candidate in self.agents:
             if candidate != agent:
                 x_trasl = candidate.coordinates[0]-agent.coordinates[0]
                 y_trasl = candidate.coordinates[1]-agent.coordinates[1]
                 if x_trasl**2 + y_trasl**2 < agent.visual_radius**2:
-                    neighbors.append(candidate)
-        return neighbors
+                    agent.neighbors.append(candidate)
 
     # function to detect odor particles within the olfactoy_radius
     def sniff_particles(self, agent):
-        # find neighboring particles of each agent
-        sniffed_particles = []
+        # reset particles list
+        agent.sniffed_particles = []
         for candidate in self.cloud.particles:
             x_trasl = candidate.coordinates[0]-agent.coordinates[0]
             y_trasl = candidate.coordinates[1]-agent.coordinates[1]
             if x_trasl**2 + y_trasl**2 < agent.olfactory_radius**2:
-                sniffed_particles.append(candidate)
-                # print(f'agent {agent.label} sniffed a particle!')
-        return sniffed_particles
+                agent.sniffed_particles.append(candidate)
 
     # TODO this will be a discounted running average
     def update_wind_estimate(self, agent):
-        agent.wind_estimate[0], agent.wind_estimate[1] = self.flow.interpolate(agent.coordinates)
+        # interpolate the flow field to obtain the estimate of the local wind speed
+        estimate = self.flow.interpolate(agent.coordinates)
+        # devide the estimate by its norm to obtain a unit vector
+        agent.wind_estimate = estimate/np.linalg.norm(estimate)
 
 class Moth:
     def __init__(self, label, coordinates, agent_speed, measure_time, olfactory_radius, visual_radius):
@@ -191,28 +180,69 @@ class Moth:
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
 
-        # moth estimate of the wind velocity along x and y
+        # counters and flags for the surging phase
+        self.t_prime = 0
+        self.clock = 0
+        self.flip_dir = False
+
+        # rotation matrices for 45deg 90deg rotations
+        self.__rot_matrix_45 = [[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]]
+        self.__rot_matrix_neg45 = [[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]]
+        self.__rot_matrix_90 = [[0, -1], [1, 0]]
+
+        # these attributes are updated by the Swarm() class:
+        # (normalised) estimate of the local wind velocity 
         self.wind_estimate = [0, 0]
+        # list of the particles within the olfactory_radius
+        self.sniffed_particles = []
+        # list of other agents within the visual_radius
+        self.neighbors = []
+        # flag to determine when to start the behavior of the agents
+        self.go = False
 
-    # TODO the speed of movement should be self.agent_speed!
+    # define the behavior of the moth
+    def behave(self):
+        # 1. If the agent has detected at least one flow particle in the time interval Delta_t (measure time), it moves
+        # upwind by v_0*Delta_t units, v_0 being the speed of the agent. This phase is called "surging".  The agent 
+        # remains in the surging phase as long as it detects flow particles within every Delta_t time and after taking 
+        # every step in the surging phase the agent sets t'=0, a number that the agent keeps track of.
+        # 2. In absence of any odors, the agent moves by v0*Delta_t units in a direction that forms an angle of +45◦ with 
+        # respect to the locally estimated upwind direction.
+        # 3. The agent updates t' as t' ← t'+2*Delta_t and then moves in the crosswind direction for time period t' with
+        # speed v_0.
+        # 4. The agent moves by v_0*Delta_t units in the direction that forms an angle of −45◦ with respect to the locally
+        # estimated upwind direction.
+        # 5. The agent updates t' ← t'+2*Delta_t and then moves with speed v_0 in the crosswind direction (opposite to the 
+        # one taken in step 3) for time period t' and resumes further from step 2.
+        # Steps 2-5 describe the "casting" phase, which is terminated as soon as the agent detects an aodor particle. Then 
+        # the agent sets t' = 0 and starts the surging phase (step 1) from the next decision time.
+        if self.sniffed_particles:
+            self.surge()
+        else:
+            self.cast()
+
     def surge(self):
-        self.coordinates[0] += -self.wind_estimate[0]*self.measure_time
-        self.coordinates[1] += -self.wind_estimate[1]*self.measure_time
-
-    # CAST
-    # 2. In absence of any odors, the agent moves by v0*Delta_t units in a direction that forms an angle of +45◦ with 
-    # respect to the locally estimated upwind direction.
-    # 3. The agent updates t' as t' ← t'+2*Delta_t and then moves in the crosswind direction for time period t' with
-    # speed v_0.
-    # 4. The agent moves by v_0*Delta_t units in the direction that forms an angle of −45◦ with respect to the locally
-    # estimated upwind direction.
-    # 5. The agent updates t' ← t'+2*Delta_t and then moves with speed v_0 in the crosswind direction (opposite to the 
-    # one taken in step 3) for time period t' and resumes further from step 2.
-    # Steps 2-5 describe the "casting" phase, which is terminated as soon as the agent detects an flow particle. Then 
-    # the agent sets t' = 0 and starts the surging phase (step 1) from the next decision time.
+        # move upwind
+        self.coordinates[0] += -self.wind_estimate[0]*self.agent_speed*self.measure_time
+        self.coordinates[1] += -self.wind_estimate[1]*self.agent_speed*self.measure_time
+        # reset surging counters
+        self.t_prime = 0; self.clock = 0
 
     def cast(self):
-        pass
+        if self.clock == self.t_prime:
+            if self.flip_dir: direction_45 = np.matmul(self.__rot_matrix_45, self.wind_estimate)
+            else: direction_45 = np.matmul(self.__rot_matrix_neg45, self.wind_estimate)
+            self.coordinates[0] += direction_45[0]*self.agent_speed*self.measure_time
+            self.coordinates[1] += direction_45[1]*self.agent_speed*self.measure_time
+            self.clock = 0
+            self.t_prime += 2*self.measure_time
+            self.flip_dir = not self.flip_dir
+        else:
+            if self.flip_dir: direction_crosswind = np.matmul(self.__rot_matrix_90, self.wind_estimate)
+            else: direction_crosswind = -np.matmul(self.__rot_matrix_90, self.wind_estimate)
+            self.coordinates[0] += direction_crosswind[0]*self.agent_speed*self.measure_time
+            self.coordinates[1] += direction_crosswind[1]*self.agent_speed*self.measure_time
+            self.clock += self.measure_time
 
 class Flow:
     def __init__(self, length, heigth, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity):
@@ -264,8 +294,8 @@ class Flow:
                     self.dotprod[y][x][k] = kvec[0]*x + kvec[1]*y
 
         # initialise array for Fourier amplitudes
-        # self.amp = np.random.rand(len(self.Kall))
         self.amp = np.zeros(len(self.Kall))
+        # self.amp = np.random.rand(len(self.Kall))
 
         # create arrays of coordinates for the interpolation of the velocity field
         self.__xc, self.__yc = np.arange(self.length), np.arange(self.heigth)
@@ -274,10 +304,11 @@ class Flow:
         self.update()
 
     def update(self):
-        # # calculate increment of Fourier amplitudes
-        # for ki in range(len(Kall)):
-        #     kvec = Kall[ki]
-        #     amp[ki] = amp[ki] -amp[ki]*dt/self.tau + self.diff_const[ki]*self.__get_deltaW()
+
+        # calculate increment of Fourier amplitudes
+        for k in range(len(self.Kall)):
+            kvec = self.Kall[k]
+            self.amp[k] = self.amp[k] -self.amp[k]*self.flow_dt/self.tau + self.diff_const[k]*self.__get_deltaW()
 
         # self.psi = np.zeros([self.heigth,self.length])
 
@@ -288,15 +319,12 @@ class Flow:
                 for k in range(len(self.Kall)):
                     kvec = self.Kall[k]
                     # TODO qui o prima? (direi qui! altrimenti c'è periodicità perfetta)
-                    self.amp[k] = self.amp[k] - self.amp[k]*self.flow_dt/self.tau + self.diff_const[k]*self.__get_deltaW()
+                    # self.amp[k] = self.amp[k] - self.amp[k]*self.flow_dt/self.tau + self.diff_const[k]*self.__get_deltaW()
                     vx[y][x] += 2*self.amp[k] * np.sin(self.dotprod[y][x][k]) * kvec[1]
                     vy[y][x] += -2*self.amp[k] * np.sin(self.dotprod[y][x][k]) * kvec[0]
                     # the two forms are equivalent
                     # self.psi[y][x] += amp[ki] * ( np.exp(1j*(kvec[0]*x+kvec[1]*y)) + np.exp(-1j*(kvec[0]*x+kvec[1]*y)) )
                     # self.psi[y][x] += self.amp[ki] * 2*np.cos(kvec[0]*x + kvec[1]*y)
-
-        # print(self.dotprod[5][0])
-        # print()
 
         # velocity field is mean wind + noise
         self.ux = self.mean_wind[0] + vx
@@ -311,7 +339,7 @@ class Flow:
     def interpolate(self, position):
         ux_interp = RegularGridInterpolator((self.__xc, self.__yc), self.ux.T) 
         uy_interp = RegularGridInterpolator((self.__xc, self.__yc), self.uy.T) 
-        return ux_interp(position)[0], uy_interp(position)[0] 
+        return [ux_interp(position)[0], uy_interp(position)[0]] 
 
 class Cloud:
     def __init__(self, particle_dt, particle_rate, source_coordinates, flow):
@@ -332,6 +360,23 @@ class Cloud:
         self.particles = []
 
     def update(self):
+        # update particle positions according to the velocity field 
+        removed = False
+        for particle in self.particles:
+            # interpolate the velocity field at the particle position
+            # TODO the dt for the particles is the same of the fluctuations (dt)?
+            u_interp = self.flow.interpolate(particle.coordinates)     
+            particle.coordinates[0] += u_interp[0]*self.particle_dt
+            particle.coordinates[1] += u_interp[1]*self.particle_dt
+            # if any of the particles is out of the simulation box, remove it
+            if (particle.coordinates[0] > self.flow.length-1 or 
+                particle.coordinates[0] < 0 or 
+                particle.coordinates[1] > self.flow.heigth-1 or 
+                particle.coordinates[1] < 0):
+                self.particles.remove(particle)
+                removed = True
+
+        # generate new particle
         added = False
         # if the time for the generation of a particle (since last generation) has passed 
         if self.stopwatch == self.next_time:
@@ -346,21 +391,6 @@ class Cloud:
             # otherwise, increase the counter
             self.stopwatch += 1
 
-        removed = False
-        # update particle positions according to the velocity field 
-        for particle in self.particles:
-            # interpolate the velocity field at the particle position
-            # TODO the dt for the particles is the same of the fluctuations (dt)?
-            ux_interp, uy_interp = self.flow.interpolate(particle.coordinates)     
-            particle.coordinates[0] += ux_interp*self.particle_dt
-            particle.coordinates[1] += uy_interp*self.particle_dt
-            # if any of the particles is out of the simulation box, remove it
-            if (particle.coordinates[0] > self.flow.length-1 or 
-                particle.coordinates[0] < 0 or 
-                particle.coordinates[1] > self.flow.heigth-1 or 
-                particle.coordinates[1] < 0):
-                self.particles.remove(particle)
-                removed = True
         # return flags
         return removed, added
 
