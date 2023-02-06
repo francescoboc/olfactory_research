@@ -6,6 +6,14 @@ from scipy.interpolate import RegularGridInterpolator
 # extract matplotlib default colors for plotting purposes
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
+# hack to prevent raising KeyboardInterrupt when stopping the script with ctrl-c
+# https://stackoverflow.com/questions/7073268/remove-traceback-in-python-on-ctrl-c
+import signal, sys
+signal.signal(signal.SIGINT, lambda x, y: sys.exit())
+
+def norm(vector):
+    return (vector[0]**2 + vector[1]**2)**0.5
+
 class Simulation:
     def __init__(self, time_steps, flow, swarm, cloud, real_time_plot, plot_flow, pause_time):
         # total time steps of the simulation
@@ -25,7 +33,7 @@ class Simulation:
         if self.real_time_plot:
             # create figure and axes for plotting
             plt.gca().remove()
-            self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length), ylim=(0, self.flow.heigth), title='time = 0')
+            self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.heigth-1), title='time = 0')
 
             # add arrows for the velocity field
             if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.2)
@@ -51,13 +59,46 @@ class Simulation:
             plt.pause(self.pause_time)
 
     def run(self):
-        for time in range(self.time_steps):
+        # reset flags and timers
+        success, agent_removed = False, False
+        time, stopwatch = 0, 0
+        for time_step in range(int(self.time_steps)):
             # update the flow
             self.flow.update()
+
             # update the cloud
-            particle_removed, particle_added = self.cloud.update()
-            # update the swarm
-            agent_removed = self.swarm.update()
+            particle_removed = self.cloud.update()
+
+            # start the swarm when an odor particle is near the spawn circle
+            if not self.swarm.go:
+                for particle in self.cloud.particles:
+                    if particle.coordinates[0] > self.swarm.spawn_center[0] - self.swarm.spawn_radius:
+                        self.swarm.go = True
+
+            # at every decision time, create particles according to rate
+            if time_step*self.cloud.particle_dt % self.swarm.decision_time < 1e-10:
+                # particle_added = self.cloud.create()
+                self.cloud.particles.append(Particle(self.cloud.source_coordinates.copy()))
+                particle_added = True
+
+            if self.swarm.go:
+                for agent in self.swarm.agents: 
+                    # update the local wind estimate of the agent
+                    self.swarm.update_wind_estimate(agent)
+
+                    # detect odor particles
+                    if not agent.sniffed:
+                        self.swarm.sniff_particles(agent)
+
+                # at every decision time, update the swarm
+                if stopwatch*self.cloud.particle_dt % self.swarm.decision_time < 1e-10:
+                    agent_removed, success = self.swarm.update()
+                    # and advance the time counter
+                    time += self.swarm.decision_time
+
+                # update stopwatch for time tracking
+                stopwatch += 1
+
             # if a particle was added to the cloud, add a patch to axes
             if self.real_time_plot and particle_added: 
                 self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b') ) 
@@ -72,15 +113,32 @@ class Simulation:
 
             # plot in real time
             if self.real_time_plot:
-                plt.title(f'time = {time+1}')
+                plt.title(f'Agents={len(self.swarm.agents)}, Time={time}')
                 # update the flow arrows
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
                 plt.draw()
                 plt.pause(self.pause_time)
 
+            # if an agent successuffly reached the source, stop
+            if success: 
+                # count agents within a circle of size spawn_radius around the source
+                count = 0
+                for candidate in self.swarm.agents:
+                    coord_trasl = candidate.coordinates - self.cloud.source_coordinates
+                    if norm(coord_trasl) < self.swarm.spawn_radius:
+                        count += 1
+                print(f'Source reached at time {time:.2f}')
+                print(f'Number of agents < Rb: {count}')
+                return(time, count, success)
+
             # if all agents are out of the simulation box, stop
-            if not self.swarm.agents: break
+            if not self.swarm.agents: 
+                print('All agents are out of the box')
+                return(time, 0, success)
+
+        # if the maximum duration of the simulation was reached, stop
+        return(time, 0, success)
 
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed,
@@ -104,6 +162,9 @@ class Swarm:
         # initialize empty list for the swarm of agents
         self.agents = []
 
+        # flag to determine when to start updating the swarm
+        self.go = False
+
         # constants for the update of the exp. disc. running average for the wind estimate
         self.c_exp = np.exp( -(1/self.memory_time)*self.cloud.particle_dt )
         self.c_exp2 = 1 - self.c_exp
@@ -122,39 +183,47 @@ class Swarm:
             self.agents.append(new_agent)
 
     def update(self):
-        removed = False
+        removed, success = False, False
         # determine behavior of the agents
         for agent in self.agents:
-            # detect odor particles
-            self.sniff_particles(agent)
 
-            # find neighbors (i.e. other agents within visual_radius) of the agent
-            self.detect_neighbors(agent)
+            # # start behaving only at the sniff of the first particle
+            # if agent.sniffed and not agent.go: agent.go = True
+            # if agent.go:
 
-            # start behaving only at the sniff of the first particle
-            if agent.sniffed_particles and not agent.go: agent.go = True
-            if agent.go:
-                # update the local wind estimate of the agent
-                self.update_wind_estimate(agent)
+            # update private velocity according to the cast and surge program
+            if agent.sniffed:
+                agent.surge()
+            else:
+                agent.cast()
 
-                # update private velocity according to the cast and surge program
-                if agent.sniffed_particles:
-                    agent.surge()
-                else:
-                    agent.cast()
+            # update public velocity
+            self.update_public_velocity(agent)
 
-                # update public velocity
-                self.update_public_velocity(agent)
+            # add noise to public velocity (random rotation)
+            random_angle = random.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
+            random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], 
+                    [np.sin(random_angle), np.cos(random_angle)]]
+            agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
 
-                # add noise to public velocity (random rotation)
-                random_angle = random.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
-                random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], 
-                        [np.sin(random_angle), np.cos(random_angle)]]
-                agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
+            # check if the odor source is within the visual radius of any of the agents
+            if agent.coordinates[0] < self.cloud.source_coordinates[0] + agent.visual_radius:
+                coord_trasl = self.cloud.source_coordinates - agent.coordinates
+                # if it is, the agent moves directly towards the source
+                if norm(coord_trasl) < agent.visual_radius:
+                    agent.velocity_comb = coord_trasl
+                    # check if the agent has reached the source
+                    if norm(coord_trasl) <= agent.speed*agent.decision_time:
+                        success = True
 
-                # update coordinates according to velocity_comb (linear comb. of priv. and pul.)
-                agent.velocity_comb = (1-self.trust)*agent.velocity_priv + self.trust*agent.velocity_pub
-                agent.coordinates += agent.speed*agent.decision_time*agent.velocity_comb/np.linalg.norm(agent.velocity_comb)
+            # otherwise, calculate velocity_comb (linear comb. of priv. and publ. cues)
+            else: agent.velocity_comb = (1-self.trust)*agent.velocity_priv + self.trust*agent.velocity_pub
+
+            # update agent's coordinates
+            agent.coordinates += agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
+
+            # reset sniffed flag for the next iteration
+            agent.sniffed = False
 
             # if an agent is out of the simulation box, remove it
             if (agent.coordinates[0] > self.flow.length-1 or agent.coordinates[0] < 0 or 
@@ -162,8 +231,8 @@ class Swarm:
                 self.agents.remove(agent)
                 removed = True
 
-        # return the removed flag
-        return removed
+        # return the removed and success flags
+        return removed, success
 
     # detect other agents within the visual_radius
     def detect_neighbors(self, agent):
@@ -171,25 +240,20 @@ class Swarm:
         agent.neighbors = []
         for candidate in self.agents:
             if candidate != agent:
-                x_trasl = candidate.coordinates[0]-agent.coordinates[0]
-                y_trasl = candidate.coordinates[1]-agent.coordinates[1]
-                if x_trasl**2 + y_trasl**2 < agent.visual_radius**2:
+                coord_trasl = candidate.coordinates - agent.coordinates
+                if norm(coord_trasl) < agent.visual_radius:
                     agent.neighbors.append(candidate)
 
-                    # activate an agent is any of its neighbours are activated
-                    if not agent.go:
-                        if candidate.go: 
-                            agent.go = True
+                    # # activate an agent is any of its neighbours are activated
+                    # if not agent.go:
+                    #     if candidate.go: agent.go = True
 
     # detect odor particles within the olfactoy_radius
     def sniff_particles(self, agent):
-        # reset particles list
-        agent.sniffed_particles = []
         for candidate in self.cloud.particles:
-            x_trasl = candidate.coordinates[0]-agent.coordinates[0]
-            y_trasl = candidate.coordinates[1]-agent.coordinates[1]
-            if x_trasl**2 + y_trasl**2 < agent.olfactory_radius**2:
-                agent.sniffed_particles.append(candidate)
+            coord_trasl = candidate.coordinates - agent.coordinates
+            if norm(coord_trasl) < agent.olfactory_radius:
+                agent.sniffed = True
 
     # update the wind estimate of an agent (i.e. private cues)
     def update_wind_estimate(self, agent):
@@ -200,13 +264,15 @@ class Swarm:
 
     # update the agent perception of the mean velocity of its neighbors (i.e. public cues)
     def update_public_velocity(self, agent):
+        # find neighbors (i.e. other agents within visual_radius) of the agent
+        self.detect_neighbors(agent)
         # reset sum
         sum_vel = np.array([0, 0])
         for neighbor in agent.neighbors:
             sum_vel = sum_vel + neighbor.velocity_comb
         # update public velocity
-        if np.linalg.norm(sum_vel)>0:
-            agent.velocity_pub = agent.speed*sum_vel/np.linalg.norm(sum_vel)
+        if norm(sum_vel)>0:
+            agent.velocity_pub = agent.speed*sum_vel/norm(sum_vel)
 
 class Moth:
     def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, initial_wind_estimate):
@@ -222,19 +288,17 @@ class Moth:
         self.t_prime, self.clock, self.flip_dir = 0, 0, False
 
         # rotation matrices for 45deg 90deg rotations
-        self.__rot_matrix_45 = [[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]]
-        self.__rot_matrix_neg45 = [[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]]
-        self.__rot_matrix_90 = [[0, -1], [1, 0]]
+        self._rot_matrix_45 = [[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]]
+        self._rot_matrix_neg45 = [[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]]
+        self._rot_matrix_90 = [[0, -1], [1, 0]]
 
         # these attributes are updated by the Swarm() class:
         # estimate of the local wind velocity 
         self.wind_estimate = initial_wind_estimate
-        # list of the particles within the olfactory_radius
-        self.sniffed_particles = []
         # list of other agents within the visual_radius
         self.neighbors = []
-        # flag to determine when to start the behavior of the agents
-        self.go = False
+        # flag to determine if a particle was sniffed
+        self.sniffed = False
         # private and public velocity of the agent
         self.velocity_priv = np.array([0, 0])
         self.velocity_pub = np.array([0, 0])
@@ -245,7 +309,7 @@ class Moth:
     # NB here and in cast() we only update the private velocity, we do NOT update the coordinates yet!
     def surge(self):
         # divide the wind estimate by its norm to obtain a unit vector
-        norm_wind_estimate = self.wind_estimate/np.linalg.norm(self.wind_estimate)
+        norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         # update value of private velocity to move upwind
         self.velocity_priv = -norm_wind_estimate*self.speed
         # reset surging counters
@@ -253,19 +317,19 @@ class Moth:
 
     def cast(self):
         # divide the wind estimate by its norm to obtain a unit vector
-        norm_wind_estimate = self.wind_estimate/np.linalg.norm(self.wind_estimate)
+        norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         # move 45 degrees
         if self.clock == self.t_prime:
-            if self.flip_dir: direction_45 = np.matmul(self.__rot_matrix_45, norm_wind_estimate)
-            else: direction_45 = np.matmul(self.__rot_matrix_neg45, norm_wind_estimate)
+            if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, norm_wind_estimate)
+            else: direction_45 = np.matmul(self._rot_matrix_neg45, norm_wind_estimate)
             self.velocity_priv = direction_45*self.speed
             self.clock = 0
             self.t_prime += 2*self.decision_time
             self.flip_dir = not self.flip_dir
         # move crosswind
         else:
-            if self.flip_dir: direction_crosswind = np.matmul(self.__rot_matrix_90, norm_wind_estimate)
-            else: direction_crosswind = -np.matmul(self.__rot_matrix_90, norm_wind_estimate)
+            if self.flip_dir: direction_crosswind = np.matmul(self._rot_matrix_90, norm_wind_estimate)
+            else: direction_crosswind = -np.matmul(self._rot_matrix_90, norm_wind_estimate)
             # update value of private velocity to move crosswind
             self.velocity_priv = direction_crosswind*self.speed
             self.clock += self.decision_time
@@ -273,8 +337,8 @@ class Moth:
 class Flow:
     def __init__(self, length, heigth, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity):
         # dimensions of the simulation box
-        self.length = length
-        self.heigth = heigth
+        self.length = length+1
+        self.heigth = heigth+1
 
         # time step
         self.flow_dt = flow_dt
@@ -288,7 +352,7 @@ class Flow:
         # calculate useful constants
         urms = self.fluct_intensity*(self.mean_wind[0]**2 + self.mean_wind[1]**2)**0.5
         ks = 2*np.pi/self.constL
-        self.__sqrtdt = self.flow_dt**0.5
+        self._sqrt_dt = self.flow_dt**0.5
 
         # calculate wavevectors
         K1x = [ks, 0, -ks, 0]
@@ -324,7 +388,7 @@ class Flow:
         # self.amp = np.random.rand(len(self.Kall))
 
         # create arrays of coordinates for the interpolation of the velocity field
-        self.__xc, self.__yc = np.arange(self.length), np.arange(self.heigth)
+        self._xc, self._yc = np.arange(self.length), np.arange(self.heigth)
 
         # run a single timestep in order to initialise the velocity field (ux, uy)
         self.update()
@@ -333,7 +397,7 @@ class Flow:
         # calculate increment of Fourier amplitudes
         for k in range(len(self.Kall)):
             kvec = self.Kall[k]
-            self.amp[k] = self.amp[k] -self.amp[k]*self.flow_dt/self.tau + self.diff_const[k]*self.__get_deltaW()
+            self.amp[k] = self.amp[k] -self.amp[k]*self.flow_dt/self.tau + self.diff_const[k]*self._get_deltaW()
 
         # compute velocity field
         vx, vy = np.zeros([self.heigth,self.length]), np.zeros([self.heigth,self.length])
@@ -349,14 +413,14 @@ class Flow:
         self.uy = self.mean_wind[1] + vy
 
     # sample a Wiener increment
-    def __get_deltaW(self):
-        # return np.random.normal(0.0, 1.0)*self.__sqrtdt
-        return random.gauss(0.0, 1.0)*self.__sqrtdt
+    def _get_deltaW(self):
+        # return np.random.normal(0.0, 1.0)*self._sqrt_dt
+        return random.gauss(0.0, 1.0)*self._sqrt_dt
 
     # interpolate the velocity field at a given position
     def interpolate(self, position):
-        ux_interp = RegularGridInterpolator((self.__xc, self.__yc), self.ux.T) 
-        uy_interp = RegularGridInterpolator((self.__xc, self.__yc), self.uy.T) 
+        ux_interp = RegularGridInterpolator((self._xc, self._yc), self.ux.T) 
+        uy_interp = RegularGridInterpolator((self._xc, self._yc), self.uy.T) 
         return np.array([ux_interp(position)[0], uy_interp(position)[0]])
 
 class Cloud:
@@ -373,7 +437,7 @@ class Cloud:
         # initialise counter for the generation of odor partices
         self.stopwatch = 0
         # initialise time for the generation of the first particle
-        self.next_time = int(self.__get_next_time())
+        self.next_time = int(self._get_next_time())
         # initialise empty list for the odor particles
         self.particles = []
 
@@ -392,27 +456,29 @@ class Cloud:
                 particle.coordinates[1] < 0):
                 self.particles.remove(particle)
                 removed = True
+        return removed
 
+    # create a particle according to exponentially distributed times
+    def create(self):
         # create new particle
         added = False
-        # if the time for the generation of a particle (since last generation) has passed 
+        # if the time for the creation of a particle (since last generation) has passed 
         if self.stopwatch == self.next_time:
             # create a new particle at the source position
             self.particles.append(Particle(self.source_coordinates.copy()))
             # reset the counter
             self.stopwatch = 0
             # and extract a new time
-            self.next_time = int(self.__get_next_time())
+            self.next_time = int(self._get_next_time())
             added = True
         else:
             # otherwise, increase the counter
-            # TODO +1 or +dt?
             self.stopwatch += 1
         # return flags about removal or creation of new particles
-        return removed, added
+        return added
 
     # sample time for the generation of next particle from an exponential distribution
-    def __get_next_time(self):
+    def _get_next_time(self):
         return random.expovariate(self.particle_rate)
 
 class Particle:
