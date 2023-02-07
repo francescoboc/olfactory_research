@@ -8,8 +8,8 @@ reload(sys.modules['olfactory_lib'])
 from olfactory_lib import *
 
 # plotting parameters
-real_time_plot = False
-plot_flow = False
+real_time_plot = True
+plot_flow = True
 pause_time = 0.01
 
 # olfactory range
@@ -26,9 +26,8 @@ particle_rate = 1
 flow_dt = particle_dt
 
 # parameters of the agents
-n_agents = 2
-# trust = 0.85 # beta
-trust = 1 # beta
+n_agents = 100
+trust = 0.85 # beta
 speed = 2.5*Rd/decision_time
 olfactory_radius = Rd # Rd 
 visual_radius = 5*Rd # Ra
@@ -54,33 +53,35 @@ mean_wind = [1, 0]
 time_steps = final_time/particle_dt
 
 # TODO bottleneck?
-# TODO beta=1 doesn't make sense (?)
+# TODO change run() loop so that final_time is correct
 # TODO set fixed particle rate or create at exp. distributed times?
 # TODO save figures and make a video
 # TODO loop the wind field
 # TODO reflection boundary conditions (?)
+# TODO beta=1 doesn't make sense (?) -> it does if we initialise the velocities (e.g. random)
 
-print(f'Ts={Ts:.2f}, N={n_agents}')
-print(f'Beta={trust:.2f}')
+# print(f'Ts = {Ts:.2f}, N = {n_agents}')
+# print(f'Beta = {trust:.2f}')
 
-# create objects
-flow = Flow(length, heigth, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity)
-cloud = Cloud(particle_dt, particle_rate, source_coordinates, flow)
-swarm = Swarm(n_agents, spawn_center, spawn_radius, decision_time, speed,
-        olfactory_radius, visual_radius, memory_time, trust, sensing_noise, cloud, flow)
-sim = Simulation(time_steps, flow, swarm, cloud, real_time_plot, plot_flow, pause_time)
-# run simulation
-arrival_time, agents_in_Rb, success = sim.run()
+# # create objects
+# flow = Flow(length, heigth, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity)
+# cloud = Cloud(particle_dt, particle_rate, source_coordinates, flow)
+# swarm = Swarm(n_agents, spawn_center, spawn_radius, decision_time, speed,
+#         olfactory_radius, visual_radius, memory_time, trust, sensing_noise, cloud, flow)
+# sim = Simulation(time_steps, flow, swarm, cloud, real_time_plot, plot_flow, pause_time)
+# # run simulation
+# arrival_time, agents_in_Rb, success = sim.run()
 
-# trust parameter (beta) values to check
-betas = np.round(np.arange(0.0, 1, 0.05),2) 
+# # trust parameter (beta) values to check
+# betas = np.round(np.arange(0.0, 1, 0.05),2) 
+betas = np.round(np.arange(0.0, 0.99, 0.02),2) 
 
 n_samples = 10
 
 # empty dataframe to store results
 results = pd.DataFrame(index=betas, columns=['times', 'n_agents'])
 for trust in betas:
-    print(f'Beta={trust:.2f}')
+    print(f'Beta = {trust:.2f}')
     # create empty lists
     arrival_times, arrival_agents = [], []
     # counter to count the successes
@@ -103,13 +104,13 @@ for trust in betas:
     # add results to dataframe
     results.loc[trust]['times'] = arrival_times
     results.loc[trust]['n_agents'] = arrival_agents
-    print('-----')
+    print('--------')
 # attributes to save in results metadata
 attributes = ['Rd', 'Lx', 'heigth', 'decision_time', 'particle_dt', 'particle_rate', 'flow_dt', 'n_agents', 
         'speed', 'olfactory_radius', 'visual_radius', 'memory_time', 'sensing_noise', 'final_time', 'spawn_radius', 
         'source_coordinates', 'spawn_center', 'length', 'fluct_intensity', 'flow_lengthscale', 'flow_corr_time', 'mean_wind']
 # add metadata to dataframe
-for attr in attributes: results.attrs[attr] = globals()[attr]
+for attr in attributes: results.attrs[attr] = locals()[attr]
 # save to disk
 results.to_pickle(f'results_dt{particle_dt:.2f}.pkl')
 

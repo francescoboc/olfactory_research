@@ -243,7 +243,6 @@ class Swarm:
                 coord_trasl = candidate.coordinates - agent.coordinates
                 if norm(coord_trasl) < agent.visual_radius:
                     agent.neighbors.append(candidate)
-
                     # # activate an agent is any of its neighbours are activated
                     # if not agent.go:
                     #     if candidate.go: agent.go = True
@@ -259,7 +258,7 @@ class Swarm:
     def update_wind_estimate(self, agent):
         # interpolate the flow field to obtain the estimate of the local wind speed
         inst_wind_estimate = self.flow.interpolate(agent.coordinates)
-        # incremental update rule for the ex. disc. running average
+        # incremental update rule for the exp. disc. running average
         agent.wind_estimate = self.c_exp*agent.wind_estimate + self.c_exp2*inst_wind_estimate
 
     # update the agent perception of the mean velocity of its neighbors (i.e. public cues)
