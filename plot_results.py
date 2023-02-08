@@ -13,7 +13,7 @@ plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
 # dts to plot
-particle_dts = [1, 0.2]
+particle_dts = [1, 0.2, 0.1]
 
 index = 2
 for particle_dt in particle_dts:
@@ -42,17 +42,22 @@ for particle_dt in particle_dts:
     plt.figure(1)
     plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, 
             label=f'$\delta t={particle_dt:.2f}$', marker=markers[index])
-    plt.xlabel(r'Trust parameter $\beta$')
-    plt.ylabel(r'$T/T_s$')
-    plt.legend(fancybox=False)
 
     plt.figure(2)
     plt.errorbar(results.index, 'nagents_avg', yerr='nagents_std', data=results_norm, 
             label=f'$\delta t={particle_dt:.2f}$', marker=markers[index])
-    plt.xlabel(r'Trust parameter $\beta$')
-    plt.ylabel(r'Fraction of agents $< R_b$')
-    plt.legend(fancybox=False)
 
     index += 1
 
-plt.show()
+plt.figure(1)
+plt.axhline(1, c='k', lw=1)
+plt.xlabel(r'Trust parameter $\beta$')
+plt.ylabel(r'$T/T_s$')
+plt.legend()
+
+plt.figure(2)
+plt.xlabel(r'Trust parameter $\beta$')
+plt.ylabel(r'Fraction of agents $< R_b$')
+plt.legend()
+
+plt.ion(); plt.show()
