@@ -3,8 +3,6 @@ import numpy as np
 import random
 from scipy.ndimage import map_coordinates
 
-random.seed(666)
-
 # extract matplotlib default colors for plotting purposes
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -35,7 +33,10 @@ class Simulation:
         if self.real_time_plot:
             # create figure and axes for plotting
             plt.gca().remove()
-            self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.heigth-1))
+            # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.heigth-1))
+            self.axes = plt.subplot(aspect='equal', adjustable='box', 
+                    xlim=(self.cloud.source_coordinates[0] - self.swarm.spawn_radius*2, self.swarm.spawn_center[0] + self.swarm.spawn_radius*2), 
+                    ylim=(self.swarm.spawn_center[1] + self.swarm.spawn_radius*2, self.swarm.spawn_center[1] - self.swarm.spawn_radius*2))
 
             # add arrows for the velocity field
             if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.2)
@@ -48,14 +49,14 @@ class Simulation:
             self.axes.add_patch(spawn_circle); self.axes.add_patch(source_point); self.axes.add_patch(source_circle)
 
             # add agents points and visual circles
-            index=0
+            index = 0
             for agent in self.swarm.agents:
                 color_id = min([len(colors), index%len(colors)]) 
                 agent_point = plt.Circle(agent.coordinates, 0.25, color=colors[color_id], label=index)
                 visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[color_id], alpha=0.5)
                 olfactory_circle = plt.Circle(agent.coordinates, agent.olfactory_radius, fill=False, color=colors[color_id], alpha=0.5, ls='--')
                 self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle); self.axes.add_patch(olfactory_circle)
-                index+=1
+                index += 1
             # plt.legend(fancybox=False, loc=3)
 
             plt.pause(self.pause_time)
@@ -112,11 +113,12 @@ class Simulation:
 
             # plot in real time
             if self.real_time_plot:
-                plt.title(f'Agents = {len(self.swarm.agents)}, Time = {time}')
+                plt.title(f'Time = {time}')
                 # update the flow arrows
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
                 plt.draw()
+                # plt.savefig(f'frames/frame{time_step}')
                 plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
@@ -405,7 +407,7 @@ class Flow:
         # initialise the velocity field (ux, uy)
         self.initialise()
 
-        # auxiliary variable to store the evolution of the field
+        # auxiliary variables to store the evolution of the field
         self._ux_frames, self._uy_frames = [], []
         self._f_id: int = 0
         self._first_call = True
@@ -430,7 +432,7 @@ class Flow:
         self.ux = self.mean_wind[0] + vx
         self.uy = self.mean_wind[1] + vy
 
-    # update the flow: either evolve the dynamics and save frames or loop through the frames 
+    # update the flow: either evolve the dynamics and save frames or loop through saved frames 
     def update(self, time_step):
         # evolve
         if time_step*self.flow_dt < self.loop_cycles*self.tau:
@@ -439,7 +441,7 @@ class Flow:
                 kvec = self._Kall[k]
                 self._amp[k] = self._amp[k] -self._amp[k]*self.flow_dt/self.tau + self._diff_const[k]*self._get_deltaW()
 
-            # compute velocity field
+            # compute noise
             vx, vy = np.zeros([self.heigth,self.length]), np.zeros([self.heigth,self.length])
             for y in range(self.heigth):
                 for x in range(self.length):
@@ -514,9 +516,8 @@ class Cloud:
                 particle.coordinates[1] < 0):
                 to_be_removed.append(particle)
         if to_be_removed:
+            for particle in to_be_removed: self.particles.remove(particle)
             removed = True
-            for particle in to_be_removed:
-                self.particles.remove(particle)
         return removed
 
     # create a particle according to exponentially distributed times

@@ -13,12 +13,14 @@ plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
 # dts to plot
-particle_dts = [1, 0.2, 0.1]
+# particle_dts = [1, 0.2, 0.1]
+particle_dts = [1, 0.5, 0.2, 0.1, 0.05]
 
 index = 2
 for particle_dt in particle_dts:
-    # import results in a dataframe
-    results = pd.read_pickle(f'results_dt{particle_dt:.2f}.pkl')
+    # load results in a dataframe
+    # results = pd.read_pickle(f'results_dt{particle_dt:.2f}.pkl')
+    results = pd.read_pickle(f'new_results_dt{particle_dt:.2f}.pkl')
 
     # calculate means and stds
     results['time_avg'] = results['times'].apply(np.mean)
