@@ -15,7 +15,7 @@ def norm(vector):
     return (vector[0]**2 + vector[1]**2)**0.5
 
 class Simulation:
-    def __init__(self, final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time):
+    def __init__(self, final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, save_frames):
         # final time of the simulation
         self.final_time = final_time
 
@@ -27,17 +27,18 @@ class Simulation:
         # flag to enable or disable real time plotting
         self.real_time_plot = real_time_plot
         self.plot_flow = plot_flow
+        self.save_frames = save_frames
         # pause time between frames during plotting
         self.pause_time = pause_time
 
         if self.real_time_plot:
             # create figure and axes for plotting
+            fig = plt.figure(figsize=(10,5))
             plt.gca().remove()
             # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.heigth-1))
-            self.axes = plt.subplot(aspect='equal', adjustable='box', 
+            self.axes = plt.subplot(aspect='equal', adjustable='box',
                     xlim=(self.cloud.source_coordinates[0] - self.swarm.spawn_radius*2, self.swarm.spawn_center[0] + self.swarm.spawn_radius*2), 
-                    ylim=(self.swarm.spawn_center[1] + self.swarm.spawn_radius*2, self.swarm.spawn_center[1] - self.swarm.spawn_radius*2))
-
+                    ylim=(self.swarm.spawn_center[1] - self.swarm.spawn_radius*2.5, self.swarm.spawn_center[1] + self.swarm.spawn_radius*2.5)) 
             # add arrows for the velocity field
             if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.2)
 
@@ -62,10 +63,12 @@ class Simulation:
             plt.pause(self.pause_time)
 
     def run(self):
+        # wind_estimates = []
         # reset flags and timers
         success, agent_removed = False, False
-        time_step, time, stopwatch = 0, 0, 0
+        time_step, time, stopwatch, count = 0, 0, 0, 0
         while time < self.final_time:
+            # wind_estimates.append([ag.wind_estimate for ag in self.swarm.agents])
             # update the flow
             self.flow.update(time_step)
 
@@ -89,7 +92,8 @@ class Simulation:
 
             # at every decision time, update the swarm
             if stopwatch*self.cloud.particle_dt % self.swarm.decision_time < 1e-10:
-                agent_removed, success = self.swarm.update()
+                # agent_removed, success = self.swarm.update()
+                success = self.swarm.update_elastic()
                 # and advance the time counter
                 if self.swarm.activated: time += self.swarm.decision_time
 
@@ -113,33 +117,35 @@ class Simulation:
 
             # plot in real time
             if self.real_time_plot:
-                plt.title(f'Time = {time}')
+                plt.title(rf'$\beta$ = {self.swarm.trust:.2f}, Time = {time}')
                 # update the flow arrows
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
+                # add position of center of mass
+                self.axes.scatter(self.swarm.center_of_mass[0], self.swarm.center_of_mass[1], c='k', marker='+')
                 # and redraw the patches
                 plt.draw()
-                # plt.savefig(f'frames/frame{time_step}')
+                if self.save_frames: plt.savefig(f'frames/frame{time_step}')
                 plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
             if success: 
                 # count agents within a circle of size spawn_radius around the source
-                count = 0
                 for candidate in self.swarm.agents:
                     coord_trasl = candidate.coordinates - self.cloud.source_coordinates
                     if norm(coord_trasl) < self.swarm.spawn_radius:
                         count += 1
                 print(f'Source reached at time {time:.2f}')
                 print(f'Number of agents < Rb: {count}')
-                return(time, count, success)
+                break
 
             # if all agents are out of the simulation box, stop
             if not self.swarm.agents: 
                 print('All agents are out of the box')
-                return(time, 0, success)
+                break
 
         # if the maximum duration of the simulation was reached, stop
-        return(time, 0, success)
+        return(time, count, success)
+        # return(time, count, success, wind_estimates)
 
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed,
@@ -185,6 +191,97 @@ class Swarm:
             new_agent = Moth(n_ag, [rand_x, rand_y], self.speed, self.decision_time, 
                     self.olfactory_radius, self.visual_radius, initial_wind_estimate)
             self.agents.append(new_agent)
+
+        # initialise position of center of mass
+        pos_x = [agent.coordinates[0] for agent in self.agents]
+        pos_y = [agent.coordinates[1] for agent in self.agents]
+        self.center_of_mass = [np.mean(pos_x), np.mean(pos_y)]
+
+    def update_elastic(self):
+        success = False
+        # determine future coordinates of the agents
+        future_x, future_y = [], []
+        for agent in self.agents:
+            # start behaving only at the sniff of the first particle
+            if agent.sniffed and not agent.go: agent.go = True
+
+            # update public velocity
+            self.update_public_velocity(agent)
+
+            if agent.go:
+                # turn on the flag
+                if not self.activated: self.activated = True
+
+                # update private velocity according to the cast and surge program
+                if agent.sniffed:
+                    agent.surge()
+                else:
+                    agent.cast()
+
+                # add noise to public velocity (random rotation)
+                random_angle = random.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
+                random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], 
+                        [np.sin(random_angle), np.cos(random_angle)]]
+                agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
+
+                # check if the odor source is within the visual radius of any of the agents
+                if agent.coordinates[0] < self.cloud.source_coordinates[0] + agent.visual_radius:
+                    coord_trasl = self.cloud.source_coordinates - agent.coordinates
+                    # if it is, the agent moves directly towards the source
+                    if norm(coord_trasl) < agent.visual_radius:
+                        agent.velocity_comb = coord_trasl
+                        # check if the agent has reached the source
+                        if norm(coord_trasl) <= agent.speed*agent.decision_time:
+                            success = True
+                            break
+
+                # otherwise, calculate velocity_comb (linear comb. of priv. and publ. cues)
+                else: agent.velocity_comb = (1-self.trust)*agent.velocity_priv + self.trust*agent.velocity_pub
+
+                # calculate future agent's coordinates
+                future_coord = agent.coordinates + agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
+                future_x.append(future_coord[0]), future_y.append(future_coord[1])
+
+                # TODO add inst_velocity method to agent class -> not needed? we can create it here and who cares
+                # TODO normalise?
+                agent.inst_velocity = (future_coord - agent.coordinates)/agent.decision_time
+
+                # reset sniffed flag for the next iteration
+                agent.sniffed = False
+
+            else:
+                agent.velocity_comb = np.array([0, 0])
+                future_coord = agent.coordinates 
+                future_x.append(future_coord[0]), future_y.append(future_coord[1])
+                agent.inst_velocity = np.array([0, 0])
+
+        # calculate predicted future position of the center of mass
+        if self.activated:
+            self.center_of_mass = [np.mean(future_x), np.mean(future_y)]
+            # self.center_of_mass = self.spawn_center
+
+        # calculate acceleration
+        for agent in self.agents:
+            if agent.go:
+                coord_trasl = agent.coordinates - self.center_of_mass 
+                if norm(coord_trasl) < self.spawn_radius: heavyside = 0
+                else: heavyside = 1
+                magnitude = norm(agent.coordinates-self.center_of_mass) 
+                agent.acceleration = -1 * ( heavyside*(magnitude - self.spawn_radius) * coord_trasl/magnitude 
+                        + agent.inst_velocity - agent.velocity_comb )
+
+                agent.inst_velocity += agent.acceleration*agent.decision_time
+                agent.coordinates += agent.inst_velocity*agent.decision_time
+
+        # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) + (vel(t) - v_comb(t))]
+        # vel(t+dt) = vel(t) + acc(t)*dt
+        # pos(t+dt) = pos(t) + vel(t+dt)*dt
+        # H is the heavyside function: H = 0 if pos <= Rb
+        # vel(t) is calculated with finite difference
+        # TODO direction?
+
+        # return success flag
+        return success
 
     def update(self):
         removed, success = False, False
@@ -398,8 +495,8 @@ class Flow:
                     self._dotprod[y][x][k] = kvec[0]*x + kvec[1]*y
 
         # initialise array for Fourier amplitudes
-        self._amp = np.random.rand(len(self._Kall))
-        # self._amp = np.zeros(len(self._Kall))
+        self._amp = np.zeros(len(self._Kall))
+        # self._amp = np.random.rand(len(self._Kall))
 
         # create arrays of coordinates for the interpolation of the velocity field
         self._xc, self._yc = np.arange(self.length), np.arange(self.heigth)
