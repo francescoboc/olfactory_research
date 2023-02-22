@@ -11,6 +11,11 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 import signal, sys
 signal.signal(signal.SIGINT, lambda x, y: sys.exit())
 
+# initialise the rng
+# seed = random.randrange(sys.maxsize)
+seed= 8746384349097964866
+rng = random.Random(seed)
+
 def norm(vector):
     return (vector[0]**2 + vector[1]**2)**0.5
 
@@ -33,7 +38,7 @@ class Simulation:
 
         if self.real_time_plot:
             # create figure and axes for plotting
-            fig = plt.figure(figsize=(10,5))
+            # fig = plt.figure(figsize=(10,5))
             plt.gca().remove()
             # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.heigth-1))
             self.axes = plt.subplot(aspect='equal', adjustable='box',
@@ -42,12 +47,17 @@ class Simulation:
             # add arrows for the velocity field
             if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.2)
 
-            # add source and spawn circle drawings
+            # add patches for source and spawn circle 
             # plt.plot(*self.cloud.source_coordinates, c='k', marker='d')
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
             source_point = plt.Circle(self.cloud.source_coordinates, 0.1, color='k', zorder=2)
             source_circle = plt.Circle(self.cloud.source_coordinates, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
             self.axes.add_patch(spawn_circle); self.axes.add_patch(source_point); self.axes.add_patch(source_circle)
+
+            # add patches for center of mass
+            cmass_point = plt.Circle(self.swarm.center_of_mass, 0.1, color='k', zorder=2)
+            cmass_circle = plt.Circle(self.swarm.center_of_mass, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
+            self.axes.add_patch(cmass_point); self.axes.add_patch(cmass_circle)
 
             # add agents points and visual circles
             index = 0
@@ -63,12 +73,10 @@ class Simulation:
             plt.pause(self.pause_time)
 
     def run(self):
-        # wind_estimates = []
         # reset flags and timers
         success, agent_removed = False, False
         time_step, time, stopwatch, count = 0, 0, 0, 0
         while time < self.final_time:
-            # wind_estimates.append([ag.wind_estimate for ag in self.swarm.agents])
             # update the flow
             self.flow.update(time_step)
 
@@ -105,7 +113,7 @@ class Simulation:
 
             # if a particle was added to the cloud, add a patch to axes
             if self.real_time_plot and particle_added: 
-                self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b') ) 
+                self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b', alpha=0.5) ) 
 
             # remove patches from axes in case an agent or a particle was removed
             if self.real_time_plot and (particle_removed or agent_removed):
@@ -120,8 +128,6 @@ class Simulation:
                 plt.title(rf'$\beta$ = {self.swarm.trust:.2f}, Time = {time}')
                 # update the flow arrows
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
-                # add position of center of mass
-                self.axes.scatter(self.swarm.center_of_mass[0], self.swarm.center_of_mass[1], c='k', marker='+')
                 # and redraw the patches
                 plt.draw()
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
@@ -180,8 +186,8 @@ class Swarm:
         # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
         for n_ag in range(self.n_agents):
             # spawn each agent randomly in the circle
-            radius = self.spawn_radius*np.sqrt(random.random())
-            theta = random.random()*2*np.pi
+            radius = self.spawn_radius*np.sqrt(rng.random())
+            theta = rng.random()*2*np.pi
             rand_x = self.spawn_center[0]+radius*np.cos(theta)
             rand_y = self.spawn_center[1]+radius*np.sin(theta)
 
@@ -195,7 +201,7 @@ class Swarm:
         # initialise position of center of mass
         pos_x = [agent.coordinates[0] for agent in self.agents]
         pos_y = [agent.coordinates[1] for agent in self.agents]
-        self.center_of_mass = [np.mean(pos_x), np.mean(pos_y)]
+        self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
 
     def update_elastic(self):
         success = False
@@ -219,7 +225,7 @@ class Swarm:
                     agent.cast()
 
                 # add noise to public velocity (random rotation)
-                random_angle = random.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
+                random_angle = rng.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
                 random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], 
                         [np.sin(random_angle), np.cos(random_angle)]]
                 agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
@@ -229,21 +235,17 @@ class Swarm:
                     coord_trasl = self.cloud.source_coordinates - agent.coordinates
                     # if it is, the agent moves directly towards the source
                     if norm(coord_trasl) < agent.visual_radius:
-                        agent.velocity_comb = coord_trasl
-                        # check if the agent has reached the source
-                        if norm(coord_trasl) <= agent.speed*agent.decision_time:
-                            success = True
-                            break
+                        agent.velocity_comb = coord_trasl/norm(coord_trasl)*agent.speed
 
                 # otherwise, calculate velocity_comb (linear comb. of priv. and publ. cues)
                 else: agent.velocity_comb = (1-self.trust)*agent.velocity_priv + self.trust*agent.velocity_pub
 
-                # calculate future agent's coordinates
+                # calculate future coordinates of the agent
                 future_coord = agent.coordinates + agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
-                future_x.append(future_coord[0]), future_y.append(future_coord[1])
+                future_x.append(future_coord[0]); future_y.append(future_coord[1])
 
-                # TODO add inst_velocity method to agent class -> not needed? we can create it here and who cares
                 # TODO normalise?
+                # calculate instantaneous velocity of the agent as a finite difference
                 agent.inst_velocity = (future_coord - agent.coordinates)/agent.decision_time
 
                 # reset sniffed flag for the next iteration
@@ -252,13 +254,12 @@ class Swarm:
             else:
                 agent.velocity_comb = np.array([0, 0])
                 future_coord = agent.coordinates 
-                future_x.append(future_coord[0]), future_y.append(future_coord[1])
+                future_x.append(future_coord[0]); future_y.append(future_coord[1])
                 agent.inst_velocity = np.array([0, 0])
 
-        # calculate predicted future position of the center of mass
-        if self.activated:
-            self.center_of_mass = [np.mean(future_x), np.mean(future_y)]
-            # self.center_of_mass = self.spawn_center
+        # # calculate predicted future position of the center of mass
+        # if self.activated:
+        #     self.center_of_mass[0] = np.mean(future_x); self.center_of_mass[1] = np.mean(future_y)
 
         # calculate acceleration
         for agent in self.agents:
@@ -270,15 +271,21 @@ class Swarm:
                 agent.acceleration = -1 * ( heavyside*(magnitude - self.spawn_radius) * coord_trasl/magnitude 
                         + agent.inst_velocity - agent.velocity_comb )
 
+                # update velocity and position
                 agent.inst_velocity += agent.acceleration*agent.decision_time
                 agent.coordinates += agent.inst_velocity*agent.decision_time
 
-        # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) + (vel(t) - v_comb(t))]
+                # check if the agent has reached the source
+                coord_trasl = self.cloud.source_coordinates - agent.coordinates
+                if norm(coord_trasl) <= agent.speed*agent.decision_time:
+                    success = True
+
+        # direction = ( pos(t) - pos_cdm(t) ) / ||pos(t) - pos_cdm(t)|| 
+        # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) * direction + (vel(t) - v_comb(t))]
         # vel(t+dt) = vel(t) + acc(t)*dt
         # pos(t+dt) = pos(t) + vel(t+dt)*dt
         # H is the heavyside function: H = 0 if pos <= Rb
         # vel(t) is calculated with finite difference
-        # TODO direction?
 
         # return success flag
         return success
@@ -304,7 +311,7 @@ class Swarm:
                     agent.cast()
 
                 # add noise to public velocity (random rotation)
-                random_angle = random.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
+                random_angle = rng.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
                 random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], 
                         [np.sin(random_angle), np.cos(random_angle)]]
                 agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
@@ -314,7 +321,7 @@ class Swarm:
                     coord_trasl = self.cloud.source_coordinates - agent.coordinates
                     # if it is, the agent moves directly towards the source
                     if norm(coord_trasl) < agent.visual_radius:
-                        agent.velocity_comb = coord_trasl
+                        agent.velocity_comb = coord_trasl/norm(coord_trasl)
                         # check if the agent has reached the source
                         if norm(coord_trasl) <= agent.speed*agent.decision_time:
                             success = True
@@ -411,6 +418,8 @@ class Moth:
         self.velocity_pub = np.array([0, 0])
         # linear combination of the two
         self.velocity_comb = np.array([0, 0])
+        # instantaneous velocity
+        self.inst_velocity = np.array([0, 0])
 
         # flag to determine when to start moving the agent
         self.go = False
@@ -566,7 +575,7 @@ class Flow:
     # sample a Wiener increment
     def _get_deltaW(self):
         # return np.random.normal(0.0, 1.0)*self._sqrt_dt
-        return random.gauss(0.0, 1.0)*self._sqrt_dt
+        return rng.gauss(0.0, 1.0)*self._sqrt_dt
 
     # interpolate the velocity field at a given position
     def interpolate(self, pos_x, pos_y):
@@ -638,7 +647,7 @@ class Cloud:
 
     # sample time for the generation of next particle from an exponential distribution
     def _get_next_time(self):
-        return random.expovariate(self.particle_rate)
+        return rng.expovariate(self.particle_rate)
 
 class Particle:
     def __init__(self, coordinates):
