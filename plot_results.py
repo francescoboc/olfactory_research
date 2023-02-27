@@ -4,8 +4,8 @@ import pandas as pd
 
 # extract default colors and markers
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-markers = list(plt.Line2D.markers.keys())
-# markers = ['o', 's', 'd', 'v', '^', '<', '>']
+# markers = list(plt.Line2D.markers.keys())
+markers = ['o', 's', 'd', 'v', '^', '<', '>']
 
 def print_attributes(dataframe):
     for key in dataframe.attrs.keys():
@@ -17,20 +17,31 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
-# name = 'square'
 # name = 'zeroamp' # amplitudes of wind noise are initialised at 0
 # name = 'lownoise' # fluct_intensity is reduced by half
-# name = 'J5square' # higher particle rate
-# name = 'new' 
-name = 'elastic' 
+
+# name = 'elastic' 
+# name = 'free' 
+# name = 'j5' 
+# name = 'j10b' 
+# name = 'j20' 
+# name = 'v0.2'
+# name = 'v0.2_J10'
+# name = 'v0.2_J5'
+# name = 'elastic_vj'
+name = 'free_vj'
 
 # dts to plot
 # particle_dts = [1, 0.5, 0.2, 0.1, 0.05, 0.02]
 # particle_dts = [0.2, 0.1, 0.05, 0.02]
 particle_dts = [0.1]
 
-index = 2
+
+index = 0
 for particle_dt in particle_dts:
+    # label = f'$\delta t={particle_dt:.2f}$'
+    # label = 'constrained'
+    label = 'unconstrained'
     # load results in a dataframe
     try: 
         results = pd.read_pickle(f'results/{name}_results_dt{particle_dt:.2f}.pkl')
@@ -38,6 +49,9 @@ for particle_dt in particle_dts:
     except: present = False
 
     if present:
+        # remove zeros
+        for res in results['n_agents']:
+            res[:] = (val for val in res if val != 0)
         # calculate means and stds
         results['time_avg'] = results['times'].apply(np.mean)
         results['nagents_avg'] = results['n_agents'].apply(np.mean)
@@ -60,25 +74,29 @@ for particle_dt in particle_dts:
         # plot
         plt.figure(1)
         plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, 
-                label=f'$\delta t={particle_dt:.2f}$', marker=markers[index])
+                label=label, marker=markers[index])
 
         plt.figure(2)
         plt.errorbar(results.index, 'nagents_avg', yerr='nagents_std', data=results_norm, 
-                label=f'$\delta t={particle_dt:.2f}$', marker=markers[index])
+                label=label, marker=markers[index])
 
         index += 1
+
+J = results.attrs['particle_rate']
+v0 = results.attrs['speed']
+title = f'$v_0={v0}, J={J}$'
 
 plt.figure(1)
 plt.axhline(1, c='k', lw=1)
 plt.xlabel(r'Trust parameter $\beta$')
 plt.ylabel(r'$T/T_s$')
-plt.title(f'{name}')
+plt.title(title)
 plt.legend()
 
 plt.figure(2)
 plt.xlabel(r'Trust parameter $\beta$')
 plt.ylabel(r'Fraction of agents $< R_b$')
-plt.title(f'{name}')
+plt.title(title)
 plt.legend()
 
 plt.ion(); plt.show()

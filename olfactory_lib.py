@@ -11,16 +11,28 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 import signal, sys
 signal.signal(signal.SIGINT, lambda x, y: sys.exit())
 
-# initialise the rng
-# seed = random.randrange(sys.maxsize)
-seed= 8746384349097964866
-rng = random.Random(seed)
+# escape sequences to print colors in terminal
+class tc:
+    purple = '\033[95m'
+    blue = '\033[94m'
+    cyan = '\033[96m'
+    green = '\033[92m'
+    yellow = '\033[93m'
+    red = '\033[91m'
+    bold = '\033[1m'
+    ul = '\033[4m'
+    end = '\033[0m'
 
 def norm(vector):
     return (vector[0]**2 + vector[1]**2)**0.5
 
+def initialise_rng(seed):
+    global rng 
+    rng = random.Random(seed)
+
 class Simulation:
-    def __init__(self, final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, save_frames):
+    def __init__(self, final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, save_frames, elastic):
+        self.elastic = elastic
         # final time of the simulation
         self.final_time = final_time
 
@@ -100,8 +112,8 @@ class Simulation:
 
             # at every decision time, update the swarm
             if stopwatch*self.cloud.particle_dt % self.swarm.decision_time < 1e-10:
-                # agent_removed, success = self.swarm.update()
-                success = self.swarm.update_elastic()
+                if self.elastic: agent_removed, success = self.swarm.update_elastic()
+                else: agent_removed, success = self.swarm.update()
                 # and advance the time counter
                 if self.swarm.activated: time += self.swarm.decision_time
 
@@ -140,18 +152,18 @@ class Simulation:
                     coord_trasl = candidate.coordinates - self.cloud.source_coordinates
                     if norm(coord_trasl) < self.swarm.spawn_radius:
                         count += 1
-                print(f'Source reached at time {time:.2f}')
+                print(f'{tc.green}Source reached{tc.end} at time {time:.2f}')
                 print(f'Number of agents < Rb: {count}')
                 break
 
             # if all agents are out of the simulation box, stop
             if not self.swarm.agents: 
-                print('All agents are out of the box')
+                print(f'{tc.red}Fail{tc.end}: all agents are out of the box')
                 break
 
-        # if the maximum duration of the simulation was reached, stop
+        # if the maximum duration of the simulation was reached, stop and return
+        if not success and time == self.final_time: print(f'{tc.red}Fail{tc.end}: time is up')
         return(time, count, success)
-        # return(time, count, success, wind_estimates)
 
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed,
@@ -172,7 +184,7 @@ class Swarm:
         self.cloud = cloud
         # and the flow, to estimate the wind velocity
         self.flow = flow
-        # initialize empty list for the swarm of agents
+        # initialise empty list for the swarm of agents
         self.agents = []
 
         # flag to account for the activation of the swarm (i.e.if any of the agents started moving)
@@ -204,7 +216,7 @@ class Swarm:
         self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
 
     def update_elastic(self):
-        success = False
+        removed, success = False, False
         # determine future coordinates of the agents
         future_x, future_y = [], []
         for agent in self.agents:
@@ -257,9 +269,16 @@ class Swarm:
                 future_x.append(future_coord[0]); future_y.append(future_coord[1])
                 agent.inst_velocity = np.array([0, 0])
 
-        # # calculate predicted future position of the center of mass
-        # if self.activated:
-        #     self.center_of_mass[0] = np.mean(future_x); self.center_of_mass[1] = np.mean(future_y)
+        # calculate predicted future position of the center of mass
+        if self.activated:
+            self.center_of_mass[0] = np.mean(future_x); self.center_of_mass[1] = np.mean(future_y)
+
+        # direction = ( pos(t) - pos_cdm(t) ) / ||pos(t) - pos_cdm(t)|| 
+        # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) * direction + (vel(t) - v_comb(t))]
+        # vel(t+dt) = vel(t) + acc(t)*dt
+        # pos(t+dt) = pos(t) + vel(t+dt)*dt
+        # H is the heavyside function: H = 0 if pos <= Rb
+        # vel(t) is calculated with finite difference
 
         # calculate acceleration
         for agent in self.agents:
@@ -280,15 +299,14 @@ class Swarm:
                 if norm(coord_trasl) <= agent.speed*agent.decision_time:
                     success = True
 
-        # direction = ( pos(t) - pos_cdm(t) ) / ||pos(t) - pos_cdm(t)|| 
-        # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) * direction + (vel(t) - v_comb(t))]
-        # vel(t+dt) = vel(t) + acc(t)*dt
-        # pos(t+dt) = pos(t) + vel(t+dt)*dt
-        # H is the heavyside function: H = 0 if pos <= Rb
-        # vel(t) is calculated with finite difference
+                # if an agent is out of the simulation box, remove it
+                if (agent.coordinates[0] > self.flow.length-1 or agent.coordinates[0] < 0 or 
+                    agent.coordinates[1] > self.flow.heigth-1 or agent.coordinates[1] < 0):
+                    self.agents.remove(agent)
+                    removed = True
 
         # return success flag
-        return success
+        return removed, success
 
     def update(self):
         removed, success = False, False
