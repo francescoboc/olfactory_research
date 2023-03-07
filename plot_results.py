@@ -20,22 +20,14 @@ plt.rcParams['legend.fancybox'] = False
 # name = 'zeroamp' # amplitudes of wind noise are initialised at 0
 # name = 'lownoise' # fluct_intensity is reduced by half
 
-# name = 'elastic' 
-# name = 'free' 
-# name = 'j5' 
-# name = 'j10b' 
-# name = 'j20' 
-# name = 'v0.2'
-# name = 'v0.2_J10'
-# name = 'v0.2_J5'
-# name = 'elastic_vj'
-name = 'free_vj'
+filename = 'test'
 
 # dts to plot
 # particle_dts = [1, 0.5, 0.2, 0.1, 0.05, 0.02]
 # particle_dts = [0.2, 0.1, 0.05, 0.02]
 particle_dts = [0.1]
 
+# beta = 0.85
 
 index = 0
 for particle_dt in particle_dts:
@@ -44,23 +36,23 @@ for particle_dt in particle_dts:
     label = 'unconstrained'
     # load results in a dataframe
     try: 
-        results = pd.read_pickle(f'results/{name}_results_dt{particle_dt:.2f}.pkl')
+        results_raw = pd.read_pickle(f'results/{filename}.pkl')
         present = True
     except: present = False
 
     if present:
-        # remove zeros
-        for res in results['n_agents']:
-            res[:] = (val for val in res if val != 0)
-        # calculate means and stds
-        results['time_avg'] = results['times'].apply(np.mean)
-        results['nagents_avg'] = results['n_agents'].apply(np.mean)
-        results['time_std'] = results['times'].apply(np.std)
-        results['nagents_std'] = results['n_agents'].apply(np.std)
+        # print details of the simulation
+        print_attributes(results_raw)
 
-        # remove raw data
-        results = results.drop(['times', 'n_agents'], axis='columns')
-        print_attributes(results)
+        # make a clean dataframe without raw data
+        results = results_raw.copy()
+        results = results.drop(['times', 'n_agents', 'seeds'], axis='columns')
+
+        # calculate means and stds
+        results['time_avg'] = results_raw['times'].apply(np.mean)
+        results['nagents_avg'] = results_raw['n_agents'].apply(np.mean)
+        results['time_std'] = results_raw['times'].apply(np.std)
+        results['nagents_std'] = results_raw['n_agents'].apply(np.std)
 
         # normalise
         results_norm = results.copy()

@@ -60,7 +60,6 @@ class Simulation:
             if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.2)
 
             # add patches for source and spawn circle 
-            # plt.plot(*self.cloud.source_coordinates, c='k', marker='d')
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
             source_point = plt.Circle(self.cloud.source_coordinates, 0.1, color='k', zorder=2)
             source_circle = plt.Circle(self.cloud.source_coordinates, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
@@ -152,8 +151,7 @@ class Simulation:
                     coord_trasl = candidate.coordinates - self.cloud.source_coordinates
                     if norm(coord_trasl) < self.swarm.spawn_radius:
                         count += 1
-                print(f'{tc.green}Source reached{tc.end} at time {time:.2f}')
-                print(f'Number of agents < Rb: {count}')
+                print(f'{tc.green}Success{tc.end} at time {time:.2f}, N. agents < Rb: {count}')
                 break
 
             # if all agents are out of the simulation box, stop
@@ -534,7 +532,7 @@ class Flow:
         # auxiliary variables to store the evolution of the field
         self._ux_frames, self._uy_frames = [], []
         self._f_id: int = 0
-        self._first_call = True
+        # self._first_call = True
 
     # initialise the velocity field
     def initialise(self):
@@ -584,7 +582,7 @@ class Flow:
 
         # loop through the lists of frames
         else:
-            if self._first_call: print('Looping velocity field'); self._first_call = False
+            # if self._first_call: print('Looping velocity field'); self._first_call = False
             self.ux = self._ux_frames[self._f_id]
             self.uy = self._uy_frames[self._f_id]
             if self._f_id < len(self._ux_frames)-1: self._f_id += 1
