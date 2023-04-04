@@ -3,13 +3,24 @@ import numpy as np
 import random
 from scipy.ndimage import map_coordinates
 
-# extract matplotlib default colors for plotting purposes
-colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
 # hack to prevent raising KeyboardInterrupt when stopping the script with ctrl-c
 # https://stackoverflow.com/questions/7073268/remove-traceback-in-python-on-ctrl-c
 import signal, sys
 signal.signal(signal.SIGINT, lambda x, y: sys.exit())
+
+# extract matplotlib default colors and markers
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+# markers = list(plt.Line2D.markers.keys())
+markers = ['o', 's', 'd', 'v', '^', '<', '>']
+
+# update matplotlib parameters globally
+plt.rcParams['lines.markerfacecolor'] = 'none'
+plt.rcParams['lines.linewidth'] = 1
+plt.rcParams['errorbar.capsize'] = 2
+plt.rcParams['legend.fancybox'] = False
+
+# TODO change color for cast and surge behavior!
+# TODO count the detections in the same way as mihir!
 
 # escape sequences to print colors in terminal
 class tc:
@@ -22,6 +33,11 @@ class tc:
     bold = '\033[1m'
     ul = '\033[4m'
     end = '\033[0m'
+
+# print attributes of a dataframe
+def print_attributes(dataframe):
+    for key in dataframe.attrs.keys():
+        print(f'{key} = {dataframe.attrs[key]}')
 
 def norm(vector):
     return (vector[0]**2 + vector[1]**2)**0.5
@@ -50,7 +66,7 @@ class Simulation:
 
         if self.real_time_plot:
             # create figure and axes for plotting
-            # fig = plt.figure(figsize=(10,5))
+            fig = plt.figure(figsize=(12,6))
             plt.gca().remove()
             # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.heigth-1))
             self.axes = plt.subplot(aspect='equal', adjustable='box',
@@ -66,15 +82,15 @@ class Simulation:
             self.axes.add_patch(spawn_circle); self.axes.add_patch(source_point); self.axes.add_patch(source_circle)
 
             # add patches for center of mass
-            cmass_point = plt.Circle(self.swarm.center_of_mass, 0.1, color='k', zorder=2)
+            cmass_point = plt.Circle(self.swarm.center_of_mass, 0.2, color='k', zorder=2)
             cmass_circle = plt.Circle(self.swarm.center_of_mass, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
-            self.axes.add_patch(cmass_point); self.axes.add_patch(cmass_circle)
+            # self.axes.add_patch(cmass_point); self.axes.add_patch(cmass_circle)
 
             # add agents points and visual circles
             index = 0
             for agent in self.swarm.agents:
                 color_id = min([len(colors), index%len(colors)]) 
-                agent_point = plt.Circle(agent.coordinates, 0.25, color=colors[color_id], label=index)
+                agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[color_id], label=index)
                 visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[color_id], alpha=0.5)
                 olfactory_circle = plt.Circle(agent.coordinates, agent.olfactory_radius, fill=False, color=colors[color_id], alpha=0.5, ls='--')
                 self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle); self.axes.add_patch(olfactory_circle)
@@ -87,6 +103,8 @@ class Simulation:
         # reset flags and timers
         success, agent_removed = False, False
         time_step, time, stopwatch, count = 0, 0, 0, 0
+        x_coords = [ [] for n in range(self.swarm.n_agents) ]
+        y_coords = [ [] for n in range(self.swarm.n_agents) ]
         while time < self.final_time:
             # update the flow
             self.flow.update(time_step)
@@ -104,10 +122,13 @@ class Simulation:
             # update the local wind estimate of the agents
             self.swarm.update_wind_estimate()
 
+            ag = 0
             for agent in self.swarm.agents: 
+                x_coords[ag].append(agent.coordinates[0])
+                y_coords[ag].append(agent.coordinates[1])
+                ag += 1
                 # detect odor particles
-                if not agent.sniffed:
-                    self.swarm.sniff_particles(agent)
+                if not agent.sniffed: self.swarm.sniff_particles(agent)
 
             # at every decision time, update the swarm
             if stopwatch*self.cloud.particle_dt % self.swarm.decision_time < 1e-10:
@@ -137,11 +158,12 @@ class Simulation:
             # plot in real time
             if self.real_time_plot:
                 plt.title(rf'$\beta$ = {self.swarm.trust:.2f}, Time = {time}')
+                # plt.title(rf'Time = {time}')
                 # update the flow arrows
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
                 plt.draw()
-                if self.save_frames: plt.savefig(f'frames/frame{time_step}')
+                if self.save_frames: plt.savefig(f'frames085/frame{time_step}')
                 plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
@@ -161,11 +183,18 @@ class Simulation:
 
         # if the maximum duration of the simulation was reached, stop and return
         if not success and time == self.final_time: print(f'{tc.red}Fail{tc.end}: time is up')
-        return(time, count, success)
+        # return time, count, success
+
+        detections = [ 0 for n in range(self.swarm.n_agents) ]
+        ag = 0
+        for agent in self.swarm.agents:
+            detections[ag] = agent.detections
+            ag += 1
+        return time, count, success, x_coords, y_coords, detections
 
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed,
-            olfactory_radius, visual_radius, memory_time, trust, sensing_noise, cloud, flow):
+            olfactory_radius, visual_radius, memory_time, sensing_noise, trust_inform, trust_uninform, trust_decay, cloud, flow):
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -175,8 +204,12 @@ class Swarm:
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
         self.memory_time = memory_time
-        self.trust = trust
+        self.trust = trust_inform
         self.sensing_noise = sensing_noise
+
+        self.trust_inform = trust_inform
+        self.trust_uninform = trust_uninform
+        self.trust_decay = trust_decay
 
         # we also need the cloud object, to sniff the particles
         self.cloud = cloud
@@ -197,6 +230,7 @@ class Swarm:
         for n_ag in range(self.n_agents):
             # spawn each agent randomly in the circle
             radius = self.spawn_radius*np.sqrt(rng.random())
+            # radius = self.spawn_radius*rng.random()
             theta = rng.random()*2*np.pi
             rand_x = self.spawn_center[0]+radius*np.cos(theta)
             rand_y = self.spawn_center[1]+radius*np.sin(theta)
@@ -205,7 +239,7 @@ class Swarm:
             ux_interp, uy_interp = self.flow.interpolate([rand_x], [rand_y])
             initial_wind_estimate = np.array([ux_interp[0], uy_interp[0]])
             new_agent = Moth(n_ag, [rand_x, rand_y], self.speed, self.decision_time, 
-                    self.olfactory_radius, self.visual_radius, initial_wind_estimate)
+                    self.olfactory_radius, self.visual_radius, initial_wind_estimate, self.trust_inform, self.trust_uninform, self.trust_decay)
             self.agents.append(new_agent)
 
         # initialise position of center of mass
@@ -248,7 +282,7 @@ class Swarm:
                         agent.velocity_comb = coord_trasl/norm(coord_trasl)*agent.speed
 
                 # otherwise, calculate velocity_comb (linear comb. of priv. and publ. cues)
-                else: agent.velocity_comb = (1-self.trust)*agent.velocity_priv + self.trust*agent.velocity_pub
+                else: agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
 
                 # calculate future coordinates of the agent
                 future_coord = agent.coordinates + agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
@@ -272,11 +306,11 @@ class Swarm:
             self.center_of_mass[0] = np.mean(future_x); self.center_of_mass[1] = np.mean(future_y)
 
         # direction = ( pos(t) - pos_cdm(t) ) / ||pos(t) - pos_cdm(t)|| 
-        # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) * direction + (vel(t) - v_comb(t))]
+        # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) * direction + (vel_inst(t) - v_comb(t))]
         # vel(t+dt) = vel(t) + acc(t)*dt
         # pos(t+dt) = pos(t) + vel(t+dt)*dt
         # H is the heavyside function: H = 0 if pos <= Rb
-        # vel(t) is calculated with finite difference
+        # vel_inst(t) is calculated with finite difference
 
         # calculate acceleration
         for agent in self.agents:
@@ -323,6 +357,7 @@ class Swarm:
                 # update private velocity according to the cast and surge program
                 if agent.sniffed:
                     agent.surge()
+                    agent.detections += 1
                 else:
                     agent.cast()
 
@@ -343,7 +378,7 @@ class Swarm:
                             success = True
 
                 # otherwise, calculate velocity_comb (linear comb. of priv. and publ. cues)
-                else: agent.velocity_comb = (1-self.trust)*agent.velocity_priv + self.trust*agent.velocity_pub
+                else: agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
 
                 # update agent's coordinates
                 agent.coordinates += agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
@@ -373,10 +408,10 @@ class Swarm:
         pos_y = [agent.coordinates[1] for agent in self.agents]
         # interpolate the velocity field at all the agent positions
         ux_interp, uy_interp = self.flow.interpolate(pos_x, pos_y)     
-        for aid in range(len(self.agents)):
-            agent = self.agents[aid]
+        for ag_id in range(len(self.agents)):
+            agent = self.agents[ag_id]
             # update agent coordinates
-            inst_wind_estimate = np.array([ux_interp[aid], uy_interp[aid]])
+            inst_wind_estimate = np.array([ux_interp[ag_id], uy_interp[ag_id]])
             # incremental update rule for the exp. disc. running average
             agent.wind_estimate = self.c_exp*agent.wind_estimate + self.c_exp2*inst_wind_estimate
 
@@ -405,7 +440,7 @@ class Swarm:
                     if candidate.go: agent.go = True
 
 class Moth:
-    def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, initial_wind_estimate):
+    def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, initial_wind_estimate, trust_inform, trust_uninform, trust_decay):
         # parameters of the moth
         self.label = label
         self.coordinates = np.array(coordinates)
@@ -413,6 +448,13 @@ class Moth:
         self.decision_time = decision_time
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
+
+        self.trust_inform = trust_inform
+        self.trust_uninform = trust_uninform
+        self.trust_decay = trust_decay
+
+        # initialise trust parameter as uninformed
+        self.trust = trust_uninform
 
         # counters and flags for the surging phase
         self.t_prime, self.clock, self.flip_dir = 0, 0, False
@@ -437,12 +479,18 @@ class Moth:
         # instantaneous velocity
         self.inst_velocity = np.array([0, 0])
 
+        # number of odor detections
+        self.detections = 0
+
         # flag to determine when to start moving the agent
         self.go = False
+
+    # TODO just change beta in the cast and surge program?
 
     # cast and surge behavior 
     # NB here and in cast() we only update the private velocity, we do NOT update the coordinates yet!
     def surge(self):
+        self.trust = self.trust_inform
         # divide the wind estimate by its norm to obtain a unit vector
         norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         # update value of private velocity to move upwind
@@ -451,6 +499,7 @@ class Moth:
         self.t_prime = 0; self.clock = 0
 
     def cast(self):
+        self.trust = self.trust_uninform
         # divide the wind estimate by its norm to obtain a unit vector
         norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         # move 45 degrees
@@ -511,6 +560,14 @@ class Flow:
             elif kvec in K2:
                 self._diff_const.append( 0.5* (urms / (3**0.5 * ks)) * (2 / self.tau)**0.5 )
 
+        # precalculate diffusion constant for different values of k
+        self._sigma = []
+        for kvec in self._Kall:
+            if kvec in K1:
+                self._sigma.append( urms/(3**0.5*ks) )
+            elif kvec in K2:
+                self._sigma.append( 0.5*urms/(3**0.5*ks) )
+
         # precalculate all dotproducts
         self._dotprod = np.zeros([self.heigth,self.length,len(self._Kall)])
         for y in range(self.heigth):
@@ -539,7 +596,9 @@ class Flow:
         # evolve Fourier amplitudes
         for k in range(len(self._Kall)):
             kvec = self._Kall[k]
-            self._amp[k] = self._amp[k] -self._amp[k]*self.flow_dt/self.tau + self._diff_const[k]*self._get_deltaW()
+            # self._amp[k] = self._amp[k] -self._amp[k]*self.flow_dt/self.tau + self._diff_const[k]*self._get_deltaW()
+            self._amp[k] = self._amp[k]*np.exp(-self.flow_dt/self.tau) + \
+                    self._sigma[k]*(1-np.exp(-2*self.flow_dt/self.tau))**0.5*rng.gauss(0.0, 1.0)
 
         # compute velocity field
         vx, vy = np.zeros([self.heigth,self.length]), np.zeros([self.heigth,self.length])
@@ -561,7 +620,9 @@ class Flow:
             # evolve Fourier amplitudes
             for k in range(len(self._Kall)):
                 kvec = self._Kall[k]
-                self._amp[k] = self._amp[k] -self._amp[k]*self.flow_dt/self.tau + self._diff_const[k]*self._get_deltaW()
+                # self._amp[k] = self._amp[k] -self._amp[k]*self.flow_dt/self.tau + self._diff_const[k]*self._get_deltaW()
+                self._amp[k] = self._amp[k]*np.exp(-self.flow_dt/self.tau) + \
+                        self._sigma[k]*(1-np.exp(-2*self.flow_dt/self.tau))**0.5*rng.gauss(0.0, 1.0)
 
             # compute noise
             vx, vy = np.zeros([self.heigth,self.length]), np.zeros([self.heigth,self.length])
@@ -590,7 +651,6 @@ class Flow:
 
     # sample a Wiener increment
     def _get_deltaW(self):
-        # return np.random.normal(0.0, 1.0)*self._sqrt_dt
         return rng.gauss(0.0, 1.0)*self._sqrt_dt
 
     # interpolate the velocity field at a given position
