@@ -4,10 +4,12 @@ import pandas as pd
 # mode = 'Unconstrained'
 mode = 'Elastic constrain'
 
+# filename = 'adaptive_beta_elastic_refined'
+# filename = 'adaptive_beta_elastic'
+filename = 'adaptive_beta_elastic_decay4'
+
 # if mode == 'Unconstrained': filename = 'adaptive_beta_free'
 # else: filename = 'adaptive_beta_elastic'
-
-filename = 'adaptive_beta_elastic_refined'
 
 # load results in a dataframe
 results_raw = pd.read_pickle(f'results/{filename}.pkl')
@@ -53,34 +55,35 @@ for i_tu in range(len(trust_uninf)):
 x_lab, y_lab = results_raw.index.names[0], results_raw.index.names[1]
 x_ticks, y_ticks = trust_uninf, trust_inf
 
-plt.figure('T/T_s')
-plt.imshow(times/Ts, origin='lower')
+plt.figure()
+# plt.imshow(times/Ts, origin='lower')
+plt.imshow(Ts/times, origin='lower')
 plt.colorbar(label='$T/T_s$')
 plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab);
 plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
-plt.figure('std(T)/T_s')
-plt.imshow(times_std/Ts, origin='lower')
-plt.colorbar(label='std$(T)/T_s$')
-plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
-plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
+# plt.figure()
+# plt.imshow(times_std/Ts, origin='lower')
+# plt.colorbar(label='std$(T)/T_s$')
+# plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
+# plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
-plt.figure('Fraction of failed epi')
+plt.figure()
 plt.imshow(fails/(fails+n_samples), origin='lower')
 plt.colorbar(label='Fraction of failed epi')
 plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
 plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
-plt.figure('Frac of agents < R_b')
-plt.imshow(nagents/N, origin='lower')
-plt.colorbar(label='Frac of agents $< R_b$')
-plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
-plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
+# plt.figure()
+# plt.imshow(nagents/N, origin='lower')
+# plt.colorbar(label='Frac of agents $< R_b$')
+# plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
+# plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
-plt.figure('std(frac of agents < R_b)')
-plt.imshow(nagents_std/N, origin='lower')
-plt.colorbar(label='std(frac of agents $< R_b$)')
-plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
-plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
+# plt.figure()
+# plt.imshow(nagents_std/N, origin='lower')
+# plt.colorbar(label='std(frac of agents $< R_b$)')
+# plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
+# plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
 plt.ion(); plt.show()

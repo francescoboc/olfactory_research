@@ -19,9 +19,6 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
-# TODO change color for cast and surge behavior!
-# TODO count the detections in the same way as mihir!
-
 # escape sequences to print colors in terminal
 class tc:
     purple = '\033[95m'
@@ -47,8 +44,11 @@ def initialise_rng(seed):
     rng = random.Random(seed)
 
 class Simulation:
-    def __init__(self, final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, save_frames, elastic):
+    def __init__(self, final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, save_frames, elastic, turbulent):
+        # flags
+        self.turbulent = turbulent
         self.elastic = elastic
+
         # final time of the simulation
         self.final_time = final_time
 
@@ -66,14 +66,18 @@ class Simulation:
 
         if self.real_time_plot:
             # create figure and axes for plotting
-            fig = plt.figure(figsize=(12,6))
+            # fig = plt.figure(figsize=(12,6))
             plt.gca().remove()
-            # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.heigth-1))
+            # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.height-1))
             self.axes = plt.subplot(aspect='equal', adjustable='box',
                     xlim=(self.cloud.source_coordinates[0] - self.swarm.spawn_radius*2, self.swarm.spawn_center[0] + self.swarm.spawn_radius*2), 
                     ylim=(self.swarm.spawn_center[1] - self.swarm.spawn_radius*2.5, self.swarm.spawn_center[1] + self.swarm.spawn_radius*2.5)) 
             # add arrows for the velocity field
-            if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.ux, self.flow.uy, alpha=0.2)
+            if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.x_values, self.flow.y_values, self.flow.ux, self.flow.uy,
+                    scale=1, units='xy', headlength=3, headaxislength=3, minshaft=5, alpha=0.2, zorder=2, color='k')
+
+            if self.turbulent:
+                self.odor_image = self.axes.imshow(self.cloud.odor>self.cloud.threshold, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3)
 
             # add patches for source and spawn circle 
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
@@ -82,9 +86,10 @@ class Simulation:
             self.axes.add_patch(spawn_circle); self.axes.add_patch(source_point); self.axes.add_patch(source_circle)
 
             # add patches for center of mass
-            cmass_point = plt.Circle(self.swarm.center_of_mass, 0.2, color='k', zorder=2)
-            cmass_circle = plt.Circle(self.swarm.center_of_mass, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
-            # self.axes.add_patch(cmass_point); self.axes.add_patch(cmass_circle)
+            if self.elastic:
+                cmass_point = plt.Circle(self.swarm.center_of_mass, 0.2, color='k', zorder=2)
+                cmass_circle = plt.Circle(self.swarm.center_of_mass, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
+                self.axes.add_patch(cmass_point); self.axes.add_patch(cmass_circle)
 
             # add agents points and visual circles
             index = 0
@@ -103,32 +108,42 @@ class Simulation:
         # reset flags and timers
         success, agent_removed = False, False
         time_step, time, stopwatch, count = 0, 0, 0, 0
-        x_coords = [ [] for n in range(self.swarm.n_agents) ]
-        y_coords = [ [] for n in range(self.swarm.n_agents) ]
+        # x_coords = [ [] for n in range(self.swarm.n_agents) ]
+        # y_coords = [ [] for n in range(self.swarm.n_agents) ]
         while time < self.final_time:
-            # update the flow
-            self.flow.update(time_step)
+            # update the flow (the stochastic flow needs to know the current time step)
+            if self.turbulent:
+                self.flow.update()
+            else:
+                self.flow.update(time_step)
 
             # update the cloud
             particle_removed = self.cloud.update()
 
+            self.cloud.update()
+
             # at every decision time, create particles according to rate
-            if (time_step*self.cloud.particle_dt) % (self.swarm.decision_time/self.cloud.particle_rate) < 1e-10:
-                # particle_added = self.cloud.create()
-                self.cloud.particles.append(Particle(self.cloud.source_coordinates.copy()))
-                particle_added = True
-            else: particle_added = False
+            if not self.turbulent:
+                if (time_step*self.cloud.particle_dt) % (self.swarm.decision_time/self.cloud.particle_rate) < 1e-10:
+                    # particle_added = self.cloud.create()
+                    self.cloud.particles.append(Particle(self.cloud.source_coordinates.copy()))
+                    particle_added = True
+                else: particle_added = False
 
             # update the local wind estimate of the agents
             self.swarm.update_wind_estimate()
 
             ag = 0
             for agent in self.swarm.agents: 
-                x_coords[ag].append(agent.coordinates[0])
-                y_coords[ag].append(agent.coordinates[1])
+                # x_coords[ag].append(agent.coordinates[0])
+                # y_coords[ag].append(agent.coordinates[1])
                 ag += 1
                 # detect odor particles
-                if not agent.sniffed: self.swarm.sniff_particles(agent)
+                if not agent.sniffed: 
+                    if self.turbulent:
+                        self.swarm.sniff_odor(agent)
+                    else:
+                        self.swarm.sniff_particles(agent)
 
             # at every decision time, update the swarm
             if stopwatch*self.cloud.particle_dt % self.swarm.decision_time < 1e-10:
@@ -136,6 +151,7 @@ class Simulation:
                 else: agent_removed, success = self.swarm.update()
                 # and advance the time counter
                 if self.swarm.activated: time += self.swarm.decision_time
+                # print(self.swarm.agents[0].trust)
 
             # update stopwatch for time tracking
             if self.swarm.activated: stopwatch += 1
@@ -144,24 +160,26 @@ class Simulation:
             time_step += 1
 
             # if a particle was added to the cloud, add a patch to axes
-            if self.real_time_plot and particle_added: 
-                self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b', alpha=0.5) ) 
+            if not self.turbulent:
+                if self.real_time_plot and particle_added: 
+                    self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b', alpha=0.5) ) 
 
             # remove patches from axes in case an agent or a particle was removed
             if self.real_time_plot and (particle_removed or agent_removed):
                 for patch in self.axes.patches:
                     if (patch.center[0] > self.flow.length-1 or patch.center[0] < 0 or 
-                        patch.center[1] > self.flow.heigth -1 or patch.center[1] < 0):
+                        patch.center[1] > self.flow.height -1 or patch.center[1] < 0):
                         patch.remove()
                 # plt.legend(fancybox=False, loc=3)
 
             # plot in real time
             if self.real_time_plot:
-                plt.title(rf'$\beta$ = {self.swarm.trust:.2f}, Time = {time}')
-                # plt.title(rf'Time = {time}')
+                plt.title(rf'Time = {time}')
                 # update the flow arrows
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
+                if self.turbulent:
+                    self.odor_image.set_data(self.cloud.odor>self.cloud.threshold)
                 plt.draw()
                 if self.save_frames: plt.savefig(f'frames085/frame{time_step}')
                 plt.pause(self.pause_time)
@@ -183,18 +201,20 @@ class Simulation:
 
         # if the maximum duration of the simulation was reached, stop and return
         if not success and time == self.final_time: print(f'{tc.red}Fail{tc.end}: time is up')
-        # return time, count, success
 
-        detections = [ 0 for n in range(self.swarm.n_agents) ]
-        ag = 0
-        for agent in self.swarm.agents:
-            detections[ag] = agent.detections
-            ag += 1
-        return time, count, success, x_coords, y_coords, detections
+        # detections = [ 0 for n in range(self.swarm.n_agents) ]
+        # ag = 0
+        # for agent in self.swarm.agents:
+        #     detections[ag] = agent.detections
+        #     ag += 1
+
+        # return time, count, success, x_coords, y_coords, detections
+        return time, count, success
 
 class Swarm:
-    def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed,
-            olfactory_radius, visual_radius, memory_time, sensing_noise, trust_inform, trust_uninform, trust_decay, cloud, flow):
+    def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
+            visual_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, decay_time, 
+            adaptive_beta, cloud, flow):
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -204,12 +224,18 @@ class Swarm:
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
         self.memory_time = memory_time
-        self.trust = trust_inform
+        self.trust = trust
         self.sensing_noise = sensing_noise
+        self.adaptive_beta = adaptive_beta
 
         self.trust_inform = trust_inform
         self.trust_uninform = trust_uninform
-        self.trust_decay = trust_decay
+        self.decay_time = decay_time
+
+        if type(flow) is Flow_turbulent:
+            self.turbulent = True
+        else:
+            self.turbulent = False
 
         # we also need the cloud object, to sniff the particles
         self.cloud = cloud
@@ -219,10 +245,14 @@ class Swarm:
         self.agents = []
 
         # flag to account for the activation of the swarm (i.e.if any of the agents started moving)
-        self.activated: bool = False
+        if type(self.flow) is Flow_turbulent:
+            # if the flow is turbulent, we don't need to wait 
+            self.activated: bool = True
+        else:
+            self.activated: bool = False
 
         # constants for the update of the exp. disc. running average for the wind estimate
-        self.c_exp = np.exp( -(1/self.memory_time)*self.cloud.particle_dt )
+        self.c_exp = np.exp(-(1/self.memory_time))
         self.c_exp2 = 1 - self.c_exp
 
         # extract uniformly random points within the initial spawn circle
@@ -238,8 +268,9 @@ class Swarm:
             # initialise the wind estimate with the istantaneous local wind
             ux_interp, uy_interp = self.flow.interpolate([rand_x], [rand_y])
             initial_wind_estimate = np.array([ux_interp[0], uy_interp[0]])
-            new_agent = Moth(n_ag, [rand_x, rand_y], self.speed, self.decision_time, 
-                    self.olfactory_radius, self.visual_radius, initial_wind_estimate, self.trust_inform, self.trust_uninform, self.trust_decay)
+            new_agent = Moth(n_ag, [rand_x, rand_y], self.speed, self.decision_time, self.olfactory_radius, 
+                    self.visual_radius, initial_wind_estimate, self.trust, self.trust_inform, self.trust_uninform, 
+                    self.decay_time, self.adaptive_beta, self.turbulent)
             self.agents.append(new_agent)
 
         # initialise position of center of mass
@@ -288,7 +319,6 @@ class Swarm:
                 future_coord = agent.coordinates + agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
                 future_x.append(future_coord[0]); future_y.append(future_coord[1])
 
-                # TODO normalise?
                 # calculate instantaneous velocity of the agent as a finite difference
                 agent.inst_velocity = (future_coord - agent.coordinates)/agent.decision_time
 
@@ -333,7 +363,7 @@ class Swarm:
 
                 # if an agent is out of the simulation box, remove it
                 if (agent.coordinates[0] > self.flow.length-1 or agent.coordinates[0] < 0 or 
-                    agent.coordinates[1] > self.flow.heigth-1 or agent.coordinates[1] < 0):
+                    agent.coordinates[1] > self.flow.height-1 or agent.coordinates[1] < 0):
                     self.agents.remove(agent)
                     removed = True
 
@@ -388,7 +418,7 @@ class Swarm:
 
                 # if an agent is out of the simulation box, remove it
                 if (agent.coordinates[0] > self.flow.length-1 or agent.coordinates[0] < 0 or 
-                    agent.coordinates[1] > self.flow.heigth-1 or agent.coordinates[1] < 0):
+                    agent.coordinates[1] > self.flow.height-1 or agent.coordinates[1] < 0):
                     self.agents.remove(agent)
                     removed = True
 
@@ -401,6 +431,14 @@ class Swarm:
             coord_trasl = candidate.coordinates - agent.coordinates
             if norm(coord_trasl) < agent.olfactory_radius:
                 agent.sniffed = True
+
+    # detect odor field within the olfactoy_radius
+    def sniff_odor(self, agent):
+        # find indexes of flow field that is closest to agent coordinates
+        id_x = np.flatnonzero(self.flow.x_values>agent.coordinates[0])[0]
+        id_y = np.flatnonzero(self.flow.y_values>agent.coordinates[1])[0]
+        if self.cloud.odor[id_y][id_x]>self.cloud.threshold:
+            agent.sniffed = True
 
     # update the wind estimate of agents (i.e. private cues)
     def update_wind_estimate(self):
@@ -440,7 +478,7 @@ class Swarm:
                     if candidate.go: agent.go = True
 
 class Moth:
-    def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, initial_wind_estimate, trust_inform, trust_uninform, trust_decay):
+    def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, initial_wind_estimate, trust, trust_inform, trust_uninform, decay_time, adaptive_beta, turbulent):
         # parameters of the moth
         self.label = label
         self.coordinates = np.array(coordinates)
@@ -448,13 +486,25 @@ class Moth:
         self.decision_time = decision_time
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
+        self.adaptive_beta = adaptive_beta
+        self.turbulent = turbulent
 
-        self.trust_inform = trust_inform
-        self.trust_uninform = trust_uninform
-        self.trust_decay = trust_decay
+        if self.adaptive_beta:
+            self.trust_inform = trust_inform
+            self.trust_uninform = trust_uninform
+            self.decay_time = decay_time
 
-        # initialise trust parameter as uninformed
-        self.trust = trust_uninform
+            # calculate trust values for the "trust cooldown"
+            self.trust_values = np.linspace(self.trust_inform, self.trust_uninform, self.decay_time+1)
+
+            # initialise trust parameter as uninformed 
+            self.trust = self.trust_uninform
+
+            self.trust_index = 0
+
+        # constant beta
+        else:
+            self.trust = trust
 
         # counters and flags for the surging phase
         self.t_prime, self.clock, self.flip_dir = 0, 0, False
@@ -483,14 +533,19 @@ class Moth:
         self.detections = 0
 
         # flag to determine when to start moving the agent
-        self.go = False
-
-    # TODO just change beta in the cast and surge program?
-
+        if self.turbulent:
+            # if the flow is turbulent we don't need to wait
+            self.go = True
+        else:
+            self.go = False
+        
     # cast and surge behavior 
     # NB here and in cast() we only update the private velocity, we do NOT update the coordinates yet!
     def surge(self):
-        self.trust = self.trust_inform
+        if self.adaptive_beta:
+            # when surging, set trust parameter to trust_inform (i.e. the 0th element of trust_values)
+            self.trust_index = 0
+            self.trust = self.trust_values[self.trust_index]
         # divide the wind estimate by its norm to obtain a unit vector
         norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         # update value of private velocity to move upwind
@@ -499,7 +554,11 @@ class Moth:
         self.t_prime = 0; self.clock = 0
 
     def cast(self):
-        self.trust = self.trust_uninform
+        if self.adaptive_beta:
+            # when surging, increase linearly the trust parameter until trust_uninform is reached
+            if self.trust_index < self.decay_time: 
+                self.trust_index += 1 
+                self.trust = self.trust_values[self.trust_index]
         # divide the wind estimate by its norm to obtain a unit vector
         norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         # move 45 degrees
@@ -518,17 +577,30 @@ class Moth:
             self.velocity_priv = direction_crosswind*self.speed
             self.clock += self.decision_time
 
-class Flow:
-    def __init__(self, length, heigth, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity, loop_cycles):
-        # dimensions of the simulation box
-        self.length = length+1
-        self.heigth = heigth+1
+class Flow_stochastic:
+    def __init__(self, length, height, npoints_x, npoints_y, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity, loop_cycles):
+        # desired physical dimensions of the simulation box
+        self.length = length
+        self.height = height
+
+        # number of points in the x and y dimension
+        self.npoints_x = npoints_x
+        self.npoints_y = npoints_y
+
+        # adjust space bins in order to obtain the desired dimensions
+        self.delta_x = self.length/self.npoints_x
+        self.delta_y = self.height/self.npoints_y
+
+        self.x_values = np.arange(self.npoints_x)*self.delta_x
+        self.y_values = np.arange(self.npoints_y)*self.delta_y
+        self.x_max = max(self.x_values)
+        self.y_max = max(self.y_values)
 
         # time step
         self.flow_dt = flow_dt
 
         # parameters of the stochastic flow
-        self.constL = flow_lengthscale
+        self.constL = flow_lengthscale/self.delta_x
         self.tau = flow_corr_time
         self.mean_wind = mean_wind
         self.fluct_intensity = fluct_intensity
@@ -569,9 +641,9 @@ class Flow:
                 self._sigma.append( 0.5*urms/(3**0.5*ks) )
 
         # precalculate all dotproducts
-        self._dotprod = np.zeros([self.heigth,self.length,len(self._Kall)])
-        for y in range(self.heigth):
-            for x in range(self.length):
+        self._dotprod = np.zeros([self.npoints_y,self.npoints_x,len(self._Kall)])
+        for y in range(self.npoints_y):
+            for x in range(self.npoints_x):
                 for k in range(len(self._Kall)):
                     kvec = self._Kall[k]
                     self._dotprod[y][x][k] = kvec[0]*x + kvec[1]*y
@@ -581,7 +653,7 @@ class Flow:
         # self._amp = np.random.rand(len(self._Kall))
 
         # create arrays of coordinates for the interpolation of the velocity field
-        self._xc, self._yc = np.arange(self.length), np.arange(self.heigth)
+        self._xc, self._yc = np.arange(self.length), np.arange(self.height)
 
         # initialise the velocity field (ux, uy)
         self.initialise()
@@ -601,9 +673,9 @@ class Flow:
                     self._sigma[k]*(1-np.exp(-2*self.flow_dt/self.tau))**0.5*rng.gauss(0.0, 1.0)
 
         # compute velocity field
-        vx, vy = np.zeros([self.heigth,self.length]), np.zeros([self.heigth,self.length])
-        for y in range(self.heigth):
-            for x in range(self.length):
+        vx, vy = np.zeros([self.npoints_y,self.npoints_x]), np.zeros([self.npoints_y,self.npoints_x])
+        for y in range(self.npoints_y):
+            for x in range(self.npoints_x):
                 for k in range(len(self._Kall)):
                     kvec = self._Kall[k]
                     vx[y][x] += 2*self._amp[k] * np.sin(self._dotprod[y][x][k]) * kvec[1]
@@ -625,9 +697,9 @@ class Flow:
                         self._sigma[k]*(1-np.exp(-2*self.flow_dt/self.tau))**0.5*rng.gauss(0.0, 1.0)
 
             # compute noise
-            vx, vy = np.zeros([self.heigth,self.length]), np.zeros([self.heigth,self.length])
-            for y in range(self.heigth):
-                for x in range(self.length):
+            vx, vy = np.zeros([self.npoints_y,self.npoints_x]), np.zeros([self.npoints_y,self.npoints_x])
+            for y in range(self.npoints_y):
+                for x in range(self.npoints_x):
                     for k in range(len(self._Kall)):
                         kvec = self._Kall[k]
                         vx[y][x] += 2*self._amp[k] * np.sin(self._dotprod[y][x][k]) * kvec[1]
@@ -659,7 +731,69 @@ class Flow:
         uy_interp = map_coordinates(self.uy.T, [pos_x, pos_y], mode='grid-wrap', order=1)
         return ux_interp, uy_interp
 
-class Cloud:
+class Flow_turbulent:
+    def __init__(self, z_coord, length):
+        # desired physical dimensions of the simulation box
+        self.length = length
+
+        # rescaling factors
+        space_scale_factor = 10/length
+        vel_scale_factor = 10/1
+        # time_scale_factor = 0.01/flow_dt
+
+        # build path for npy files containing velocity frames
+        self.folder = f'flow/height_{z_coord:.2f}'
+        ux_path = f'{self.folder}/vel_x.npy'
+        uy_path = f'{self.folder}/vel_y.npy'
+
+        # load the npy files into arrays
+        self._ux_frames = np.load(ux_path)
+        self._uy_frames = np.load(uy_path)
+
+        # rescale velocity field
+        self._ux_frames /= vel_scale_factor
+        self._uy_frames /= vel_scale_factor
+
+        # initialise the frame id to 0
+        self._f_id: int = 0
+
+        # initialise the fields 
+        self.ux = self._ux_frames[self._f_id]
+        self.uy = self._uy_frames[self._f_id]
+
+        # extract number of points of the field
+        self.npoints_y, self.npoints_x = self.ux.shape
+
+        # adjust space bins in order to obtain the desired dimensions
+        self.delta_x = 10/self.npoints_x
+        self.delta_y = self.delta_x
+
+        # rescale space
+        self.delta_x /= space_scale_factor
+        self.delta_y /= space_scale_factor
+
+        # calculate height of the simulation box
+        self.height = self.delta_y*self.npoints_y
+
+        self.x_values = np.arange(self.npoints_x)*self.delta_x
+        self.y_values = np.arange(self.npoints_y)*self.delta_y
+        self.x_max = max(self.x_values)
+        self.y_max = max(self.y_values)
+
+    def update(self):
+        # loop through the lists of frames
+        self.ux = self._ux_frames[self._f_id]
+        self.uy = self._uy_frames[self._f_id]
+        if self._f_id < len(self._ux_frames)-1: self._f_id += 1
+        else: self._f_id = 0
+
+    # interpolate the velocity field at a given position
+    def interpolate(self, pos_x, pos_y):
+        ux_interp = map_coordinates(self.ux.T, [pos_x, pos_y], mode='grid-wrap', order=1)
+        uy_interp = map_coordinates(self.uy.T, [pos_x, pos_y], mode='grid-wrap', order=1)
+        return ux_interp, uy_interp
+
+class Cloud_of_particles:
     def __init__(self, particle_dt, particle_rate, source_coordinates, flow):
         # time step
         self.particle_dt = particle_dt
@@ -694,7 +828,7 @@ class Cloud:
             # if any of the particles is out of the simulation box, remove it
             if (particle.coordinates[0] > self.flow.length-1 or 
                 particle.coordinates[0] < 0 or 
-                particle.coordinates[1] > self.flow.heigth-1 or 
+                particle.coordinates[1] > self.flow.height-1 or 
                 particle.coordinates[1] < 0):
                 to_be_removed.append(particle)
         if to_be_removed:
@@ -724,6 +858,34 @@ class Cloud:
     # sample time for the generation of next particle from an exponential distribution
     def _get_next_time(self):
         return rng.expovariate(self.particle_rate)
+
+class Cloud_turbulent:
+    def __init__(self, threshold, flow):
+        # threshold to detect odor
+        self.threshold = threshold
+        # hardcoded attributes
+        self.source_coordinates = [flow.x_max/10, flow.y_max/2]
+        # self.particle_dt = 0.01
+        # TODO nella simulaz originale di martin questo è 0.01... ma cosa significa esattamente?
+        self.particle_dt = 1
+
+        # build path for npy files containing odor frames
+        odor_path = f'{flow.folder}/odor.npy'
+
+        # load the npy file into an array
+        self._odor_frames = np.load(odor_path)
+
+        # sync frame id with the flow
+        self._f_id = flow._f_id
+
+        # initialise the field
+        self.odor = self._odor_frames[self._f_id]
+
+    def update(self):
+        # loop through the lists of frames
+        self.odor = self._odor_frames[self._f_id]
+        if self._f_id < len(self._odor_frames)-1: self._f_id += 1
+        else: self._f_id = 0
 
 class Particle:
     def __init__(self, coordinates):

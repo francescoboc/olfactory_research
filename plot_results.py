@@ -33,10 +33,15 @@ plt.rcParams['legend.fancybox'] = False
 
 # filename = 'vary_radius_free1'
 # filename = 'vary_radius_free'
-filename = 'vary_radius_elastic'
+# filename = 'vary_radius_elastic'
 
-# x_label = r'Trust parameter $\beta$'
-x_label = r'Swarm radius $R_b$'
+# filename = 'turbulent_free_lx50'
+filename = 'turbulent_free_lx100'
+# filename = 'turbulent_elastic_lx50'
+# filename = 'turbulent_elastic_lx100'
+
+x_label = r'Trust parameter $\beta$'
+# x_label = r'Swarm radius $R_b$'
 
 legend = True
 
