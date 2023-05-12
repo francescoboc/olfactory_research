@@ -68,16 +68,20 @@ class Simulation:
             # create figure and axes for plotting
             # fig = plt.figure(figsize=(12,6))
             plt.gca().remove()
-            # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.height-1))
-            self.axes = plt.subplot(aspect='equal', adjustable='box',
-                    xlim=(self.cloud.source_coordinates[0] - self.swarm.spawn_radius*2, self.swarm.spawn_center[0] + self.swarm.spawn_radius*2), 
-                    ylim=(self.swarm.spawn_center[1] - self.swarm.spawn_radius*2.5, self.swarm.spawn_center[1] + self.swarm.spawn_radius*2.5)) 
+            self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.height-1))
+            # self.axes = plt.subplot(aspect='equal', adjustable='box',
+            #         xlim=(self.cloud.source_coordinates[0] - self.swarm.spawn_radius*2, self.swarm.spawn_center[0] + self.swarm.spawn_radius*2), 
+            #         ylim=(self.swarm.spawn_center[1] - self.swarm.spawn_radius*2.5, self.swarm.spawn_center[1] + self.swarm.spawn_radius*2.5)) 
             # add arrows for the velocity field
             if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.x_values, self.flow.y_values, self.flow.ux, self.flow.uy,
                     scale=1, units='xy', headlength=3, headaxislength=3, minshaft=5, alpha=0.2, zorder=2, color='k')
 
             if self.turbulent:
-                self.odor_image = self.axes.imshow(self.cloud.odor>self.cloud.threshold, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3)
+                self.odor_image = self.axes.imshow(self.cloud.odor>self.cloud.threshold, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
+                # self.sniff_mask = np.zeros(self.cloud.odor.shape)
+                # self.sniff_mask[0][0] = 1
+                # self.odor_image = self.axes.imshow(self.sniff_mask, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
+                # self.sniff_image = self.axes.imshow(self.sniff_mask, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='inferno_r', alpha=0.3)
 
             # add patches for source and spawn circle 
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
@@ -111,16 +115,13 @@ class Simulation:
         # x_coords = [ [] for n in range(self.swarm.n_agents) ]
         # y_coords = [ [] for n in range(self.swarm.n_agents) ]
         while time < self.final_time:
-            # update the flow (the stochastic flow needs to know the current time step)
+            # update the flow and the odor cloud
             if self.turbulent:
                 self.flow.update()
+                self.cloud.update()
             else:
                 self.flow.update(time_step)
-
-            # update the cloud
-            particle_removed = self.cloud.update()
-
-            self.cloud.update()
+                particle_removed = self.cloud.update()
 
             # at every decision time, create particles according to rate
             if not self.turbulent:
@@ -141,7 +142,8 @@ class Simulation:
                 # detect odor particles
                 if not agent.sniffed: 
                     if self.turbulent:
-                        self.swarm.sniff_odor(agent)
+                        mask = self.swarm.sniff_odor(agent)
+                        self.sniff_mask = mask
                     else:
                         self.swarm.sniff_particles(agent)
 
@@ -164,13 +166,13 @@ class Simulation:
                 if self.real_time_plot and particle_added: 
                     self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b', alpha=0.5) ) 
 
-            # remove patches from axes in case an agent or a particle was removed
-            if self.real_time_plot and (particle_removed or agent_removed):
-                for patch in self.axes.patches:
-                    if (patch.center[0] > self.flow.length-1 or patch.center[0] < 0 or 
-                        patch.center[1] > self.flow.height -1 or patch.center[1] < 0):
-                        patch.remove()
-                # plt.legend(fancybox=False, loc=3)
+            # # remove patches from axes in case an agent or a particle was removed
+            # if self.real_time_plot and (particle_removed or agent_removed):
+            #     for patch in self.axes.patches:
+            #         if (patch.center[0] > self.flow.length-1 or patch.center[0] < 0 or 
+            #             patch.center[1] > self.flow.height -1 or patch.center[1] < 0):
+            #             patch.remove()
+            #     # plt.legend(fancybox=False, loc=3)
 
             # plot in real time
             if self.real_time_plot:
@@ -179,8 +181,8 @@ class Simulation:
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
                 if self.turbulent:
+                    # self.odor_image.set_data(self.sniff_mask)
                     self.odor_image.set_data(self.cloud.odor>self.cloud.threshold)
-                plt.draw()
                 if self.save_frames: plt.savefig(f'frames085/frame{time_step}')
                 plt.pause(self.pause_time)
 
@@ -435,10 +437,17 @@ class Swarm:
     # detect odor field within the olfactoy_radius
     def sniff_odor(self, agent):
         # find indexes of flow field that is closest to agent coordinates
-        id_x = np.flatnonzero(self.flow.x_values>agent.coordinates[0])[0]
-        id_y = np.flatnonzero(self.flow.y_values>agent.coordinates[1])[0]
-        if self.cloud.odor[id_y][id_x]>self.cloud.threshold:
+        # center_x = np.flatnonzero(self.flow.x_values>agent.coordinates[0])[0]
+        # center_y = np.flatnonzero(self.flow.y_values>agent.coordinates[1])[0]
+
+        x_trasl = self.flow.x_values - agent.coordinates[0] 
+        y_trasl = self.flow.y_values - agent.coordinates[1]
+
+        mask = norm([x_trasl, np.atleast_2d(y_trasl).T]) <= agent.olfactory_radius
+
+        if np.any(self.cloud.odor[mask]>self.cloud.threshold):
             agent.sniffed = True
+            print('sniffed')
 
     # update the wind estimate of agents (i.e. private cues)
     def update_wind_estimate(self):
@@ -562,6 +571,7 @@ class Moth:
         # divide the wind estimate by its norm to obtain a unit vector
         norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         # move 45 degrees
+
         if self.clock == self.t_prime:
             if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, norm_wind_estimate)
             else: direction_45 = np.matmul(self._rot_matrix_neg45, norm_wind_estimate)

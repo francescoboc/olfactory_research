@@ -37,42 +37,46 @@ def parallel_run(n):
     return arrival_time, agents_in_Rb, success, seed
 
 # TODO check within the olfactory radius for the turbulent flow
+# TODO git merge
 
-# TODO initial amplitudes of noise? -> not needed for the trubulent flow
 # TODO reflection boundary conditions (or better not?)
+# TODO initial amplitudes of noise? -> not needed for the trubulent flow
 # TODO beta=1 doesn't make sense (?) -> it does if we initialise the velocities (e.g. random)!
 # TODO save data periodically (just in case) 
-# TODO fai andare ancora un po' la sim con elastic=True per far si che tutti gli agenti arrivino a destinazione
+# TODO fai andare ancora un po' la sim con elastic=True per far si che tutti gli agenti arrivino a destinazione -> just remove this parameter from evaluation (?)
 # TODO vary eta and Lx
 
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
 save_frames = False
-pause_time = 0.001
+# pause_time = 0.001
+pause_time = 0.25
 
 # name of the output results file
 filename = 'test'
 
 # do more runs at the same time
 parallel = False
-n_threads = 50 # number of threads used for parallelisation
+n_threads = 6 # number of threads used for parallelisation
  
+# number of successful episodes to sample
+n_samples = 12
+
 # use elastic recall force
-elastic = True
+elastic = False
 
 # use a different beta for informed and uninformed agents
-adaptive_beta = True
+adaptive_beta = False
 
 # use a stochastic or a turbulent flow
 turbulent = True
+
+# parameters of the turbulent flow
 # available heights = 0.15, 0.5, 1.0, 1.5
 z_coord = 1
 # smelling threshold
 threshold = 0.02
-
-# number of successful episodes to sample
-n_samples = 100
 
 # # trust parameter (β) values to check in a parallel run
 # trusts = np.round(np.arange(0.05, 1, 0.05),2) 
@@ -81,7 +85,10 @@ n_samples = 100
 # trusts_inf = np.round(np.arange(0.0, 1, 0.1),2) 
 # trusts_uninf = np.round(np.arange(0.8, 1, 0.02),2) 
 
-# these parameters are relevant only if we are using an adaptive beta
+# constant trust parameter
+trust = 0.85 # β
+
+# these are relevant only if we are using an adaptive beta
 trust_uninform = 0.9
 trust_inform = 0.1
 decay_time = 3
@@ -103,8 +110,7 @@ npoints_y = int(height)
 decision_time = 1 # Δt
 
 # parameters of the agents
-n_agents = 100 # N
-trust = 0.85 # β
+n_agents = 1 # N
 speed = 0.2 # v0
 olfactory_radius = Rd # Rd 
 visual_radius = 5*Rd # Ra
@@ -150,7 +156,8 @@ os.makedirs('results', exist_ok=True); os.makedirs('frames', exist_ok=True)
 
 if not parallel:
     # initialise the rng
-    seed = random.randrange(sys.maxsize)
+    # seed = random.randrange(sys.maxsize)
+    seed = 1424265012697621092 
     initialise_rng(seed)
     print(f'Seed = {seed}')
     # create objects
