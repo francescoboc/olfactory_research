@@ -4,9 +4,8 @@ import pandas as pd
 # mode = 'Unconstrained'
 mode = 'Elastic constrain'
 
-# filename = 'adaptive_beta_elastic_refined'
-# filename = 'adaptive_beta_elastic'
-filename = 'adaptive_beta_elastic_decay4'
+filename = 'new_adaptive_beta_elastic_decay4'
+# filename = 'adaptive_beta_elastic_decay4'
 
 # if mode == 'Unconstrained': filename = 'adaptive_beta_free'
 # else: filename = 'adaptive_beta_elastic'
