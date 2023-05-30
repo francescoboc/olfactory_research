@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from scipy.ndimage import map_coordinates
+from tqdm import tqdm
 
 # hack to prevent raising KeyboardInterrupt when stopping the script with ctrl-c
 # https://stackoverflow.com/questions/7073268/remove-traceback-in-python-on-ctrl-c
@@ -108,13 +109,58 @@ class Simulation:
 
             plt.pause(self.pause_time)
 
-    def run(self):
+    def run_random(self, bias):
         # reset flags and timers
         success, agent_removed = False, False
         time_step, time, stopwatch, count = 0, 0, 0, 0
+
+        order_param = []
+        for time in tqdm(range(self.final_time), ascii=' █'):
+            # compute order parameter
+            order_param.append(self.swarm.compute_order_parameter())
+
+            self.swarm.update_random(bias)
+            time += self.swarm.decision_time
+
+            # plot in real time
+            if self.real_time_plot:
+                # plt.title(rf'Time = {time}')
+                plt.title(rf'$\psi = {order_param[-1]}$')
+                # update the flow arrows
+                if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
+                # and redraw the patches
+                if self.turbulent:
+                    # self.odor_image.set_data(self.sniff_mask)
+                    self.odor_image.set_data(self.cloud.odor>self.cloud.threshold)
+                if self.save_frames: plt.savefig(f'frames085/frame{time_step}')
+                plt.pause(self.pause_time)
+
+            # # PBC
+            # for agent in self.swarm.agents:
+            #     if agent.coordinates[0] > self.flow.length-1:
+            #         agent.coordinates[0] -= self.flow.length
+            #     if agent.coordinates[0] < 0:
+            #         agent.coordinates[0] += self.flow.length
+            #     if agent.coordinates[1] > self.flow.height-1:
+            #         agent.coordinates[1] -= self.flow.height
+            #     if agent.coordinates[1] < 0:
+            #         agent.coordinates[1] += self.flow.height
+
+        return order_param
+
+
+    def run(self):
         # x_coords = [ [] for n in range(self.swarm.n_agents) ]
         # y_coords = [ [] for n in range(self.swarm.n_agents) ]
+
+        # reset flags and timers
+        success, agent_removed = False, False
+        time_step, time, stopwatch, count = 0, 0, 0, 0
+
         while time < self.final_time:
+            # compute order parameter
+            order_param = self.swarm.compute_order_parameter()
+
             # update the flow and the odor cloud
             if self.turbulent:
                 self.flow.update()
@@ -177,6 +223,7 @@ class Simulation:
             # plot in real time
             if self.real_time_plot:
                 plt.title(rf'Time = {time}')
+                # plt.title(rf'$\psi = {order_param}$')
                 # update the flow arrows
                 if self.plot_flow: self.flow_arrows.set_UVC(self.flow.ux, self.flow.uy)
                 # and redraw the patches
@@ -226,7 +273,10 @@ class Swarm:
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
         self.memory_time = memory_time
-        self.trust = trust
+        # this is to avoid divisions by zero
+        # (could also be fixed by initialising private vel to random)
+        if trust != 1.0: self.trust = trust
+        else: self.trust = 0.9999999999
         self.sensing_noise = sensing_noise
         self.adaptive_beta = adaptive_beta
 
@@ -280,6 +330,32 @@ class Swarm:
         pos_y = [agent.coordinates[1] for agent in self.agents]
         self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
 
+    # all agents make random moves
+    def update_random(self, bias):
+        for agent in self.agents:
+            # update public velocity
+            self.update_public_velocity(agent)
+
+            # # add noise to public velocity (random rotation)
+            # random_angle = rng.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
+            # random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
+            # agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
+
+            # # extract a random private velocity
+            random_angle = rng.uniform(0, 2*3.141592653589793)
+            v_rand = np.array([np.cos(random_angle), np.sin(random_angle)])
+            agent.velocity_priv = bias*np.array([-1,0]) + (1-bias)*v_rand
+
+            # agent.velocity_priv /= norm(agent.velocity_priv)
+            # agent.velocity_priv = np.array([np.cos(random_angle), np.sin(random_angle)])
+
+            # combine the two according to the trust parameter
+            agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
+            agent.velocity_comb = agent.speed*agent.velocity_comb/norm(agent.velocity_comb)
+            # update coordinates
+            # agent.coordinates += agent.speed*agent.decision_time*agent.velocity_comb
+            agent.coordinates += agent.decision_time*agent.velocity_comb
+
     def update_elastic(self):
         removed, success = False, False
         # determine future coordinates of the agents
@@ -303,8 +379,7 @@ class Swarm:
 
                 # add noise to public velocity (random rotation)
                 random_angle = rng.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
-                random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], 
-                        [np.sin(random_angle), np.cos(random_angle)]]
+                random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
                 agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
 
                 # check if the odor source is within the visual radius of any of the agents
@@ -395,8 +470,7 @@ class Swarm:
 
                 # add noise to public velocity (random rotation)
                 random_angle = rng.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
-                random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], 
-                        [np.sin(random_angle), np.cos(random_angle)]]
+                random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
                 agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
 
                 # check if the odor source is within the visual radius of any of the agents
@@ -440,14 +514,13 @@ class Swarm:
         # center_x = np.flatnonzero(self.flow.x_values>agent.coordinates[0])[0]
         # center_y = np.flatnonzero(self.flow.y_values>agent.coordinates[1])[0]
 
+        # find pixels that are within the olfactory circle and create a mask
         x_trasl = self.flow.x_values - agent.coordinates[0] 
         y_trasl = self.flow.y_values - agent.coordinates[1]
-
         mask = norm([x_trasl, np.atleast_2d(y_trasl).T]) <= agent.olfactory_radius
 
         if np.any(self.cloud.odor[mask]>self.cloud.threshold):
             agent.sniffed = True
-            print('sniffed')
 
     # update the wind estimate of agents (i.e. private cues)
     def update_wind_estimate(self):
@@ -486,8 +559,16 @@ class Swarm:
                 if not agent.go:
                     if candidate.go: agent.go = True
 
+    # compute the order parameter to quantify consesus among agents
+    def compute_order_parameter(self):
+        sum_vel = np.zeros(2)
+        for agent in self.agents:
+            sum_vel += agent.velocity_comb
+        return norm(sum_vel)/(self.n_agents*self.speed)
+
 class Moth:
-    def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, initial_wind_estimate, trust, trust_inform, trust_uninform, decay_time, adaptive_beta, turbulent):
+    def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, 
+            initial_wind_estimate, trust, trust_inform, trust_uninform, decay_time, adaptive_beta, turbulent):
         # parameters of the moth
         self.label = label
         self.coordinates = np.array(coordinates)
@@ -518,7 +599,7 @@ class Moth:
         # counters and flags for the surging phase
         self.t_prime, self.clock, self.flip_dir = 0, 0, False
 
-        # rotation matrices for 45deg 90deg rotations
+        # rotation matrices for 45deg and 90deg rotations
         self._rot_matrix_45 = [[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]]
         self._rot_matrix_neg45 = [[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]]
         self._rot_matrix_90 = [[0, -1], [1, 0]]
@@ -563,29 +644,37 @@ class Moth:
         self.t_prime = 0; self.clock = 0
 
     def cast(self):
+        still_surging = False
+
         if self.adaptive_beta:
-            # when surging, increase linearly the trust parameter until trust_uninform is reached
+            # when casting, increase linearly the trust parameter until trust_uninform is reached
             if self.trust_index < self.decay_time: 
                 self.trust_index += 1 
                 self.trust = self.trust_values[self.trust_index]
-        # divide the wind estimate by its norm to obtain a unit vector
-        norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
-        # move 45 degrees
+                # and during this time, keep on surging
+                norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
+                self.velocity_priv = -norm_wind_estimate*self.speed
+                still_surging = True
 
-        if self.clock == self.t_prime:
-            if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, norm_wind_estimate)
-            else: direction_45 = np.matmul(self._rot_matrix_neg45, norm_wind_estimate)
-            self.velocity_priv = direction_45*self.speed
-            self.clock = 0
-            self.t_prime += 2*self.decision_time
-            self.flip_dir = not self.flip_dir
-        # move crosswind
-        else:
-            if self.flip_dir: direction_crosswind = np.matmul(self._rot_matrix_90, norm_wind_estimate)
-            else: direction_crosswind = -np.matmul(self._rot_matrix_90, norm_wind_estimate)
-            # update value of private velocity to move crosswind
-            self.velocity_priv = direction_crosswind*self.speed
-            self.clock += self.decision_time
+        if not still_surging:
+            # divide the wind estimate by its norm to obtain a unit vector
+            norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
+
+            # move 45 degrees
+            if self.clock == self.t_prime:
+                if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, norm_wind_estimate)
+                else: direction_45 = np.matmul(self._rot_matrix_neg45, norm_wind_estimate)
+                self.velocity_priv = direction_45*self.speed
+                self.clock = 0
+                self.t_prime += 2*self.decision_time
+                self.flip_dir = not self.flip_dir
+            # move crosswind
+            else:
+                if self.flip_dir: direction_crosswind = np.matmul(self._rot_matrix_90, norm_wind_estimate)
+                else: direction_crosswind = -np.matmul(self._rot_matrix_90, norm_wind_estimate)
+                # update value of private velocity to move crosswind
+                self.velocity_priv = direction_crosswind*self.speed
+                self.clock += self.decision_time
 
 class Flow_stochastic:
     def __init__(self, length, height, npoints_x, npoints_y, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity, loop_cycles):
