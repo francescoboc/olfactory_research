@@ -20,9 +20,10 @@ def parallel_run(n):
     if turbulent:
         flow = Flow_turbulent(z_coord, length)
         cloud = Cloud_turbulent(threshold, flow)
-        spawn_center = [cloud.source_coordinates[0]+Lx, flow.height/2]
+        # spawn_center = [cloud.source_coordinates[0]+Lx, flow.height/2]
     else:
-        flow = Flow_stochastic(length, height, npoints_x, npoints_y, flow_dt, flow_lengthscale, flow_corr_time, mean_wind, fluct_intensity, loop_cycles)
+        flow = Flow_stochastic(length, height, npoints_x, npoints_y, flow_dt, flow_lengthscale, 
+                flow_corr_time, mean_wind, fluct_intensity, loop_cycles)
         cloud = Cloud_of_particles(particle_dt, particle_rate, source_coordinates, flow)
 
     swarm = Swarm(n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
@@ -36,9 +37,6 @@ def parallel_run(n):
 
     return arrival_time, agents_in_Rb, success, seed
 
-# TODO check within the olfactory radius for the turbulent flow
-# TODO git merge
-
 # TODO reflection boundary conditions (or better not?)
 # TODO initial amplitudes of noise? -> not needed for the trubulent flow
 # TODO beta=1 doesn't make sense (?) -> it does if we initialise the velocities (e.g. random)!
@@ -50,21 +48,20 @@ def parallel_run(n):
 real_time_plot = True
 plot_flow = False
 save_frames = False
-# pause_time = 0.001
-pause_time = 0.25
+pause_time = 0.001
 
 # name of the output results file
-filename = 'test'
+filename = 'new_adaptive_beta_elastic_decay4'
 
 # do more runs at the same time
 parallel = False
-n_threads = 6 # number of threads used for parallelisation
+n_threads = 25 # number of threads used for parallelisation
  
 # number of successful episodes to sample
-n_samples = 12
+n_samples = 100
 
 # use elastic recall force
-elastic = False
+elastic = True
 
 # use a different beta for informed and uninformed agents
 adaptive_beta = False
@@ -81,9 +78,9 @@ threshold = 0.02
 # # trust parameter (β) values to check in a parallel run
 # trusts = np.round(np.arange(0.05, 1, 0.05),2) 
 
-# # trust parameter (β) values to check if using an adaptive beta
-# trusts_inf = np.round(np.arange(0.0, 1, 0.1),2) 
-# trusts_uninf = np.round(np.arange(0.8, 1, 0.02),2) 
+# trust parameter (β) values to check if using an adaptive beta
+trusts_inf = np.round(np.arange(0.0, 1, 0.1),2) 
+trusts_uninf = np.round(np.arange(0.8, 1, 0.02),2) 
 
 # constant trust parameter
 trust = 0.85 # β
@@ -91,16 +88,18 @@ trust = 0.85 # β
 # these are relevant only if we are using an adaptive beta
 trust_uninform = 0.9
 trust_inform = 0.1
-decay_time = 3
+
+# decay time used both for beta and for the surging phase
+decay_time = 4
 
 Rd = 0.2 # olfactory range
 # Lx = 250*Rd # distance from the source
-Lx = 100 # distance from the source
+Lx = 50 # distance from the source
 
 # size of the simulation box
-# length = int(2.5*Lx) 
-length = 150
-height = length
+length = int(2*Lx) 
+# length = 150
+height = int(length/2)
 
 # number of grid points for the stochastic flow
 npoints_x = int(length)
@@ -110,7 +109,7 @@ npoints_y = int(height)
 decision_time = 1 # Δt
 
 # parameters of the agents
-n_agents = 1 # N
+n_agents = 100 # N
 speed = 0.2 # v0
 olfactory_radius = Rd # Rd 
 visual_radius = 5*Rd # Ra
@@ -156,8 +155,7 @@ os.makedirs('results', exist_ok=True); os.makedirs('frames', exist_ok=True)
 
 if not parallel:
     # initialise the rng
-    # seed = random.randrange(sys.maxsize)
-    seed = 1424265012697621092 
+    seed = random.randrange(sys.maxsize)
     initialise_rng(seed)
     print(f'Seed = {seed}')
     # create objects
@@ -210,10 +208,11 @@ else:
                     # terminate the pool of workersadaptive_beta  
                 pool.terminate(); pool.join() 
 
-            results.loc[(trust_uninform, trust_inform)]['times'] = arrival_times
-            results.loc[(trust_uninform, trust_inform)]['n_agents'] = arrival_agents
-            results.loc[(trust_uninform, trust_inform)]['fails'] = fail_counter
-            results.loc[(trust_uninform, trust_inform)]['seeds'] = seeds
+                results.loc[(trust_uninform, trust_inform)]['times'] = arrival_times
+                results.loc[(trust_uninform, trust_inform)]['n_agents'] = arrival_agents
+                results.loc[(trust_uninform, trust_inform)]['fails'] = fail_counter
+                results.loc[(trust_uninform, trust_inform)]['seeds'] = seeds
+
     else:
         for trust in trusts:
             results = pd.DataFrame(index=trusts, columns=['times', 'n_agents', 'fails', 'seeds'])
@@ -239,10 +238,10 @@ else:
                 # terminate the pool of workersadaptive_beta  
             pool.terminate(); pool.join() 
 
-        results.loc[trust]['times'] = arrival_times
-        results.loc[trust]['n_agents'] = arrival_agents
-        results.loc[trust]['fails'] = fail_counter
-        results.loc[trust]['seeds'] = seeds
+            results.loc[trust]['times'] = arrival_times
+            results.loc[trust]['n_agents'] = arrival_agents
+            results.loc[trust]['fails'] = fail_counter
+            results.loc[trust]['seeds'] = seeds
 
     # attributes to save in results metadata
     if turbulent:
