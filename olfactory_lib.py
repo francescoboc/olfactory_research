@@ -3,7 +3,10 @@ import numpy as np
 import random
 from scipy.ndimage import map_coordinates
 from tqdm import tqdm
+<<<<<<< HEAD
 import h5py
+=======
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
 
 # hack to prevent raising KeyboardInterrupt when stopping the script with ctrl-c
 # https://stackoverflow.com/questions/7073268/remove-traceback-in-python-on-ctrl-c
@@ -76,7 +79,11 @@ class Simulation:
             #         ylim=(self.swarm.spawn_center[1] - self.swarm.spawn_radius*2.5, self.swarm.spawn_center[1] + self.swarm.spawn_radius*2.5)) 
             # add arrows for the velocity field
             if self.plot_flow: self.flow_arrows = self.axes.quiver(self.flow.x_values, self.flow.y_values, self.flow.ux, self.flow.uy,
+<<<<<<< HEAD
                     scale=3, units='xy', headlength=3, headaxislength=3, minshaft=5, alpha=0.2, zorder=2, color='k')
+=======
+                    scale=1, units='xy', headlength=3, headaxislength=3, minshaft=5, alpha=0.2, zorder=2, color='k')
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
 
             if self.turbulent:
                 self.odor_image = self.axes.imshow(self.cloud.odor>self.cloud.threshold, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
@@ -132,8 +139,13 @@ class Simulation:
                 # and redraw the patches
                 if self.turbulent:
                     # self.odor_image.set_data(self.sniff_mask)
+<<<<<<< HEAD
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
+=======
+                    self.odor_image.set_data(self.cloud.odor>self.cloud.threshold)
+                if self.save_frames: plt.savefig(f'frames085/frame{time_step}')
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
                 plt.pause(self.pause_time)
 
             # # PBC
@@ -213,6 +225,7 @@ class Simulation:
                 if self.real_time_plot and particle_added: 
                     self.axes.add_patch( plt.Circle(self.cloud.particles[-1].coordinates, 0.1, color='b', alpha=0.5) ) 
 
+<<<<<<< HEAD
             # remove patches from axes in case an agent was removed
             if self.real_time_plot and agent_removed:
                 for patch in self.axes.patches:
@@ -220,6 +233,15 @@ class Simulation:
                         patch.center[1] > self.flow.height -1 or patch.center[1] < 0):
                         patch.remove()
                 # plt.legend(fancybox=False, loc=3)
+=======
+            # # remove patches from axes in case an agent or a particle was removed
+            # if self.real_time_plot and (particle_removed or agent_removed):
+            #     for patch in self.axes.patches:
+            #         if (patch.center[0] > self.flow.length-1 or patch.center[0] < 0 or 
+            #             patch.center[1] > self.flow.height -1 or patch.center[1] < 0):
+            #             patch.remove()
+            #     # plt.legend(fancybox=False, loc=3)
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
 
             # # remove patches from axes in case an agent or a particle was removed
             # if self.real_time_plot and (particle_removed or agent_removed):
@@ -238,8 +260,13 @@ class Simulation:
                 # and redraw the patches
                 if self.turbulent:
                     # self.odor_image.set_data(self.sniff_mask)
+<<<<<<< HEAD
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
+=======
+                    self.odor_image.set_data(self.cloud.odor>self.cloud.threshold)
+                if self.save_frames: plt.savefig(f'frames085/frame{time_step}')
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
                 plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
@@ -272,7 +299,11 @@ class Simulation:
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
             visual_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, decay_time, 
+<<<<<<< HEAD
             threshold, adaptive_beta, cloud, flow):
+=======
+            adaptive_beta, cloud, flow):
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -282,6 +313,7 @@ class Swarm:
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
         self.memory_time = memory_time
+<<<<<<< HEAD
         self.sensing_noise = sensing_noise
         self.adaptive_beta = adaptive_beta
         self.threshold = threshold
@@ -289,6 +321,14 @@ class Swarm:
         # hack to avoid divisions by zero (could also be fixed by initialising private vel to random)
         if trust != 1.0: self.trust = trust
         else: self.trust = 0.9999999999
+=======
+        # this is to avoid divisions by zero
+        # (could also be fixed by initialising private vel to random)
+        if trust != 1.0: self.trust = trust
+        else: self.trust = 0.9999999999
+        self.sensing_noise = sensing_noise
+        self.adaptive_beta = adaptive_beta
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
 
         self.trust_inform = trust_inform
         self.trust_uninform = trust_uninform
@@ -529,7 +569,11 @@ class Swarm:
         y_trasl = self.flow.y_values - agent.coordinates[1]
         mask = norm([x_trasl, np.atleast_2d(y_trasl).T]) <= agent.olfactory_radius
 
+<<<<<<< HEAD
         if np.any(self.cloud.odor[mask]>self.threshold):
+=======
+        if np.any(self.cloud.odor[mask]>self.cloud.threshold):
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
             agent.sniffed = True
 
     # update the wind estimate of agents (i.e. private cues)
@@ -589,11 +633,14 @@ class Moth:
         self.adaptive_beta = adaptive_beta
         self.turbulent = turbulent
 
+<<<<<<< HEAD
         # # # ADAPTIVE BETA BASED ON MEMORY
         # # initialize empty memory buffer for beta calculation
         # self.memory = [0 for m in range(decay_time)]
 
         # # ADAPTIVE BETA BASED ON TIME DECAY
+=======
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
         if self.adaptive_beta:
             self.trust_inform = trust_inform
             self.trust_uninform = trust_uninform
@@ -601,8 +648,15 @@ class Moth:
 
             # calculate trust values for the "trust cooldown"
             self.trust_values = np.linspace(self.trust_inform, self.trust_uninform, self.decay_time+1)
+<<<<<<< HEAD
             # initialise trust parameter as uninformed 
             self.trust = self.trust_uninform
+=======
+
+            # initialise trust parameter as uninformed 
+            self.trust = self.trust_uninform
+
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
             self.trust_index = 0
 
         # constant beta
@@ -844,12 +898,17 @@ class Flow_stochastic:
         return ux_interp, uy_interp
 
 class Flow_turbulent:
+<<<<<<< HEAD
     def __init__(self, path, length):
+=======
+    def __init__(self, z_coord, length):
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
         # desired physical dimensions of the simulation box
         self.length = length
 
         # rescaling factors
         space_scale_factor = 10/length
+<<<<<<< HEAD
         self.vel_scale_factor = 10
         # time_scale_factor = 0.01/flow_dt
 
@@ -868,10 +927,28 @@ class Flow_turbulent:
         # # rescale velocity field
         # self._ux_frames /= vel_scale_factor
         # self._uy_frames /= vel_scale_factor
+=======
+        vel_scale_factor = 10/1
+        # time_scale_factor = 0.01/flow_dt
+
+        # build path for npy files containing velocity frames
+        self.folder = f'flow/height_{z_coord:.2f}'
+        ux_path = f'{self.folder}/vel_x.npy'
+        uy_path = f'{self.folder}/vel_y.npy'
+
+        # load the npy files into arrays
+        self._ux_frames = np.load(ux_path)
+        self._uy_frames = np.load(uy_path)
+
+        # rescale velocity field
+        self._ux_frames /= vel_scale_factor
+        self._uy_frames /= vel_scale_factor
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
 
         # initialise the frame id to 0
         self._f_id: int = 0
 
+<<<<<<< HEAD
         # # initialise the fields 
         # self.ux = self._ux_frames[self._f_id]
         # self.uy = self._uy_frames[self._f_id]
@@ -879,6 +956,11 @@ class Flow_turbulent:
         # initialise the fields 
         self.ux = np.array(self.data['vel_x'][str(self._f_id)])/self.vel_scale_factor
         self.uy = np.array(self.data['vel_y'][str(self._f_id)])/self.vel_scale_factor
+=======
+        # initialise the fields 
+        self.ux = self._ux_frames[self._f_id]
+        self.uy = self._uy_frames[self._f_id]
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
 
         # extract number of points of the field
         self.npoints_y, self.npoints_x = self.ux.shape
@@ -899,6 +981,7 @@ class Flow_turbulent:
         self.x_max = max(self.x_values)
         self.y_max = max(self.y_values)
 
+<<<<<<< HEAD
         self._n_frames = len(list(self.data.items())[0][1].keys()) 
 
     def update(self):
@@ -913,6 +996,13 @@ class Flow_turbulent:
         # else: self._f_id = 0
 
         if self._f_id < self._n_frames-1: self._f_id += 1
+=======
+    def update(self):
+        # loop through the lists of frames
+        self.ux = self._ux_frames[self._f_id]
+        self.uy = self._uy_frames[self._f_id]
+        if self._f_id < len(self._ux_frames)-1: self._f_id += 1
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
         else: self._f_id = 0
 
     # interpolate the velocity field at a given position
@@ -988,6 +1078,7 @@ class Cloud_of_particles:
         return rng.expovariate(self.particle_rate)
 
 class Cloud_turbulent:
+<<<<<<< HEAD
     def __init__(self, flow):
         self.flow = flow
         # hardcoded attributes
@@ -1002,10 +1093,27 @@ class Cloud_turbulent:
 
         # # load the npy file into an array
         # self._odor_frames = np.load(odor_path)
+=======
+    def __init__(self, threshold, flow):
+        # threshold to detect odor
+        self.threshold = threshold
+        # hardcoded attributes
+        self.source_coordinates = [flow.x_max/10, flow.y_max/2]
+        # self.particle_dt = 0.01
+        # TODO nella simulaz originale di martin questo è 0.01... ma cosa significa esattamente?
+        self.particle_dt = 1
+
+        # build path for npy files containing odor frames
+        odor_path = f'{flow.folder}/odor.npy'
+
+        # load the npy file into an array
+        self._odor_frames = np.load(odor_path)
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
 
         # sync frame id with the flow
         self._f_id = flow._f_id
 
+<<<<<<< HEAD
         # # initialise the field
         # self.odor = self._odor_frames[self._f_id]
 
@@ -1021,6 +1129,15 @@ class Cloud_turbulent:
         # loop through the lists of frames
         self.odor = np.array(self.flow.data['odor'][str(self._f_id)])
         if self._f_id < self.flow._n_frames-1: self._f_id += 1
+=======
+        # initialise the field
+        self.odor = self._odor_frames[self._f_id]
+
+    def update(self):
+        # loop through the lists of frames
+        self.odor = self._odor_frames[self._f_id]
+        if self._f_id < len(self._odor_frames)-1: self._f_id += 1
+>>>>>>> 9a27127ee020ae0409904375cfbb8d9d4e419bcb
         else: self._f_id = 0
 
 class Particle:
