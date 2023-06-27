@@ -4,8 +4,8 @@ import pandas as pd
 
 # extract default colors and markers
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-# markers = list(plt.Line2D.markers.keys())
-markers = ['o', 's', 'd', 'v', '^', '<', '>']
+markers = list(plt.Line2D.markers.keys())[2:]
+# markers = ['o', 's', 'd', 'v', '^', '<', '>']
 
 def print_attributes(dataframe):
     for key in dataframe.attrs.keys():
@@ -35,10 +35,12 @@ plt.rcParams['legend.fancybox'] = False
 # filename = 'vary_radius_free'
 # filename = 'vary_radius_elastic'
 
-# filename = 'turbulent_free_lx50'
-filename = 'turbulent_free_lx100'
-# filename = 'turbulent_elastic_lx50'
-# filename = 'turbulent_elastic_lx100'
+# folder = 'turbulent'
+# # filename = f'{folder}/turbulent_free_lx50'
+# filename = f'{folder}/turbulent_free_lx100'
+# # filename = f'{folder}/turbulent_elastic_lx50'
+# # filename = f'{folder}/turbulent_elastic_lx100'
+
 
 x_label = r'Trust parameter $\beta$'
 # x_label = r'Swarm radius $R_b$'
@@ -48,15 +50,23 @@ legend = True
 # dts to plot
 # particle_dts = [1, 0.5, 0.2, 0.1, 0.05, 0.02]
 # particle_dts = [0.2, 0.1, 0.05, 0.02]
-particle_dts = [0.1]
+# particle_dts = [0.1]
 
 # beta = 0.85
 
+ras = [0.1, 0.2, 0.5, 1, 2, 3, 4, 5]
+
+# thrs = [0.0001, 0.0005, 0.001, 0.002, 0.003, 0.005, 0.01]
+
 index = 0
-for particle_dt in particle_dts:
+for ra in ras:
+# for thr in thrs:
     # label = f'$\delta t={particle_dt:.2f}$'
     # label = 'Unconstrained'
-    label = 'Elastic constrain'
+    # label = 'Elastic constrain'
+
+    filename = f'turbulent/r280_ra{ra}_dt1_thr0.001_k1'
+    # filename = f'turbulent/r280_ra1_dt1_thr{thr}_k1'
 
     # load results in a dataframe
     try: 
@@ -65,8 +75,9 @@ for particle_dt in particle_dts:
     except: present = False
 
     if present:
-        # print details of the simulation
-        print_attributes(results_raw)
+
+        # # print details of the simulation
+        # print_attributes(results_raw)
 
         # make a clean dataframe without raw data
         results = results_raw.copy()
@@ -83,52 +94,49 @@ for particle_dt in particle_dts:
         Ts = results.attrs['Lx']/results.attrs['speed']
         N_agents = results.attrs['n_agents']
         N_episodes = len(results_raw['times'].values[0])
-        results_norm['time_avg'] = results['time_avg']/Ts
+        results_norm['time_avg'] = Ts/results['time_avg']
         results_norm['nagents_avg'] = results['nagents_avg']/N_agents
         results_norm['time_std'] = results['time_std']/Ts
         results_norm['nagents_std'] = results['nagents_std']/N_agents
         results_norm['fails'] = results['fails']/(N_episodes+results['fails'])
 
-        # plot
-        plt.figure(1)
-        plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, 
-                label=label, marker=markers[index])
+        # # plot
+        # plt.figure(1)
+        # plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, marker=markers[index])
 
         plt.figure(2)
-        plt.errorbar(results.index, 'nagents_avg', yerr='nagents_std', data=results_norm, 
-                label=label, marker=markers[index])
+        plt.plot(results.index, 'fails', data=results_norm, marker=markers[index], label=ra)
+        # plt.plot(results.index, 'fails', data=results_norm, marker=markers[index], label=thr)
 
-        plt.figure(3)
-        plt.plot(results.index, 'fails', data=results_norm, label=label, marker=markers[index])
+        # plt.figure(3)
+        # plt.errorbar(results.index, 'nagents_avg', yerr='nagents_std', data=results_norm, marker=markers[index])
 
         index += 1
 
-J = results.attrs['particle_rate']
-v0 = results.attrs['speed']
-title = f'$J={J}, v_0={v0}$'
+# J = results.attrs['particle_rate']
+# v0 = results.attrs['speed']
+# title = f'$J={J}, v_0={v0}$'
 
-print(results)
+# print(results)
 
-plt.figure(1)
-plt.axhline(1, c='k', lw=1)
-plt.xlabel(x_label)
-plt.ylabel(r'$T/T_s$')
-plt.title(title)
-if legend: plt.legend()
+# plt.figure(1)
+# plt.axhline(1, c='k', lw=1)
+# plt.xlabel(x_label)
+# plt.ylabel(r'$T_s/T$')
+# # plt.title(title)
+# if legend: plt.legend()
 
 plt.figure(2)
 plt.xlabel(x_label)
-plt.ylabel(r'Fraction of agents $< R_b$')
-plt.title(title)
-if legend: plt.legend()
-
-plt.figure(3)
-plt.xlabel(x_label)
 plt.ylabel(r'Fraction of failed episodes')
-plt.title(title)
+# plt.title(title)
 if legend: plt.legend()
 
-
+# plt.figure(3)
+# plt.xlabel(x_label)
+# plt.ylabel(r'Fraction of agents $< R_b$')
+# # plt.title(title)
+# if legend: plt.legend()
 
 # # MIHIR DATA
 # foldername = 'nonuniform10'

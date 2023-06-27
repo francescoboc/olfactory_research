@@ -1,17 +1,12 @@
 from olfactory_lib import *
 import pandas as pd
 
-# mode = 'Unconstrained'
-mode = 'Elastic constrain'
-
-filename = 'new_adaptive_beta_elastic_decay4'
-# filename = 'adaptive_beta_elastic_decay4'
-
-# if mode == 'Unconstrained': filename = 'adaptive_beta_free'
-# else: filename = 'adaptive_beta_elastic'
+folder = 'adaptive_beta'
+# filename = 'adaptive_beta_elastic_decay4_refined'
+filename = 'adaptive_beta_elastic_decay4'
 
 # load results in a dataframe
-results_raw = pd.read_pickle(f'results/{filename}.pkl')
+results_raw = pd.read_pickle(f'results/{folder}/{filename}.pkl')
 
 trust_inf, trust_uninf = [], []
 for tu, ti in results_raw.index.values:
@@ -56,21 +51,15 @@ x_ticks, y_ticks = trust_uninf, trust_inf
 
 plt.figure()
 # plt.imshow(times/Ts, origin='lower')
-plt.imshow(Ts/times, origin='lower')
-plt.colorbar(label='$T/T_s$')
-plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab);
+plt.imshow(Ts/times, origin='lower', cmap='inferno')
+plt.colorbar(label='$T_s/T$')
+plt.title(f'Inverse time to reach source'); plt.xlabel(x_lab); plt.ylabel(y_lab);
 plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
-
-# plt.figure()
-# plt.imshow(times_std/Ts, origin='lower')
-# plt.colorbar(label='std$(T)/T_s$')
-# plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
-# plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
 plt.figure()
 plt.imshow(fails/(fails+n_samples), origin='lower')
 plt.colorbar(label='Fraction of failed epi')
-plt.title(fr'{mode}'); plt.xlabel(x_lab); plt.ylabel(y_lab)
+plt.title(f'Fraction of failed episodes'); plt.xlabel(x_lab); plt.ylabel(y_lab)
 plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
 # plt.figure()
