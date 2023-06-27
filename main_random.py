@@ -9,9 +9,6 @@ from importlib import reload
 reload(sys.modules['olfactory_lib'])
 from olfactory_lib import *
 
-bias = 0.0
-print(bias)
-
 def beta_run(trust):
     print(f'β = {trust:.2f}')
     # create objects
@@ -35,7 +32,10 @@ def beta_run(trust):
     np.save(f'results/random_walk_noPBC/bias_{bias}/{n_agents}/run{nrun}/{trust}.npy', order_param)
     return 
 
-nrun = 0
+nrun = 4
+
+bias = 0.5
+print(bias)
 
 # plotting parameters 
 real_time_plot = True
@@ -150,7 +150,7 @@ print(f'Ts = {Ts:.2f}, N = {n_agents}')
 os.makedirs('results', exist_ok=True); os.makedirs('frames', exist_ok=True)
 # os.makedirs(f'results/random_walk/{n_agents}', exist_ok=True)
 # os.makedirs(f'results/random_walk/bias_{bias}/{n_agents}', exist_ok=True)
-os.makedirs(f'results/random_walk_noPBC/bias_{bias}/run{nrun}/{n_agents}', exist_ok=True)
+os.makedirs(f'results/random_walk_noPBC/bias_{bias}/{n_agents}/run{nrun}', exist_ok=True)
 
 # initialise the rng
 seed = random.randrange(sys.maxsize)
