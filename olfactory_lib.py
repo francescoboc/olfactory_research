@@ -21,7 +21,7 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
-read_h5 = False
+read_h5 = True
 
 # escape sequences to print colors in terminal
 class tc:
@@ -134,7 +134,7 @@ class Simulation:
                     # self.odor_image.set_data(self.sniff_mask)
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
-                plt.pause(self.pause_time)
+                if not read_h5: plt.pause(self.pause_time)
 
             # # PBC
             # for agent in self.swarm.agents:
@@ -240,7 +240,7 @@ class Simulation:
                     # self.odor_image.set_data(self.sniff_mask)
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
-                plt.pause(self.pause_time)
+                if not read_h5: plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
             if success: 
@@ -853,6 +853,9 @@ class Flow_turbulent:
         self.vel_scale_factor = 10
         # time_scale_factor = 0.01/flow_dt
 
+        # path to flow data
+        self.path = path
+
         # read h5 data file (on the cluster)
         if read_h5:
             self.data = h5py.File(f'{path}')
@@ -860,7 +863,6 @@ class Flow_turbulent:
         # or read npy file (for local simulations)
         else:
             # build path for npy files containing velocity frames
-            self.path = path
             ux_path = f'{self.path}/vel_x.npy'
             uy_path = f'{self.path}/vel_y.npy'
 
@@ -1005,12 +1007,6 @@ class Cloud_turbulent:
         # TODO nella simulaz originale di martin questo è 0.01... ma cosa significa esattamente?
         self.particle_dt = 1
 
-        # build path for npy files containing odor frames
-        odor_path = f'{flow.path}/odor.npy'
-
-        # load the npy file into an array
-        self._odor_frames = np.load(odor_path)
-
         # sync frame id with the flow
         self._f_id = flow._f_id
 
@@ -1019,6 +1015,12 @@ class Cloud_turbulent:
             self.odor = np.array(self.flow.data['odor'][str(self._f_id)])
 
         else:
+            # build path for npy files containing odor frames
+            odor_path = f'{flow.path}/odor.npy'
+
+            # load the npy file into an array
+            self._odor_frames = np.load(odor_path)
+
             self.odor = self._odor_frames[self._f_id]
 
     def update(self):

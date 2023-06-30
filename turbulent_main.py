@@ -34,7 +34,7 @@ def parallel_run(n):
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = False
+save_frames = True
 pause_time = 0.001
 
 # visual_radius = 0.1 # Ra
