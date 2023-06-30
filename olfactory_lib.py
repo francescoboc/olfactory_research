@@ -21,7 +21,9 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
-read_h5 = True
+def set_h5_flag(flag):
+    global read_h5
+    read_h5 = flag
 
 # escape sequences to print colors in terminal
 class tc:
@@ -82,10 +84,6 @@ class Simulation:
 
             if self.turbulent:
                 self.odor_image = self.axes.imshow(self.cloud.odor>self.swarm.threshold, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
-                # self.sniff_mask = np.zeros(self.cloud.odor.shape)
-                # self.sniff_mask[0][0] = 1
-                # self.odor_image = self.axes.imshow(self.sniff_mask, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
-                # self.sniff_image = self.axes.imshow(self.sniff_mask, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='inferno_r', alpha=0.3)
 
             # add patches for source and spawn circle 
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
@@ -96,7 +94,7 @@ class Simulation:
             # add patches for center of mass
             if self.elastic:
                 cmass_point = plt.Circle(self.swarm.center_of_mass, 0.2, color='k', zorder=2)
-                cmass_circle = plt.Circle(self.swarm.center_of_mass, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
+                cmass_circle = plt.Circle(self.swarm.center_of_mass, self.swarm.spawn_radius, fill=False, color='k', ls='-', alpha=0.2)
                 self.axes.add_patch(cmass_point); self.axes.add_patch(cmass_circle)
 
             # add agents points and visual circles
@@ -109,6 +107,12 @@ class Simulation:
                 self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle); self.axes.add_patch(olfactory_circle)
                 index += 1
             # plt.legend(fancybox=False, loc=3)
+
+            self.nag=0
+            vel_arrow = self.swarm.agents[self.nag].velocity_comb
+            coord_arrow = self.swarm.agents[self.nag].coordinates
+            self.agent_arrow = self.axes.quiver(coord_arrow[0], coord_arrow[1], vel_arrow[0], vel_arrow[1], scale=0.5, units='xy', minshaft=2, color='k')
+
 
     def run_random(self, bias):
         # reset flags and timers
@@ -149,7 +153,6 @@ class Simulation:
 
         return order_param
 
-
     def run(self):
         # x_coords = [ [] for n in range(self.swarm.n_agents) ]
         # y_coords = [ [] for n in range(self.swarm.n_agents) ]
@@ -164,7 +167,7 @@ class Simulation:
 
             # update the flow and the odor cloud
             if self.turbulent:
-                self.flow.update()
+                # self.flow.update()
                 self.cloud.update()
             else:
                 self.flow.update(time_step)
@@ -177,9 +180,6 @@ class Simulation:
                     self.cloud.particles.append(Particle(self.cloud.source_coordinates.copy()))
                     particle_added = True
                 else: particle_added = False
-
-            # update the local wind estimate of the agents
-            self.swarm.update_wind_estimate()
 
             ag = 0
             for agent in self.swarm.agents: 
@@ -242,6 +242,12 @@ class Simulation:
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
                 if not read_h5: plt.pause(self.pause_time)
 
+                # self.agent_arrow.set_UVC(-self.swarm.agents[self.nag].wind_estimate[0], -self.swarm.agents[self.nag].wind_estimate[1])
+                vel_arrow = self.swarm.agents[self.nag].velocity_comb
+                vel_arrow /= norm(vel_arrow)
+                self.agent_arrow.set_UVC(vel_arrow[0], vel_arrow[1])
+                self.agent_arrow.set_offsets(self.swarm.agents[self.nag].coordinates.T)
+
             # if an agent successuffly reached the source, stop
             if success: 
                 # count agents within a circle of size spawn_radius around the source
@@ -271,8 +277,8 @@ class Simulation:
 
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
-            visual_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, decay_time, 
-            threshold, adaptive_beta, cloud, flow):
+            visual_radius, reach_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, 
+            decay_time, threshold, adaptive_beta, cloud, flow):
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -281,6 +287,7 @@ class Swarm:
         self.speed = speed
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
+        self.reach_radius = reach_radius
         self.memory_time = memory_time
         self.sensing_noise = sensing_noise
         self.adaptive_beta = adaptive_beta
@@ -329,10 +336,9 @@ class Swarm:
 
             # initialise the wind estimate with the istantaneous local wind
             ux_interp, uy_interp = self.flow.interpolate([rand_x], [rand_y])
-            initial_wind_estimate = np.array([ux_interp[0], uy_interp[0]])
-            new_agent = Moth(n_ag, [rand_x, rand_y], self.speed, self.decision_time, self.olfactory_radius, 
-                    self.visual_radius, initial_wind_estimate, self.trust, self.trust_inform, self.trust_uninform, 
-                    self.decay_time, self.adaptive_beta, self.turbulent)
+            new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, self.decision_time, self.olfactory_radius, 
+                    self.visual_radius, self.reach_radius, self.trust, self.trust_inform, 
+                    self.trust_uninform, self.decay_time, self.adaptive_beta, self.turbulent)
             self.agents.append(new_agent)
 
         # initialise position of center of mass
@@ -392,8 +398,8 @@ class Swarm:
                 random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
                 agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
 
-                # check if the odor source is within the visual radius of any of the agents
-                if agent.coordinates[0] < self.cloud.source_coordinates[0] + agent.visual_radius:
+                # check if the odor source is within the reach radius of any of the agents
+                if agent.coordinates[0] < self.cloud.source_coordinates[0] + agent.reach_radius:
                     coord_trasl = self.cloud.source_coordinates - agent.coordinates
                     # if it is, the agent moves directly towards the source
                     if norm(coord_trasl) < agent.visual_radius:
@@ -483,8 +489,8 @@ class Swarm:
                 random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
                 agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
 
-                # check if the odor source is within the visual radius of any of the agents
-                if agent.coordinates[0] < self.cloud.source_coordinates[0] + agent.visual_radius:
+                # check if the odor source is within the reach radius of any of the agents
+                if agent.coordinates[0] < self.cloud.source_coordinates[0] + agent.reach_radius:
                     coord_trasl = self.cloud.source_coordinates - agent.coordinates
                     # if it is, the agent moves directly towards the source
                     if norm(coord_trasl) < agent.visual_radius:
@@ -532,19 +538,6 @@ class Swarm:
         if np.any(self.cloud.odor[mask]>self.threshold):
             agent.sniffed = True
 
-    # update the wind estimate of agents (i.e. private cues)
-    def update_wind_estimate(self):
-        pos_x = [agent.coordinates[0] for agent in self.agents]
-        pos_y = [agent.coordinates[1] for agent in self.agents]
-        # interpolate the velocity field at all the agent positions
-        ux_interp, uy_interp = self.flow.interpolate(pos_x, pos_y)     
-        for ag_id in range(len(self.agents)):
-            agent = self.agents[ag_id]
-            # update agent coordinates
-            inst_wind_estimate = np.array([ux_interp[ag_id], uy_interp[ag_id]])
-            # incremental update rule for the exp. disc. running average
-            agent.wind_estimate = self.c_exp*agent.wind_estimate + self.c_exp2*inst_wind_estimate
-
     # update the agent perception of the mean velocity of its neighbors (i.e. public cues)
     def update_public_velocity(self, agent):
         # find neighbors (i.e. other agents within visual_radius) of the agent
@@ -576,16 +569,17 @@ class Swarm:
             sum_vel += agent.velocity_comb
         return norm(sum_vel)/(self.n_agents*self.speed)
 
-class Moth:
-    def __init__(self, label, coordinates, speed, decision_time, olfactory_radius, visual_radius, 
-            initial_wind_estimate, trust, trust_inform, trust_uninform, decay_time, adaptive_beta, turbulent):
-        # parameters of the moth
+class Agent:
+    def __init__(self,label, coordinates, speed, decision_time, olfactory_radius, visual_radius, reach_radius, 
+            trust, trust_inform, trust_uninform, decay_time, adaptive_beta, turbulent):
+        # parameters of the agent
         self.label = label
         self.coordinates = np.array(coordinates)
         self.speed = speed
         self.decision_time = decision_time
         self.olfactory_radius = olfactory_radius
         self.visual_radius = visual_radius
+        self.reach_radius = reach_radius
         self.adaptive_beta = adaptive_beta
         self.turbulent = turbulent
 
@@ -618,19 +612,22 @@ class Moth:
         self._rot_matrix_90 = [[0, -1], [1, 0]]
 
         # these attributes are updated by the Swarm() class:
-        # estimate of the local wind velocity 
-        self.wind_estimate = initial_wind_estimate
+        # random estimate of the local wind velocity 
+        self.wind_estimate = np.array([0.0, 0.0])
         # list of other agents within the visual_radius
         self.neighbors = []
         # flag to determine if a particle was sniffed
         self.sniffed = False
         # private and public velocity of the agent
-        self.velocity_priv = np.array([0, 0])
-        self.velocity_pub = np.array([0, 0])
+        self.velocity_priv = np.array([0.0, 0.0])
+        self.velocity_pub = np.array([0.0, 0.0])
         # linear combination of the two
-        self.velocity_comb = np.array([0, 0])
+        self.velocity_comb = np.array([0.0, 0.0])
         # instantaneous velocity
-        self.inst_velocity = np.array([0, 0])
+        self.inst_velocity = np.array([0.0, 0.0])
+        self.mean_wind=[1.0,0.0]
+
+        self.wind_noise = 0.1
 
         # number of odor detections
         self.detections = 0
@@ -641,6 +638,13 @@ class Moth:
             self.go = True
         else:
             self.go = False
+
+    def extract_random_wind_estimate(self):
+        # compute wind estimate as mean wind + noise
+        self.wind_estimate[0] = self.mean_wind[0] + (random.random()-0.5)*self.wind_noise
+        self.wind_estimate[1] = self.mean_wind[1] + (random.random()-0.5)*self.wind_noise
+        # divide the wind estimate by its norm to obtain a unit vector
+        self.wind_estimate = self.wind_estimate/norm(self.wind_estimate)
         
     # cast and surge behavior 
     # NB here and in cast() we only update the private velocity, we do NOT update the coordinates yet!
@@ -649,42 +653,43 @@ class Moth:
             # when surging, set trust parameter to trust_inform (i.e. the 0th element of trust_values)
             self.trust_index = 0
             self.trust = self.trust_values[self.trust_index]
-        # divide the wind estimate by its norm to obtain a unit vector
-        norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
+
+        self.extract_random_wind_estimate()
+
         # update value of private velocity to move upwind
-        self.velocity_priv = -norm_wind_estimate*self.speed
+        self.velocity_priv = -self.wind_estimate*self.speed
         # reset surging counters
         self.t_prime = 0; self.clock = 0
 
     def cast(self):
         still_surging = False
 
+        self.extract_random_wind_estimate()
+
         if self.adaptive_beta:
             # when casting, increase linearly the trust parameter until trust_uninform is reached
             if self.trust_index < self.decay_time: 
                 self.trust_index += 1 
                 self.trust = self.trust_values[self.trust_index]
+
                 # and during this time, keep on surging
-                norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
-                self.velocity_priv = -norm_wind_estimate*self.speed
+                self.velocity_priv = -self.wind_estimate*self.speed
                 still_surging = True
 
         if not still_surging:
-            # divide the wind estimate by its norm to obtain a unit vector
-            norm_wind_estimate = self.wind_estimate/norm(self.wind_estimate)
 
             # move 45 degrees
             if self.clock == self.t_prime:
-                if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, norm_wind_estimate)
-                else: direction_45 = np.matmul(self._rot_matrix_neg45, norm_wind_estimate)
+                if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, self.wind_estimate)
+                else: direction_45 = np.matmul(self._rot_matrix_neg45, self.wind_estimate)
                 self.velocity_priv = direction_45*self.speed
                 self.clock = 0
                 self.t_prime += 2*self.decision_time
                 self.flip_dir = not self.flip_dir
             # move crosswind
             else:
-                if self.flip_dir: direction_crosswind = np.matmul(self._rot_matrix_90, norm_wind_estimate)
-                else: direction_crosswind = -np.matmul(self._rot_matrix_90, norm_wind_estimate)
+                if self.flip_dir: direction_crosswind = np.matmul(self._rot_matrix_90, self.wind_estimate)
+                else: direction_crosswind = -np.matmul(self._rot_matrix_90, self.wind_estimate)
                 # update value of private velocity to move crosswind
                 self.velocity_priv = direction_crosswind*self.speed
                 self.clock += self.decision_time

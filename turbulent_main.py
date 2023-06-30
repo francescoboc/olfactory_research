@@ -21,7 +21,7 @@ def parallel_run(n):
 
     # create objects
     swarm = Swarm(n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
-            visual_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, 
+            visual_radius, reach_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, 
             decay_time, threshold, adaptive_beta, cloud, flow)
     sim = Simulation(final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, 
             save_frames, elastic, turbulent)
@@ -34,8 +34,11 @@ def parallel_run(n):
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = True
+save_frames = False
 pause_time = 0.001
+
+# read h5 flow file or local npy file
+read_h5 = False
 
 # visual_radius = 0.1 # Ra
 # visual_radius = 0.3 # Ra
@@ -43,6 +46,8 @@ pause_time = 0.001
 visual_radius = 1 # Ra
 # visual_radius = 5 # Ra
 # visual_radius = 10 # Ra
+
+reach_radius = 0.1
 
 # time parameters
 decision_time = 1 # Δt
@@ -54,7 +59,7 @@ threshold = 0.001
 kelast = 1
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.5
+shift = 0.0
 
 # number of agents
 n_agents = 100 # N
@@ -82,11 +87,14 @@ adaptive_beta = False
 if read_h5: path = '/storage/boccardo/odor_data_re280_small_source/r280_small_source.h5'
 else: path = 'flow/re280_small_source'
 
+set_h5_flag(read_h5)
+
 # trust parameter (β) values to check in a parallel run
 trusts = np.round(np.arange(0.0, 1.1, 0.1),2) 
 
 # constant trust parameter
-trust = 0.85 # β
+# trust = 0.85 # β
+trust = 0.05 # β
 
 # these are relevant only if we are using an adaptive beta
 trust_uninform = 0.9
@@ -96,10 +104,10 @@ trust_inform = 0.1
 decay_time = 8
 
 Rd = 0.2 # olfactory range
-Lx = 30 # distance from the source
+Lx = 50 # distance from the source
 
 # length of the simulation box (height is given by the flow data)
-length = int(2*Lx) 
+length = 100
 
 # parameters of the agents
 speed = 0.2 # v0
@@ -218,7 +226,7 @@ else:
     print(f'Seed = {seed}')
     # create objects
     swarm = Swarm(n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
-            visual_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, 
+            visual_radius, reach_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, 
             decay_time, threshold, adaptive_beta, cloud, flow)
     sim = Simulation(final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, 
             save_frames, elastic, turbulent)
