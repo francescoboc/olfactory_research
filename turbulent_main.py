@@ -34,7 +34,7 @@ def parallel_run(n):
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = True
+save_frames = False
 pause_time = 0.001
 
 # visual_radius = 0.1 # Ra
@@ -54,7 +54,7 @@ threshold = 0.001
 kelast = 1
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.25
+shift = 0.5
 
 # number of agents
 n_agents = 100 # N
@@ -79,7 +79,8 @@ turbulent = True
 adaptive_beta = False
 
 # path of the turbulent flow
-path = '/storage/boccardo/odor_data_re280_small_source/r280_small_source.h5'
+if read_h5: path = '/storage/boccardo/odor_data_re280_small_source/r280_small_source.h5'
+else: path = 'flow/re280_small_source'
 
 # trust parameter (β) values to check in a parallel run
 trusts = np.round(np.arange(0.0, 1.1, 0.1),2) 
@@ -211,7 +212,8 @@ if parallel:
 # do just one test run
 else:
     # initialise the rng
-    seed = random.randrange(sys.maxsize)
+    # seed = random.randrange(sys.maxsize)
+    seed = 98712391
     initialise_rng(seed)
     print(f'Seed = {seed}')
     # create objects
@@ -225,6 +227,6 @@ else:
 
 # plotting stuff
 if real_time_plot: 
-    # plt.ion(); plt.show()
+    plt.ion(); plt.show()
     if save_frames:
         os.system(f"ffmpeg -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 {filename}.mp4")

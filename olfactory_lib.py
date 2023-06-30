@@ -21,6 +21,8 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
+read_h5 = False
+
 # escape sequences to print colors in terminal
 class tc:
     purple = '\033[95m'
@@ -132,7 +134,7 @@ class Simulation:
                     # self.odor_image.set_data(self.sniff_mask)
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
-                # plt.pause(self.pause_time)
+                plt.pause(self.pause_time)
 
             # # PBC
             # for agent in self.swarm.agents:
@@ -238,7 +240,7 @@ class Simulation:
                     # self.odor_image.set_data(self.sniff_mask)
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
-                # plt.pause(self.pause_time)
+                plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
             if success: 
@@ -851,32 +853,36 @@ class Flow_turbulent:
         self.vel_scale_factor = 10
         # time_scale_factor = 0.01/flow_dt
 
-        # read h5 data file
-        self.data = h5py.File(f'{path}')
+        # read h5 data file (on the cluster)
+        if read_h5:
+            self.data = h5py.File(f'{path}')
 
-        # # build path for npy files containing velocity frames
-        # self.folder = f'flow/{folder}'
-        # ux_path = f'{self.folder}/vel_x.npy'
-        # uy_path = f'{self.folder}/vel_y.npy'
+        # or read npy file (for local simulations)
+        else:
+            # build path for npy files containing velocity frames
+            self.path = path
+            ux_path = f'{self.path}/vel_x.npy'
+            uy_path = f'{self.path}/vel_y.npy'
 
-        # # load the npy files into arrays
-        # self._ux_frames = np.load(ux_path)
-        # self._uy_frames = np.load(uy_path)
+            # load the npy files into arrays
+            self._ux_frames = np.load(ux_path)
+            self._uy_frames = np.load(uy_path)
 
-        # # rescale velocity field
-        # self._ux_frames /= vel_scale_factor
-        # self._uy_frames /= vel_scale_factor
+            # rescale velocity field
+            self._ux_frames /= self.vel_scale_factor
+            self._uy_frames /= self.vel_scale_factor
 
         # initialise the frame id to 0
         self._f_id: int = 0
 
-        # # initialise the fields 
-        # self.ux = self._ux_frames[self._f_id]
-        # self.uy = self._uy_frames[self._f_id]
-
         # initialise the fields 
-        self.ux = np.array(self.data['vel_x'][str(self._f_id)])/self.vel_scale_factor
-        self.uy = np.array(self.data['vel_y'][str(self._f_id)])/self.vel_scale_factor
+        if read_h5:
+            self.ux = np.array(self.data['vel_x'][str(self._f_id)])/self.vel_scale_factor
+            self.uy = np.array(self.data['vel_y'][str(self._f_id)])/self.vel_scale_factor
+
+        else:
+            self.ux = self._ux_frames[self._f_id]
+            self.uy = self._uy_frames[self._f_id]
 
         # extract number of points of the field
         self.npoints_y, self.npoints_x = self.ux.shape
@@ -897,18 +903,22 @@ class Flow_turbulent:
         self.x_max = max(self.x_values)
         self.y_max = max(self.y_values)
 
-        self._n_frames = len(list(self.data.items())[0][1].keys()) 
+        # extract number of frames
+        if read_h5:
+            self._n_frames = len(list(self.data.items())[0][1].keys()) 
+
+        else:
+            self._n_frames = len(self._ux_frames) 
 
     def update(self):
-        # # loop through the lists of frames
-        # self.ux = self._ux_frames[self._f_id]
-        # self.uy = self._uy_frames[self._f_id]
+        # loop through the lists of frames
+        if read_h5:
+            self.ux = np.array(self.data['vel_x'][str(self._f_id)])/self.vel_scale_factor
+            self.uy = np.array(self.data['vel_y'][str(self._f_id)])/self.vel_scale_factor
 
-        self.ux = np.array(self.data['vel_x'][str(self._f_id)])/self.vel_scale_factor
-        self.uy = np.array(self.data['vel_y'][str(self._f_id)])/self.vel_scale_factor
-
-        # if self._f_id < len(self._ux_frames)-1: self._f_id += 1
-        # else: self._f_id = 0
+        else:
+            self.ux = self._ux_frames[self._f_id]
+            self.uy = self._uy_frames[self._f_id]
 
         if self._f_id < self._n_frames-1: self._f_id += 1
         else: self._f_id = 0
@@ -995,29 +1005,30 @@ class Cloud_turbulent:
         # TODO nella simulaz originale di martin questo è 0.01... ma cosa significa esattamente?
         self.particle_dt = 1
 
-        # # build path for npy files containing odor frames
-        # odor_path = f'{flow.folder}/odor.npy'
+        # build path for npy files containing odor frames
+        odor_path = f'{flow.path}/odor.npy'
 
-        # # load the npy file into an array
-        # self._odor_frames = np.load(odor_path)
+        # load the npy file into an array
+        self._odor_frames = np.load(odor_path)
 
         # sync frame id with the flow
         self._f_id = flow._f_id
 
-        # # initialise the field
-        # self.odor = self._odor_frames[self._f_id]
-
         # initialise the field
-        self.odor = np.array(self.flow.data['odor'][str(self._f_id)])
+        if read_h5:
+            self.odor = np.array(self.flow.data['odor'][str(self._f_id)])
+
+        else:
+            self.odor = self._odor_frames[self._f_id]
 
     def update(self):
-        # # loop through the lists of frames
-        # self.odor = self._odor_frames[self._f_id]
-        # if self._f_id < len(self._odor_frames)-1: self._f_id += 1
-        # else: self._f_id = 0
-
         # loop through the lists of frames
-        self.odor = np.array(self.flow.data['odor'][str(self._f_id)])
+        if read_h5:
+            self.odor = np.array(self.flow.data['odor'][str(self._f_id)])
+
+        else:
+            self.odor = self._odor_frames[self._f_id]
+
         if self._f_id < self.flow._n_frames-1: self._f_id += 1
         else: self._f_id = 0
 

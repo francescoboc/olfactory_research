@@ -11,62 +11,28 @@ def print_attributes(dataframe):
     for key in dataframe.attrs.keys():
         print(f'{key} = {dataframe.attrs[key]}')
 
-# update matplotlib parameters globally
-plt.rcParams['lines.markerfacecolor'] = 'none'
-plt.rcParams['lines.linewidth'] = 1
-plt.rcParams['errorbar.capsize'] = 2
-plt.rcParams['legend.fancybox'] = False
-
-# filename = 'nonuniform10'
-# filename = 'uniform10'
-# filename = 'nonuniform_j5'
-# filename = 'nonuniform_j5'
-
-# filename = 'dt0.001'
-# filename = 'approx_dt0.01'
-# filename = 'approx_dt0.1'
-# filename = 'exact_dt0.01'
-# filename = 'exact_dt0.1'
-
-# filename = 'free_j10_v0.2'
-# filename = 'elastic_j10_v0.2'
-
-# filename = 'vary_radius_free1'
-# filename = 'vary_radius_free'
-# filename = 'vary_radius_elastic'
-
-# folder = 'turbulent'
-# # filename = f'{folder}/turbulent_free_lx50'
-# filename = f'{folder}/turbulent_free_lx100'
-# # filename = f'{folder}/turbulent_elastic_lx50'
-# # filename = f'{folder}/turbulent_elastic_lx100'
-
+folder = 'turbulent'
 
 x_label = r'Trust parameter $\beta$'
-# x_label = r'Swarm radius $R_b$'
 
 legend = True
 
-# dts to plot
-# particle_dts = [1, 0.5, 0.2, 0.1, 0.05, 0.02]
-# particle_dts = [0.2, 0.1, 0.05, 0.02]
-# particle_dts = [0.1]
-
 # beta = 0.85
 
-ras = [0.1, 0.2, 0.5, 1, 2, 3, 4, 5]
+radii = [0.1, 0.3, 0.6, 1, 5, 10]
 
+# particle_dts = [1, 0.5, 0.2, 0.1, 0.05, 0.02]
 # thrs = [0.0001, 0.0005, 0.001, 0.002, 0.003, 0.005, 0.01]
 
-index = 0
-for ra in ras:
-# for thr in thrs:
-    # label = f'$\delta t={particle_dt:.2f}$'
-    # label = 'Unconstrained'
-    # label = 'Elastic constrain'
+shift = 0
+kelast = 1
+n_agents = 100
+decision_time = 1
+threshold = 0.001
 
-    filename = f'turbulent/r280_ra{ra}_dt1_thr0.001_k1'
-    # filename = f'turbulent/r280_ra1_dt1_thr{thr}_k1'
+index = 0
+for visual_radius in radii:
+    filename = f'{folder}/r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'
 
     # load results in a dataframe
     try: 
@@ -75,10 +41,6 @@ for ra in ras:
     except: present = False
 
     if present:
-
-        # # print details of the simulation
-        # print_attributes(results_raw)
-
         # make a clean dataframe without raw data
         results = results_raw.copy()
         results = results.drop(['times', 'n_agents', 'seeds'], axis='columns')
@@ -100,37 +62,31 @@ for ra in ras:
         results_norm['nagents_std'] = results['nagents_std']/N_agents
         results_norm['fails'] = results['fails']/(N_episodes+results['fails'])
 
-        # # plot
-        # plt.figure(1)
-        # plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, marker=markers[index])
-
-        plt.figure(2)
-        plt.plot(results.index, 'fails', data=results_norm, marker=markers[index], label=ra)
+        plt.figure(1)
+        plt.plot(results.index, 'fails', data=results_norm, marker=markers[index], label=f'$r_a={visual_radius}$')
         # plt.plot(results.index, 'fails', data=results_norm, marker=markers[index], label=thr)
+
+        # # plot
+        # plt.figure(2)
+        # plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, marker=markers[index])
 
         # plt.figure(3)
         # plt.errorbar(results.index, 'nagents_avg', yerr='nagents_std', data=results_norm, marker=markers[index])
 
         index += 1
 
-# J = results.attrs['particle_rate']
-# v0 = results.attrs['speed']
-# title = f'$J={J}, v_0={v0}$'
+plt.figure(1)
+plt.xlabel(x_label)
+plt.ylabel(r'Fraction of failed episodes')
+if legend: plt.legend()
+# plt.title(title)
 
-# print(results)
-
-# plt.figure(1)
+# plt.figure(2)
 # plt.axhline(1, c='k', lw=1)
 # plt.xlabel(x_label)
 # plt.ylabel(r'$T_s/T$')
 # # plt.title(title)
 # if legend: plt.legend()
-
-plt.figure(2)
-plt.xlabel(x_label)
-plt.ylabel(r'Fraction of failed episodes')
-# plt.title(title)
-if legend: plt.legend()
 
 # plt.figure(3)
 # plt.xlabel(x_label)
