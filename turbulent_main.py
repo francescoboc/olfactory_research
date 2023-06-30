@@ -32,12 +32,17 @@ def parallel_run(n):
     return arrival_time, agents_in_Rb, success, seed
 
 # plotting parameters 
-real_time_plot = False
+real_time_plot = True
 plot_flow = False
-save_frames = False
+save_frames = True
 pause_time = 0.001
 
-visual_radius = 5 # Ra
+# visual_radius = 0.1 # Ra
+# visual_radius = 0.3 # Ra
+# visual_radius = 0.6 # Ra
+visual_radius = 1 # Ra
+# visual_radius = 5 # Ra
+# visual_radius = 10 # Ra
 
 # time parameters
 decision_time = 1 # Δt
@@ -49,14 +54,20 @@ threshold = 0.001
 kelast = 1
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0
+shift = 0.25
+
+# number of agents
+n_agents = 100 # N
 
 # do more runs at the same time
-parallel = True
-n_threads = 10 # number of threads used for parallelisation
+parallel = False
+n_threads = 12 # number of threads used for parallelisation
  
 # number of successful episodes to sample
-n_samples = 10
+n_samples = 50
+
+# max number simulations to run to reach the sampling limit
+limit = int(n_samples*50)
 
 # use elastic recall force
 elastic = True
@@ -71,7 +82,7 @@ adaptive_beta = False
 path = '/storage/boccardo/odor_data_re280_small_source/r280_small_source.h5'
 
 # trust parameter (β) values to check in a parallel run
-trusts = np.round(np.arange(0.0, 1.05, 0.05),2) 
+trusts = np.round(np.arange(0.0, 1.1, 0.1),2) 
 
 # constant trust parameter
 trust = 0.85 # β
@@ -90,12 +101,11 @@ Lx = 30 # distance from the source
 length = int(2*Lx) 
 
 # parameters of the agents
-n_agents = 100 # N
 speed = 0.2 # v0
 olfactory_radius = Rd # Rd 
 memory_time = 1/decision_time # inverse of λ
 sensing_noise = 0.1 # eta
-spawn_radius = 25*Rd # Rb
+spawn_radius = 5 # Rb
 
 # parameters of the particle cloud
 particle_dt = decision_time/10 # δt
@@ -136,6 +146,11 @@ os.makedirs('results', exist_ok=True); os.makedirs('frames', exist_ok=True)
 flow = Flow_turbulent(path, length)
 cloud = Cloud_turbulent(flow)
 
+# delete old frames
+if save_frames:
+    import os
+    os.system(f"rm -f frames/frame*.png")
+
 # spawn position and source coordinates 
 source_coordinates = cloud.source_coordinates
 spawn_center = [cloud.source_coordinates[0]+Lx, flow.height/2 + shift*(flow.height/2)]
@@ -144,9 +159,6 @@ spawn_center = [cloud.source_coordinates[0]+Lx, flow.height/2 + shift*(flow.heig
 if parallel:
     # do not plot if we are doing parallel runs!
     real_time_plot = False
-
-    # max number simulations to run to reach the sampling limit
-    limit = int(n_samples*50) 
 
     # create empty dataframe to store results
     results = pd.DataFrame(index=trusts, columns=['times', 'n_agents', 'fails', 'seeds'])
@@ -213,8 +225,6 @@ else:
 
 # plotting stuff
 if real_time_plot: 
-    plt.ion(); plt.show()
+    # plt.ion(); plt.show()
     if save_frames:
-        import os
-        os.system(f"rm -f frames/frame*.png")
         os.system(f"ffmpeg -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 {filename}.mp4")

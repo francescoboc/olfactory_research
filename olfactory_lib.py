@@ -79,7 +79,7 @@ class Simulation:
                     scale=3, units='xy', headlength=3, headaxislength=3, minshaft=5, alpha=0.2, zorder=2, color='k')
 
             if self.turbulent:
-                self.odor_image = self.axes.imshow(self.cloud.odor>self.cloud.threshold, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
+                self.odor_image = self.axes.imshow(self.cloud.odor>self.swarm.threshold, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
                 # self.sniff_mask = np.zeros(self.cloud.odor.shape)
                 # self.sniff_mask[0][0] = 1
                 # self.odor_image = self.axes.imshow(self.sniff_mask, extent=(0,self.flow.x_max,0,self.flow.y_max), cmap='GnBu', alpha=0.3, origin='lower')
@@ -108,8 +108,6 @@ class Simulation:
                 index += 1
             # plt.legend(fancybox=False, loc=3)
 
-            plt.pause(self.pause_time)
-
     def run_random(self, bias):
         # reset flags and timers
         success, agent_removed = False, False
@@ -134,7 +132,7 @@ class Simulation:
                     # self.odor_image.set_data(self.sniff_mask)
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
-                plt.pause(self.pause_time)
+                # plt.pause(self.pause_time)
 
             # # PBC
             # for agent in self.swarm.agents:
@@ -240,7 +238,7 @@ class Simulation:
                     # self.odor_image.set_data(self.sniff_mask)
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}')
-                plt.pause(self.pause_time)
+                # plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
             if success: 
