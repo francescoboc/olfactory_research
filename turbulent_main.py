@@ -31,6 +31,10 @@ def parallel_run(n):
 
     return arrival_time, agents_in_Rb, success, seed
 
+# TODO: extend the simulation box (pad height)
+# move the arrow on the CoM
+# launch simulations with shift and try to reobtain the previous results (change N?)J
+
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
@@ -47,13 +51,13 @@ visual_radius = 1 # Ra
 # visual_radius = 5 # Ra
 # visual_radius = 10 # Ra
 
-reach_radius = 0.1
+reach_radius = 0.4
 
 # time parameters
 decision_time = 1 # Δt
 
 # smelling threshold
-threshold = 0.001
+threshold = 0.0008
 
 # elastic constant
 kelast = 1
@@ -72,7 +76,7 @@ n_threads = 12 # number of threads used for parallelisation
 n_samples = 50
 
 # max number simulations to run to reach the sampling limit
-limit = int(n_samples*50)
+limit = int(n_samples*10)
 
 # use elastic recall force
 elastic = True
@@ -103,7 +107,7 @@ trust_inform = 0.1
 # decay time used both for beta and for the surging phase
 decay_time = 8
 
-Rd = 0.2 # olfactory range
+Rd = 0.4 # olfactory range
 Lx = 50 # distance from the source
 
 # length of the simulation box (height is given by the flow data)

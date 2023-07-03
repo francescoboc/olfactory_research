@@ -21,6 +21,8 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
+pad_points = 200
+
 def set_h5_flag(flag):
     global read_h5
     read_h5 = flag
@@ -88,7 +90,7 @@ class Simulation:
             # add patches for source and spawn circle 
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
             source_point = plt.Circle(self.cloud.source_coordinates, 0.1, color='k', zorder=2)
-            source_circle = plt.Circle(self.cloud.source_coordinates, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
+            source_circle = plt.Circle(self.cloud.source_coordinates, self.swarm.reach_radius, fill=False, color='k', ls='--', alpha=0.2)
             self.axes.add_patch(spawn_circle); self.axes.add_patch(source_point); self.axes.add_patch(source_circle)
 
             # add patches for center of mass
@@ -426,7 +428,8 @@ class Swarm:
 
         # calculate predicted future position of the center of mass
         if self.activated:
-            self.center_of_mass[0] = np.mean(future_x); self.center_of_mass[1] = np.mean(future_y)
+            self.center_of_mass[0] = np.mean(future_x)
+            self.center_of_mass[1] = np.mean(future_y)
 
         # direction = ( pos(t) - pos_cdm(t) ) / ||pos(t) - pos_cdm(t)|| 
         # acc(t) = -G * [H * (||pos(t) - pos_cdm(t)|| - Rb) * direction + (vel_inst(t) - v_comb(t))]
@@ -891,6 +894,10 @@ class Flow_turbulent:
             self.ux = self._ux_frames[self._f_id]
             self.uy = self._uy_frames[self._f_id]
 
+        # pad arrays to extend simulation box
+        self.ux = np.pad(self.ux, [(pad_points, pad_points), (0, 0)], mode='constant')
+        self.uy = np.pad(self.uy, [(pad_points, pad_points), (0, 0)], mode='constant')
+
         # extract number of points of the field
         self.npoints_y, self.npoints_x = self.ux.shape
 
@@ -1028,6 +1035,9 @@ class Cloud_turbulent:
 
             self.odor = self._odor_frames[self._f_id]
 
+            # pad arrays to extend simulation box
+            self.odor = np.pad(self.odor, [(100, 100), (0, 0)], mode='constant')
+
     def update(self):
         # loop through the lists of frames
         if read_h5:
@@ -1035,6 +1045,9 @@ class Cloud_turbulent:
 
         else:
             self.odor = self._odor_frames[self._f_id]
+
+        # pad arrays to extend simulation box
+        self.odor = np.pad(self.odor, [(pad_points, pad_points), (0, 0)], mode='constant')
 
         if self._f_id < self.flow._n_frames-1: self._f_id += 1
         else: self._f_id = 0
