@@ -38,18 +38,20 @@ def parallel_run(n):
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = False
+save_frames = True
 pause_time = 0.001
 
 # read h5 flow file or local npy file
-read_h5 = False
+read_h5 = True
 
 # visual_radius = 0.1 # Ra
-# visual_radius = 0.3 # Ra
-# visual_radius = 0.6 # Ra
-visual_radius = 1 # Ra
+# visual_radius = 0.5 # Ra
+# visual_radius = 1 # Ra
 # visual_radius = 5 # Ra
-# visual_radius = 10 # Ra
+visual_radius = 10 # Ra
+
+# vertical shift of the initial position (in perc of height/2)
+shift = 0.4
 
 reach_radius = 0.4
 
@@ -62,15 +64,12 @@ threshold = 0.0008
 # elastic constant
 kelast = 1
 
-# vertical shift of the initial position (in perc of height/2)
-shift = 0.0
-
 # number of agents
 n_agents = 100 # N
 
 # do more runs at the same time
-parallel = False
-n_threads = 12 # number of threads used for parallelisation
+parallel = True
+n_threads = 6 # number of threads used for parallelisation
  
 # number of successful episodes to sample
 n_samples = 50
@@ -224,8 +223,7 @@ if parallel:
 # do just one test run
 else:
     # initialise the rng
-    # seed = random.randrange(sys.maxsize)
-    seed = 98712391
+    seed = random.randrange(sys.maxsize)
     initialise_rng(seed)
     print(f'Seed = {seed}')
     # create objects
