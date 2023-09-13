@@ -1,17 +1,7 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+from olfactory_plot_utils import *
 
-# extract default colors and markers
-colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-markers = list(plt.Line2D.markers.keys())[2:]
-# markers = ['o', 's', 'd', 'v', '^', '<', '>']
-
-def print_attributes(dataframe):
-    for key in dataframe.attrs.keys():
-        print(f'{key} = {dataframe.attrs[key]}')
-
-folder = 'turbulent'
+folder = 'turbulent/maxt_50ts'
+# folder = 'turbulent/maxt_10ts'
 
 x_label = r'Trust parameter $\beta$'
 
@@ -19,26 +9,31 @@ legend = True
 
 # beta = 0.85
 
-radii = [0.1, 0.3, 0.6, 1, 5, 10]
+radii = [0.1, 0.5, 1, 5, 10]
 
 # particle_dts = [1, 0.5, 0.2, 0.1, 0.05, 0.02]
 # thrs = [0.0001, 0.0005, 0.001, 0.002, 0.003, 0.005, 0.01]
 
-shift = 0
+shift = 0.4
 kelast = 1
 n_agents = 100
 decision_time = 1
-threshold = 0.001
+threshold = 0.0008
+
+title = f'shift={shift}, N={n_agents}'
 
 index = 0
 for visual_radius in radii:
     filename = f'{folder}/r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'
+    # filename = f'{folder}/free_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'
 
     # load results in a dataframe
     try: 
         results_raw = pd.read_pickle(f'results/{filename}.pkl')
         present = True
-    except: present = False
+    except: 
+        print(f'{filename} does not exist!')
+        present = False
 
     if present:
         # make a clean dataframe without raw data
@@ -56,7 +51,7 @@ for visual_radius in radii:
         Ts = results.attrs['Lx']/results.attrs['speed']
         N_agents = results.attrs['n_agents']
         N_episodes = len(results_raw['times'].values[0])
-        results_norm['time_avg'] = Ts/results['time_avg']
+        results_norm['time_avg'] = results['time_avg']/Ts
         results_norm['nagents_avg'] = results['nagents_avg']/N_agents
         results_norm['time_std'] = results['time_std']/Ts
         results_norm['nagents_std'] = results['nagents_std']/N_agents
@@ -66,9 +61,8 @@ for visual_radius in radii:
         plt.plot(results.index, 'fails', data=results_norm, marker=markers[index], label=f'$r_a={visual_radius}$')
         # plt.plot(results.index, 'fails', data=results_norm, marker=markers[index], label=thr)
 
-        # # plot
-        # plt.figure(2)
-        # plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, marker=markers[index])
+        plt.figure(2)
+        plt.errorbar(results.index, 'time_avg', yerr='time_std', data=results_norm, marker=markers[index], label=f'$r_a={visual_radius}$')
 
         # plt.figure(3)
         # plt.errorbar(results.index, 'nagents_avg', yerr='nagents_std', data=results_norm, marker=markers[index])
@@ -78,15 +72,15 @@ for visual_radius in radii:
 plt.figure(1)
 plt.xlabel(x_label)
 plt.ylabel(r'Fraction of failed episodes')
+plt.title(title)
 if legend: plt.legend()
-# plt.title(title)
 
-# plt.figure(2)
-# plt.axhline(1, c='k', lw=1)
-# plt.xlabel(x_label)
-# plt.ylabel(r'$T_s/T$')
-# # plt.title(title)
-# if legend: plt.legend()
+plt.figure(2)
+plt.axhline(1, c='k', lw=1, ls='--')
+plt.xlabel(x_label)
+plt.ylabel(r'$T/T_s$')
+plt.title(title)
+if legend: plt.legend()
 
 # plt.figure(3)
 # plt.xlabel(x_label)
