@@ -5,7 +5,7 @@ folder = 'turbulent/maxt_100ts'
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = True
+save_frames = False
 pause_time = 0.001
 
 # read h5 flow file or local npy file
@@ -18,7 +18,7 @@ visual_radius = 0.5 # Ra
 # visual_radius = 10 # Ra
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.4
+shift = 0.2
 
 reach_radius = 0.4
 
@@ -32,7 +32,7 @@ threshold = 0.0008
 kelast = 1
 
 # number of agents
-n_agents = 10 # N
+n_agents = 100 # N
 
 # do more runs at the same time
 parallel = False
@@ -42,13 +42,13 @@ n_threads = 6 # number of threads used for parallelisation
 n_samples = 50
 
 # constant trust parameter
-trust = 0.85 # β
+trust = 0.5 # β
 
 # max number simulations to run to reach the sampling limit
 limit = int(n_samples*10)
 
 # use elastic recall force
-elastic = False
+elastic = True
 
 # use a stochastic or a turbulent flow
 turbulent = True
@@ -77,6 +77,7 @@ speed = 0.2 # v0
 olfactory_radius = Rd # Rd 
 memory_time = 1/decision_time # inverse of λ
 sensing_noise = 0.1 # eta
+wind_noise = 0.1 # noise on the estimate of the mean wind
 spawn_radius = 5 # Rb
 
 # parameters of the particle cloud

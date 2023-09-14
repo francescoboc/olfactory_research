@@ -121,14 +121,13 @@ if parallel:
 # do just one test run
 else:
     # initialise the rng
-    # seed = random.randrange(sys.maxsize)
-    seed = 2245363424567386007
+    seed = random.randrange(sys.maxsize)
     initialise_rng(seed)
     print(f'Seed = {seed}')
     # create objects
     swarm = Swarm(n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
-            visual_radius, reach_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, 
-            decay_time, threshold, adaptive_beta, cloud, flow)
+            visual_radius, reach_radius, memory_time, sensing_noise, wind_noise, trust, trust_inform, 
+            trust_uninform, decay_time, threshold, adaptive_beta, cloud, flow)
     sim = Simulation(final_time, flow, swarm, cloud, real_time_plot, plot_flow, pause_time, 
             save_frames, elastic, turbulent)
     # run simulation

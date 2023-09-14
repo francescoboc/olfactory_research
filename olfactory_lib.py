@@ -21,7 +21,7 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
-pad_points = 200
+pad_points = 100
 
 def set_h5_flag(flag):
     global read_h5
@@ -111,7 +111,7 @@ class Simulation:
             # plt.legend(fancybox=False, loc=3)
 
             # number of the agent to track
-            self.nag = 5
+            self.nag = 0
 
             vel_arrow = self.swarm.agents[self.nag].velocity_comb
             coord_arrow = self.swarm.agents[self.nag].coordinates
@@ -166,6 +166,8 @@ class Simulation:
         time_step, time, stopwatch, count = 0, 0, 0, 0
 
         while time < self.final_time:
+            # print( self.swarm.agents[self.nag].velocity_pub)
+
             # compute order parameter
             order_param = self.swarm.compute_order_parameter()
 
@@ -177,7 +179,7 @@ class Simulation:
                 self.flow.update(time_step)
                 particle_removed = self.cloud.update()
 
-            # at every decision time, create particles according to rate
+            # a at every decision time, create particles according to rate
             if not self.turbulent:
                 if (time_step*self.cloud.particle_dt) % (self.swarm.decision_time/self.cloud.particle_rate) < 1e-10:
                     # particle_added = self.cloud.create()
@@ -281,8 +283,8 @@ class Simulation:
 
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, decision_time, speed, olfactory_radius, 
-            visual_radius, reach_radius, memory_time, sensing_noise, trust, trust_inform, trust_uninform, 
-            decay_time, threshold, adaptive_beta, cloud, flow):
+            visual_radius, reach_radius, memory_time, sensing_noise, wind_noise, trust, trust_inform, 
+            trust_uninform, decay_time, threshold, adaptive_beta, cloud, flow):
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -296,6 +298,7 @@ class Swarm:
         self.sensing_noise = sensing_noise
         self.adaptive_beta = adaptive_beta
         self.threshold = threshold
+        self.wind_noise = wind_noise
 
         # hack to avoid divisions by zero (could also be fixed by initialising private vel to random)
         if trust != 1.0: self.trust = trust
@@ -341,8 +344,8 @@ class Swarm:
             # initialise the wind estimate with the istantaneous local wind
             ux_interp, uy_interp = self.flow.interpolate([rand_x], [rand_y])
             new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, self.decision_time, self.olfactory_radius, 
-                    self.visual_radius, self.reach_radius, self.trust, self.trust_inform, 
-                    self.trust_uninform, self.decay_time, self.adaptive_beta, self.turbulent)
+                    self.visual_radius, self.reach_radius, self.trust, self.trust_inform, self.trust_uninform, 
+                    self.decay_time, self.adaptive_beta, self.turbulent, self.wind_noise)
             self.agents.append(new_agent)
 
         # initialise position of center of mass
@@ -547,13 +550,17 @@ class Swarm:
     def update_public_velocity(self, agent):
         # find neighbors (i.e. other agents within visual_radius) of the agent
         self.detect_neighbors(agent)
-        # reset sum
-        sum_vel = np.array([0, 0])
-        for neighbor in agent.neighbors:
-            sum_vel = sum_vel + neighbor.velocity_comb
-        # update public velocity
-        if norm(sum_vel)>0:
-            agent.velocity_pub = agent.speed*sum_vel/norm(sum_vel)
+        # if there are neighbors:
+        if agent.neighbors:
+            # reset sum
+            sum_vel = np.array([0, 0])
+            for neighbor in agent.neighbors:
+                sum_vel = sum_vel + neighbor.velocity_comb
+            # update public velocity
+            if norm(sum_vel)>0: agent.velocity_pub = agent.speed*sum_vel/norm(sum_vel)
+        # otherwise, set public velocity to 0
+        else:
+            agent.velocity_pub = np.array([0, 0])
 
     # detect other agents within the visual_radius
     def detect_neighbors(self, agent):
@@ -563,7 +570,7 @@ class Swarm:
             coord_trasl = candidate.coordinates - agent.coordinates
             if (candidate != agent) and (norm(coord_trasl) < agent.visual_radius):
                 agent.neighbors.append(candidate)
-                # activate an agent if any of its neighbours are activated
+                # activate an agent if any of its neighburs are activated
                 if not agent.go:
                     if candidate.go: agent.go = True
 
@@ -576,7 +583,7 @@ class Swarm:
 
 class Agent:
     def __init__(self,label, coordinates, speed, decision_time, olfactory_radius, visual_radius, reach_radius, 
-            trust, trust_inform, trust_uninform, decay_time, adaptive_beta, turbulent):
+            trust, trust_inform, trust_uninform, decay_time, adaptive_beta, turbulent, wind_noise):
         # parameters of the agent
         self.label = label
         self.coordinates = np.array(coordinates)
@@ -631,8 +638,8 @@ class Agent:
         # instantaneous velocity
         self.inst_velocity = np.array([0.0, 0.0])
         self.mean_wind=[1.0,0.0]
-
-        self.wind_noise = 0.1
+        # noise on the estimate of the mean wind
+        self.wind_noise = wind_noise
 
         # number of odor detections
         self.detections = 0
@@ -646,11 +653,11 @@ class Agent:
 
     def extract_random_wind_estimate(self):
         # compute wind estimate as mean wind + noise
-        self.wind_estimate[0] = self.mean_wind[0] + (random.random()-0.5)*self.wind_noise
-        self.wind_estimate[1] = self.mean_wind[1] + (random.random()-0.5)*self.wind_noise
+        self.wind_estimate[0] = self.mean_wind[0] + (rng.random()-0.5)*self.wind_noise
+        self.wind_estimate[1] = self.mean_wind[1] + (rng.random()-0.5)*self.wind_noise
         # divide the wind estimate by its norm to obtain a unit vector
         self.wind_estimate = self.wind_estimate/norm(self.wind_estimate)
-        
+
     # cast and surge behavior 
     # NB here and in cast() we only update the private velocity, we do NOT update the coordinates yet!
     def surge(self):
@@ -676,13 +683,11 @@ class Agent:
             if self.trust_index < self.decay_time: 
                 self.trust_index += 1 
                 self.trust = self.trust_values[self.trust_index]
-
                 # and during this time, keep on surging
                 self.velocity_priv = -self.wind_estimate*self.speed
                 still_surging = True
 
         if not still_surging:
-
             # move 45 degrees
             if self.clock == self.t_prime:
                 if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, self.wind_estimate)
