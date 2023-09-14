@@ -10,7 +10,9 @@ import os
 import sys
 from importlib import reload
 reload(sys.modules['olfactory_lib'])
+reload(sys.modules['input_file'])
 from olfactory_lib import *
+from input_file import *
 
 def parallel_run(n):
     print(f'Running sim. {n+1}', end='\r')
