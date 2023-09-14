@@ -121,7 +121,8 @@ if parallel:
 # do just one test run
 else:
     # initialise the rng
-    seed = random.randrange(sys.maxsize)
+    # seed = random.randrange(sys.maxsize)
+    seed = 2245363424567386007
     initialise_rng(seed)
     print(f'Seed = {seed}')
     # create objects

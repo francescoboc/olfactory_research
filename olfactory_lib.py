@@ -110,7 +110,9 @@ class Simulation:
                 index += 1
             # plt.legend(fancybox=False, loc=3)
 
-            self.nag=0
+            # number of the agent to track
+            self.nag = 5
+
             vel_arrow = self.swarm.agents[self.nag].velocity_comb
             coord_arrow = self.swarm.agents[self.nag].coordinates
             self.agent_arrow = self.axes.quiver(coord_arrow[0], coord_arrow[1], vel_arrow[0], vel_arrow[1], scale=0.5, units='xy', minshaft=2, color='k')

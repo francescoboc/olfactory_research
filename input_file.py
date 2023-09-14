@@ -5,7 +5,7 @@ folder = 'turbulent/maxt_100ts'
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = False
+save_frames = True
 pause_time = 0.001
 
 # read h5 flow file or local npy file
@@ -18,7 +18,7 @@ visual_radius = 0.5 # Ra
 # visual_radius = 10 # Ra
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.0
+shift = 0.4
 
 reach_radius = 0.4
 
@@ -32,7 +32,7 @@ threshold = 0.0008
 kelast = 1
 
 # number of agents
-n_agents = 100 # N
+n_agents = 10 # N
 
 # do more runs at the same time
 parallel = False
