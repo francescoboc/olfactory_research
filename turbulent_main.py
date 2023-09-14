@@ -34,7 +34,9 @@ def parallel_run(n):
 
     return arrival_time, agents_in_Rb, success, seed
 
+# set global variables
 set_h5_flag(read_h5)
+set_pad_points(pad_points)
 
 # check if file already exists
 if parallel and os.path.isfile(f'results/{folder}/{filename}.pkl'):
@@ -47,7 +49,7 @@ if parallel and os.cpu_count() < n_threads:
 # print info to the terminal
 print(f'Filename = {filename}')
 print(f'Turbulent = {turbulent}, Elastic = {elastic}')
-print(f'Ts = {Ts:.2f}, N = {n_agents}')
+print(f'Ts = {Ts:.2f}, N = {n_agents}, Shift = {shift}')
 
 # create folders
 os.makedirs('results', exist_ok=True); os.makedirs('frames', exist_ok=True)
@@ -137,4 +139,4 @@ else:
 if real_time_plot: 
     plt.ion(); plt.show()
     if save_frames:
-        os.system(f"ffmpeg -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 {filename}.mp4")
+        os.system(f"ffmpeg -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 results/videos/{filename}.mp4")

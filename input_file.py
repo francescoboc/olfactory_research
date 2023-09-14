@@ -2,14 +2,17 @@ import numpy as np
 
 folder = 'turbulent/maxt_100ts'
 
+# pad points to extend the simulation box
+pad_points = 200
+
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = False
+save_frames = True
 pause_time = 0.001
 
 # read h5 flow file or local npy file
-read_h5 = False
+read_h5 = True
 
 # visual_radius = 0.1 # Ra
 visual_radius = 0.5 # Ra
@@ -18,7 +21,7 @@ visual_radius = 0.5 # Ra
 # visual_radius = 10 # Ra
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.4
+shift = 0.5
 
 reach_radius = 0.4
 
@@ -42,13 +45,13 @@ n_threads = 6 # number of threads used for parallelisation
 n_samples = 50
 
 # constant trust parameter
-trust = 0.5 # β
+trust = 0.85 # β
 
 # max number simulations to run to reach the sampling limit
 limit = int(n_samples*10)
 
 # use elastic recall force
-elastic = False
+elastic = True
 
 # use a stochastic or a turbulent flow
 turbulent = True
@@ -67,7 +70,7 @@ trust_inform = 0.1
 decay_time = 8
 
 Rd = 0.4 # olfactory range
-Lx = 1 # distance from the source
+Lx = 5 # distance from the source
 
 # length of the simulation box (height is given by the flow data)
 length = 100
@@ -94,8 +97,7 @@ loop_cycles = 10
 
 # max duration of the simulation
 Ts = Lx/speed # straight-path time
-# final_time = 10*Ts 
-final_time = 100
+final_time = 10*Ts 
 
 # name of the output results file
 filename = f'r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'

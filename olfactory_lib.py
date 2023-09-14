@@ -21,7 +21,9 @@ plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 
-pad_points = 100
+def set_pad_points(points):
+    global pad_points
+    pad_points = points
 
 def set_h5_flag(flag):
     global read_h5
@@ -166,8 +168,6 @@ class Simulation:
         time_step, time, stopwatch, count = 0, 0, 0, 0
 
         while time < self.final_time:
-            # print( self.swarm.agents[self.nag].velocity_pub)
-
             # compute order parameter
             order_param = self.swarm.compute_order_parameter()
 
@@ -268,6 +268,13 @@ class Simulation:
             if not self.swarm.agents: 
                 print(f'{tc.red}Fail{tc.end}: all agents are out of the box')
                 break
+
+            # check if all the agents have passed the simulation box: if they have, stop
+            if time % 100 == 0:
+                all_coord = [ag.coordinates[0] for ag in self.swarm.agents]
+                if np.all(all_coord < self.cloud.source_coordinates[0]):
+                    print(f'{tc.red}Fail{tc.end}: all agents are past the source')
+                    break
 
         # if the maximum duration of the simulation was reached, stop and return
         if not success and time == self.final_time: print(f'{tc.red}Fail{tc.end}: time is up')
