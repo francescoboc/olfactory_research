@@ -12,8 +12,8 @@ signal.signal(signal.SIGINT, lambda x, y: sys.exit())
 
 # extract matplotlib default colors and markers
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-# markers = list(plt.Line2D.markers.keys())
-markers = ['o', 's', 'd', 'v', '^', '<', '>']
+markers = list(plt.Line2D.markers.keys())[2:]
+# markers = ['o', 's', 'd', 'v', '^', '<', '>']
 
 # update matplotlib parameters globally
 plt.rcParams['lines.markerfacecolor'] = 'none'
@@ -74,7 +74,7 @@ class Simulation:
 
         if self.real_time_plot:
             # create figure and axes for plotting
-            # fig = plt.figure(figsize=(12,6))
+            fig = plt.figure(figsize=(13,8))
             plt.gca().remove()
             self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.flow.length-1), ylim=(0, self.flow.height-1))
             # self.axes = plt.subplot(aspect='equal', adjustable='box',
@@ -104,7 +104,7 @@ class Simulation:
             for agent in self.swarm.agents:
                 color_id = min([len(colors), index%len(colors)]) 
                 agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[color_id], label=index)
-                visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[color_id], alpha=0.2)
+                visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[color_id], alpha=0.1)
                 olfactory_circle = plt.Circle(agent.coordinates, agent.olfactory_radius, fill=False, color=colors[color_id], alpha=0.2, ls='--')
                 self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle); self.axes.add_patch(olfactory_circle)
                 index += 1
