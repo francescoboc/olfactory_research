@@ -37,7 +37,7 @@ def parallel_run(n):
 set_h5_flag(read_h5)
 
 # check if file already exists
-if parallel and os.path.isfile(f'results/{filename}.pkl'):
+if parallel and os.path.isfile(f'results/{folder}/{filename}.pkl'):
     raise Warning(f'File {filename}.pkl already exists!')
 
 # check if we are using too many CPUs
@@ -116,7 +116,7 @@ if parallel:
     for attr in attributes: results.attrs[attr] = locals()[attr]
 
     # save to disk
-    results.to_pickle(f'results/{filename}.pkl')
+    results.to_pickle(f'results/{folder}/{filename}.pkl')
 
 # do just one test run
 else:

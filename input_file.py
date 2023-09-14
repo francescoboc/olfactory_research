@@ -1,22 +1,24 @@
 import numpy as np 
 
+folder = 'turbulent/maxt_100ts'
+
 # plotting parameters 
 real_time_plot = True
 plot_flow = False
-save_frames = True
+save_frames = False
 pause_time = 0.001
 
 # read h5 flow file or local npy file
-read_h5 = True
+read_h5 = False
 
 # visual_radius = 0.1 # Ra
-# visual_radius = 0.5 # Ra
+visual_radius = 0.5 # Ra
 # visual_radius = 1 # Ra
-visual_radius = 5 # Ra
+# visual_radius = 5 # Ra
 # visual_radius = 10 # Ra
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.3
+shift = 0.0
 
 reach_radius = 0.4
 
@@ -33,14 +35,14 @@ kelast = 1
 n_agents = 100 # N
 
 # do more runs at the same time
-parallel = True
+parallel = False
 n_threads = 6 # number of threads used for parallelisation
  
 # number of successful episodes to sample
 n_samples = 50
 
 # constant trust parameter
-trust = 0.5 # β
+trust = 0.85 # β
 
 # max number simulations to run to reach the sampling limit
 limit = int(n_samples*10)
