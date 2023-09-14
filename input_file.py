@@ -18,7 +18,7 @@ visual_radius = 0.5 # Ra
 # visual_radius = 10 # Ra
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.2
+shift = 0.4
 
 reach_radius = 0.4
 
@@ -48,7 +48,7 @@ trust = 0.5 # β
 limit = int(n_samples*10)
 
 # use elastic recall force
-elastic = True
+elastic = False
 
 # use a stochastic or a turbulent flow
 turbulent = True
@@ -67,7 +67,7 @@ trust_inform = 0.1
 decay_time = 8
 
 Rd = 0.4 # olfactory range
-Lx = 50 # distance from the source
+Lx = 1 # distance from the source
 
 # length of the simulation box (height is given by the flow data)
 length = 100
@@ -94,7 +94,8 @@ loop_cycles = 10
 
 # max duration of the simulation
 Ts = Lx/speed # straight-path time
-final_time = 10*Ts 
+# final_time = 10*Ts 
+final_time = 100
 
 # name of the output results file
 filename = f'r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'

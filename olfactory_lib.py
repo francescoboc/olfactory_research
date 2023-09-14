@@ -412,8 +412,8 @@ class Swarm:
                     if norm(coord_trasl) < agent.visual_radius:
                         agent.velocity_comb = coord_trasl/norm(coord_trasl)*agent.speed
 
-                # otherwise, calculate velocity_comb (linear comb. of priv. and publ. cues)
-                else: agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
+                # calculate velocity_comb (linear comb. of priv. and publ. cues)
+                agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
 
                 # calculate future coordinates of the agent
                 future_coord = agent.coordinates + agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
@@ -507,8 +507,8 @@ class Swarm:
                         if norm(coord_trasl) <= agent.speed*agent.decision_time:
                             success = True
 
-                # otherwise, calculate velocity_comb (linear comb. of priv. and publ. cues)
-                else: agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
+                # calculate velocity_comb (linear comb. of priv. and publ. cues)
+                agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
 
                 # update agent's coordinates
                 agent.coordinates += agent.speed*agent.decision_time*agent.velocity_comb/norm(agent.velocity_comb)
