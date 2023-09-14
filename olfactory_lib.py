@@ -1038,7 +1038,7 @@ class Cloud_turbulent:
             self.odor = self._odor_frames[self._f_id]
 
             # pad arrays to extend simulation box
-            self.odor = np.pad(self.odor, [(100, 100), (0, 0)], mode='constant')
+            self.odor = np.pad(self.odor, [(pad_points, pad_points), (0, 0)], mode='constant')
 
     def update(self):
         # loop through the lists of frames

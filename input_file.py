@@ -48,7 +48,7 @@ trust = 0.85 # β
 limit = int(n_samples*10)
 
 # use elastic recall force
-elastic = True
+elastic = False
 
 # use a stochastic or a turbulent flow
 turbulent = True
