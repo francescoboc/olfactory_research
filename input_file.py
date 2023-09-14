@@ -1,28 +1,30 @@
 import numpy as np 
 
-folder = 'turbulent/maxt_100ts'
+# folder where the output file is saved
+folder = 'turbulent/'
 
 # pad points to extend the simulation box
 pad_points = 200
 
 # plotting parameters 
-real_time_plot = True
+real_time_plot = False
 plot_flow = False
-save_frames = True
+save_frames = False
 pause_time = 0.001
 
 # read h5 flow file or local npy file
 read_h5 = True
 
 # visual_radius = 0.1 # Ra
-visual_radius = 0.5 # Ra
+# visual_radius = 0.5 # Ra
 # visual_radius = 1 # Ra
 # visual_radius = 5 # Ra
-# visual_radius = 10 # Ra
+visual_radius = 10 # Ra
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.5
+shift = 0.4
 
+# radius within which the source is seen by the agents
 reach_radius = 0.4
 
 # time parameters
@@ -38,11 +40,11 @@ kelast = 1
 n_agents = 100 # N
 
 # do more runs at the same time
-parallel = False
-n_threads = 6 # number of threads used for parallelisation
+parallel = True
+n_threads = 10 # number of threads used for parallelisation
  
 # number of successful episodes to sample
-n_samples = 50
+n_samples = 10
 
 # constant trust parameter
 trust = 0.85 # β
@@ -60,7 +62,8 @@ turbulent = True
 adaptive_beta = False
 
 # trust parameter (β) values to check in a parallel run
-trusts = np.round(np.arange(0.0, 1.1, 0.1),2) 
+# trusts = np.round(np.arange(0.0, 1.1, 0.1),2) 
+trusts = np.round(np.arange(0.1, 1.0, 0.1),2) 
 
 # these are relevant only if we are using an adaptive beta
 trust_uninform = 0.9
@@ -70,7 +73,7 @@ trust_inform = 0.1
 decay_time = 8
 
 Rd = 0.4 # olfactory range
-Lx = 5 # distance from the source
+Lx = 50 # distance from the source
 
 # length of the simulation box (height is given by the flow data)
 length = 100
@@ -97,7 +100,7 @@ loop_cycles = 10
 
 # max duration of the simulation
 Ts = Lx/speed # straight-path time
-final_time = 10*Ts 
+final_time = 100*Ts 
 
 # name of the output results file
 filename = f'r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'
