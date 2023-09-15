@@ -139,4 +139,4 @@ else:
 if real_time_plot: 
     plt.ion(); plt.show()
     if save_frames:
-        os.system(f"ffmpeg -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 results/videos/{filename}.mp4")
+        os.system(f"ffmpeg -hide_banner -loglevel error -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 results/videos/{filename}.mp4")
