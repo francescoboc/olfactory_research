@@ -119,7 +119,7 @@ class Simulation:
 class Swarm:
     def __init__(self, n_agents, spawn_center, spawn_radius, speed, 
             visual_radius, sensing_noise, wind_noise, trust, length, height,
-            source_coordinates, reach_radius, dt):
+            source_coordinates, reach_radius, dt, memory_time):
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -136,6 +136,7 @@ class Swarm:
         self.reach_radius = reach_radius
 
         self.dt = dt
+        self.memory_time = memory_time
 
         # hack to avoid divisions by zero (could also be fixed by initialising private vel to random)
         if trust != 1.0: self.trust = trust
@@ -145,6 +146,10 @@ class Swarm:
 
         # initialise empty list for the swarm of agents
         self.agents = []
+
+        # constants for the update of the exp. disc. running average of the public velocity
+        self.c_exp = np.exp(-(self.dt/self.memory_time))
+        self.c_exp2 = 1 - self.c_exp
 
         # extract uniformly random points within the initial spawn circle
         # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
@@ -172,33 +177,33 @@ class Swarm:
         # self.traj.append(self.center_of_mass.copy())
         self.traj.append(self.agents[0].coordinates.copy())
 
-        # print(f'--time {time}--')
-        # print(f'v_priv = {self.agents[0].velocity_priv}')
-        # print(f'v_pub = {self.agents[0].velocity_pub}')
-        # print(f'v_comb = {self.agents[0].velocity_comb}')
+        # print(f'--timestep {time_step}--')
+        # print(f'v_priv = {self.agents[0].private_velocity}')
+        # print(f'v_pub = {self.agents[0].public_velocity}')
+        # print(f'v_comb = {self.agents[0].combined_velocity}')
         # print('----------')
         # print('')
 
         self.update_private_velocity(time_step)
 
-        self.update_public_velocity()
+        self.update_public_velocity(time_step)
 
         for agent in self.agents:
-            # calculate velocity_comb (linear comb. of priv. and publ. cues)
-            agent.velocity_comb = (1-agent.trust)*agent.velocity_priv + agent.trust*agent.velocity_pub
+            # calculate combined_velocity (linear comb. of priv. and publ. cues)
+            agent.combined_velocity = (1-agent.trust)*agent.private_velocity + agent.trust*agent.public_velocity
 
             # check if the odor source is within the reach radius of any of the agents
             if agent.coordinates[0] < self.source_coordinates[0] + self.reach_radius:
                 coord_trasl = self.source_coordinates - agent.coordinates
                 # if it is, the agent moves directly towards the source
                 if norm(coord_trasl) < agent.visual_radius:
-                    agent.velocity_comb = coord_trasl/norm(coord_trasl)
+                    agent.combined_velocity = coord_trasl/norm(coord_trasl)
                     # check if the agent has reached the source
                     if norm(coord_trasl) <= agent.speed*agent.dt:
                         success = True
 
             # update agent's coordinates
-            agent.coordinates += agent.speed*agent.dt*agent.velocity_comb/norm(agent.velocity_comb)
+            agent.coordinates += agent.speed*agent.dt*agent.combined_velocity/norm(agent.combined_velocity)
 
             # # if an agent is out of the simulation box, remove it
             # if (agent.coordinates[0] > self.length or agent.coordinates[0] < 0 or 
@@ -216,7 +221,8 @@ class Swarm:
         return removed, success
 
     # update the agents perception of the mean velocity of neighborrs (i.e. public cues)
-    def update_public_velocity(self):
+    def update_public_velocity(self, time_step):
+
         for agent in self.agents:
             # find neighbors (i.e. other agents within visual_radius) of the agent
             self.detect_neighbors(agent)
@@ -225,18 +231,34 @@ class Swarm:
                 # reset sum
                 sum_vel = np.array([0, 0])
                 for neighbor in agent.neighbors:
-                    sum_vel = sum_vel + neighbor.velocity_comb
-                # update public velocity
-                agent.velocity_pub = agent.speed*sum_vel/norm(sum_vel)
-            # otherwise, set public velocity to 0
+                    sum_vel = sum_vel + neighbor.combined_velocity
+                # calculate instantaneous public velocity
+                instant_public_velocity = agent.speed*sum_vel/norm(sum_vel)
+            # otherwise, set it to 0
             else:
-                agent.velocity_pub = np.array([0, 0])
+                instant_public_velocity = np.array([0, 0])
+
+        # # with the memory kernel (smart riemann sum)
+        #     agent.public_velocity_observations_sum += instant_public_velocity*np.exp(time_step*self.dt/self.memory_time)
+        #     agent.public_velocity = self.dt/self.memory_time * np.exp(-time_step*self.dt/self.memory_time) * agent.public_velocity_observations_sum
+
+        # with the memory kernel (incremental approximation)
+            # incremental update rule for the exp. disc. running average
+            agent.public_velocity = self.c_exp*agent.public_velocity + self.c_exp2*instant_public_velocity
+
+        # # with the memory kernel (riemann sum)
+        #     # agent.public_velocity = dt/tau * exp(-n/tau) * sum(u(i*dt) exp(i*(dt/tau)))
+        #     agent.public_velocity_observations.append(instant_public_velocity)
+        #     weighted_sum = np.array([0, 0])
+        #     for i in range(len(agent.public_velocity_observations)):
+        #         weighted_sum = weighted_sum + agent.public_velocity_observations[i] * np.exp(i*self.dt/self.memory_time) 
+        #     agent.public_velocity = self.dt/self.memory_time * np.exp(-time_step*self.dt/self.memory_time) * weighted_sum
 
             # add noise to public velocity (random rotation)
             if self.sensing_noise != 0:
-                random_angle = rng.uniform(-self.sensing_noise*3.141592653589793, self.sensing_noise*3.141592653589793)
+                random_angle = rng.uniform(-self.sensing_noise*np.pi, self.sensing_noise*np.pi)
                 random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
-                agent.velocity_pub = np.matmul(random_rot_matrix, agent.velocity_pub) 
+                agent.public_velocity = np.matmul(random_rot_matrix, agent.public_velocity) 
 
     # determine private behavior of the agents
     def update_private_velocity(self, time_step):
@@ -255,7 +277,7 @@ class Swarm:
                 agent.neighbors.append(candidate)
 
 class Agent:
-    def __init__(self,label, coordinates, speed, visual_radius, trust, wind_noise, dt):
+    def __init__(self, label, coordinates, speed, visual_radius, trust, wind_noise, dt):
         # parameters of the agent
         self.label = label
         self.coordinates = np.array(coordinates)
@@ -281,19 +303,29 @@ class Agent:
         self.neighbors = []
         # flag to determine if a particle was sniffed
         self.sniffed: bool = False
+
         # private and public velocity of the agent
-        self.velocity_priv = np.array([0.0, 0.0])
-        self.velocity_pub = np.array([0.0, 0.0])
+        # self.private_velocity = np.array([0.0, 0.0])
+        # self.public_velocity = np.array([0.0, 0.0])
+        # self.combined_velocity = np.array([0.0, 0.0]) 
 
-        # linear combination of the two 
-        random_angle = rng.uniform(-3.141592653589793/2, 3.141592653589793/2)
-        random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
-        self.velocity_comb = np.matmul(random_rot_matrix, np.array([-1.0, 0])) 
+        self.private_velocity = speed*np.array([-np.sqrt(2), -np.sqrt(2)])/2
+        self.public_velocity = speed*np.array([-np.sqrt(2), -np.sqrt(2)])/2
+        self.combined_velocity = speed*np.array([-np.sqrt(2), -np.sqrt(2)])/2 
 
-        # self.velocity_comb = np.array([0.0, 0.0]) 
+        # self.public_velocity_observations = [self.public_velocity.copy()]
+        self.public_velocity_observations = []
+        self.public_velocity_observations_sum = 0.0
+        # self.public_velocity_observations_sum = self.public_velocity.copy()
 
-        # instantaneous velocity
-        self.inst_velocity = np.copy(self.velocity_comb)
+        # # linear combination of the two 
+        # random_angle = rng.uniform(-np.pi/2, np.pi/2)
+        # random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
+        # self.combined_velocity = np.matmul(random_rot_matrix, np.array([-1.0, 0])) 
+
+        # # instantaneous velocity
+        # self.inst_velocity = np.copy(self.combined_velocity)
+
         # noise on the estimate of the mean wind
         self.wind_noise = wind_noise
         self.mean_wind = [1.0,0.0]
@@ -320,7 +352,7 @@ class Agent:
             self.extract_random_wind_estimate()
 
         # update value of private velocity to move upwind
-        self.velocity_priv = -self.wind_estimate*self.speed
+        self.private_velocity = -self.wind_estimate*self.speed
 
         # reset counters
         self.diagonal_clock = 0
@@ -330,12 +362,31 @@ class Agent:
         if self.wind_noise != 0:
             self.extract_random_wind_estimate()
 
+        # # move diagonally for casting_steps
+        # if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, self.wind_estimate)
+        # else: direction_45 = np.matmul(self._rot_matrix_neg45, self.wind_estimate)
+        # # assign value to private velocity
+        # self.private_velocity = direction_45*self.speed
+        # # if self.diagonal_clock == self.cast_steps:
+        # if time_step == int((50/self.dt)/2):
+        #     # reset the clock for moving diagonally
+        #     self.diagonal_clock = 0
+        #     # set flag to move diagonally to False (now we want to go crosswind)
+        #     self.move_diagonal = False
+        #     # increase the multiplier for the crosswind movement
+        #     self.crosswind_multi += 1
+        #     # flip the direction for the next movement
+        #     self.flip_dir = not self.flip_dir
+        # # increase counter for diagonal movement
+        # self.diagonal_clock += 1
+
+
         # move diagonally for casting_steps
         if self.move_diagonal:
             if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, self.wind_estimate)
             else: direction_45 = np.matmul(self._rot_matrix_neg45, self.wind_estimate)
             # assign value to private velocity
-            self.velocity_priv = direction_45*self.speed
+            self.private_velocity = direction_45*self.speed
             if self.diagonal_clock == self.cast_steps:
                 # reset the clock for moving diagonally
                 self.diagonal_clock = 0
@@ -353,7 +404,7 @@ class Agent:
             if self.flip_dir: direction_crosswind = np.matmul(self._rot_matrix_90, self.wind_estimate)
             else: direction_crosswind = -np.matmul(self._rot_matrix_90, self.wind_estimate)
             # assign value to private velocity
-            self.velocity_priv = direction_crosswind*self.speed
+            self.private_velocity = direction_crosswind*self.speed
             if self.crosswind_clock == self.crosswind_multi*self.cast_steps:
                 # reset the clock for moving crosswind
                 self.crosswind_clock = 0
