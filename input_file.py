@@ -1,7 +1,8 @@
 import numpy as np 
 
 # folder where the output file is saved
-folder = 'turbulent/'
+folder = 'results/turbulent/no_noise'
+# folder = 'results/turbulent/'
 
 # pad points to extend the simulation box
 pad_points = 200
@@ -18,11 +19,11 @@ read_h5 = True
 # visual_radius = 0.1 # Ra
 # visual_radius = 0.5 # Ra
 # visual_radius = 1 # Ra
-# visual_radius = 5 # Ra
-visual_radius = 10 # Ra
+visual_radius = 5 # Ra
+# visual_radius = 10 # Ra
 
 # vertical shift of the initial position (in perc of height/2)
-shift = 0.4
+shift = 0.5
 
 # radius within which the source is seen by the agents
 reach_radius = 0.4
@@ -82,8 +83,8 @@ length = 100
 speed = 0.2 # v0
 olfactory_radius = Rd # Rd 
 memory_time = 1/decision_time # inverse of λ
-sensing_noise = 0.1 # eta
-wind_noise = 0.1 # noise on the estimate of the mean wind
+sensing_noise = 0.0 # eta
+wind_noise = 0.0 # noise on the estimate of the mean wind
 spawn_radius = 5 # Rb
 
 # parameters of the particle cloud
@@ -104,6 +105,8 @@ final_time = 100*Ts
 
 # name of the output results file
 filename = f'r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'
+# filename = f'r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}_snoise{sensing_noise}_wnoise{wind_noise}'
+# filename = f'free_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}_snoise{sensing_noise}_wnoise{wind_noise}'
 
 # path of the turbulent flow
 if read_h5: path = '/storage/boccardo/odor_data_re280_small_source/r280_small_source.h5'

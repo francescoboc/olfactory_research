@@ -52,7 +52,7 @@ print(f'Turbulent = {turbulent}, Elastic = {elastic}')
 print(f'Ts = {Ts:.2f}, N = {n_agents}, Shift = {shift}')
 
 # create folders
-os.makedirs('results', exist_ok=True); os.makedirs('frames', exist_ok=True)
+os.makedirs(f'{folder}', exist_ok=True)
 
 # create flow and odor objects
 flow = Flow_turbulent(path, length)
@@ -118,12 +118,13 @@ if parallel:
     for attr in attributes: results.attrs[attr] = locals()[attr]
 
     # save to disk
-    results.to_pickle(f'results/{folder}/{filename}.pkl')
+    results.to_pickle(f'{folder}/{filename}.pkl')
 
 # do just one test run
 else:
     # initialise the rng
-    seed = random.randrange(sys.maxsize)
+    # seed = random.randrange(sys.maxsize)
+    seed = 2912106185768689831
     initialise_rng(seed)
     print(f'Seed = {seed}')
     # create objects
@@ -139,4 +140,5 @@ else:
 if real_time_plot: 
     plt.ion(); plt.show()
     if save_frames:
-        os.system(f"ffmpeg -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 results/videos/{filename}.mp4")
+        os.system(f"ffmpeg -hide_banner -loglevel error -framerate 30 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 results/videos/{filename}.mp4")
+        print(f'Movie saved as results/videos/{filename}.mp4')

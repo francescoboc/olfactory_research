@@ -1,7 +1,6 @@
 from olfactory_plot_utils import *
 
-folder = 'turbulent/maxt_50ts'
-# folder = 'turbulent/maxt_10ts'
+folder = 'turbulent/no_noise'
 
 x_label = r'Trust parameter $\beta$'
 
@@ -9,12 +8,12 @@ legend = True
 
 # beta = 0.85
 
-radii = [0.1, 0.5, 1, 5, 10]
+radii = [0.5, 1, 5, 10]
 
 # particle_dts = [1, 0.5, 0.2, 0.1, 0.05, 0.02]
 # thrs = [0.0001, 0.0005, 0.001, 0.002, 0.003, 0.005, 0.01]
 
-shift = 0.4
+shift = 0.1
 kelast = 1
 n_agents = 100
 decision_time = 1
