@@ -142,3 +142,4 @@ if real_time_plot:
     if save_frames:
         os.system(f"ffmpeg -hide_banner -loglevel error -framerate 30 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 results/videos/{filename}.mp4")
         print(f'Movie saved as results/videos/{filename}.mp4')
+        os.system(f"ffmpeg -hide_banner -loglevel error -framerate 60 -start_number 1 -i 'frames/frame%d.png' -c:v libx264 results/videos/{filename}.mp4")
