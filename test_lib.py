@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import random
-import os
+import random, os
 
 # hack to prevent raising KeyboardInterrupt when stopping the script with ctrl-c
 # https://stackoverflow.com/questions/7073268/remove-traceback-in-python-on-ctrl-c
@@ -32,19 +31,25 @@ def initialise_rng(seed):
     rng = random.Random(seed)
 
 class Simulation:
-    def __init__(self, final_time, swarm, real_time_plot, pause_time, save_frames):
-        self.swarm = swarm
+    def __init__(self, 
+            final_time, 
+            swarm, 
+            real_time_plot, 
+            pause_time, 
+            save_frames):
 
-        # final time of the simulation
         self.final_time = final_time
+
+        self.swarm = swarm
 
         # flag to enable or disable real time plotting
         self.real_time_plot = real_time_plot
         self.save_frames = save_frames
+
         # pause time between frames during plotting
         self.pause_time = pause_time
 
-        # total time steps
+        # calculate total time steps
         self.tot_time_steps = int(self.final_time/self.swarm.dt)
 
         if self.real_time_plot:
@@ -52,6 +57,9 @@ class Simulation:
             # fig = plt.figure(figsize=(13,8))
             plt.gca().remove()
             self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.swarm.length), ylim=(0, self.swarm.height))
+
+            self.axes.add_patch( plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2) )
+            self.axes.add_patch( plt.Circle(self.swarm.source_coordinates, 0.2, color='k') )
 
             # add patches for source and spawn circle 
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
@@ -61,32 +69,38 @@ class Simulation:
             for agent in self.swarm.agents:
                 color_id = min([len(colors), index%len(colors)]) 
                 agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[color_id], label=index)
-                visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[color_id], alpha=0.1)
+                # visual_circle = plt.Circle(agent.coordinates, agent.visual_radius, fill=False, color=colors[color_id], alpha=0.1)
+                visual_circle = plt.Circle(agent.coordinates, self.swarm.reach_radius, fill=False, color=colors[color_id], alpha=0.1)
                 self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle)
                 index += 1
 
-            # cmass_point = plt.Circle(self.swarm.center_of_mass, 0.1, color='k', zorder=2)
-            # self.axes.add_patch(cmass_point)
-
     def run(self):
         # reset flags and timers
-        success, agent_removed = False, False
+        success = False
+        agent_removed = False
         time_step = 0
         count = 0
 
-        while time_step <= self.tot_time_steps:
-
+        while time_step < self.tot_time_steps:
             # update the swarm
             agent_removed, success = self.swarm.update(time_step)
 
             # update global time step 
             time_step += 1
 
+            # remove patches from axes in case an agent was removed
+            if self.real_time_plot and agent_removed:
+                for patch in self.axes.patches:
+                    if (patch.center[0] > self.swarm.length-1 or patch.center[0] < 0 or 
+                        patch.center[1] > self.swarm.height -1 or patch.center[1] < 0):
+                        patch.remove()
+
             # plot in real time
             if self.real_time_plot:
-                plt.title(rf'Time = {time_step*self.swarm.dt}')
-                if self.save_frames: plt.savefig(f'frames/frame{time_step}')
-                plt.pause(self.pause_time)
+                if time_step%10 == 0:
+                    plt.title(rf'Time = {np.round(time_step*self.swarm.dt, 2)}')
+                    if self.save_frames: plt.savefig(f'frames/frame{time_step}')
+                    plt.pause(self.pause_time)
 
             # if an agent successuffly reached the source, stop
             if success: 
@@ -95,31 +109,50 @@ class Simulation:
                     coord_trasl = candidate.coordinates - self.swarm.source_coordinates
                     if norm(coord_trasl) < self.swarm.spawn_radius:
                         count += 1
-                print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}, N. agents < Rb: {count}')
+                # print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}, N. agents < Rb: {count}')
+                print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}')
                 break
 
-            # # if all agents are out of the simulation box, stop
-            # if not self.swarm.agents: 
-            #     print(f'{tc.red}Fail{tc.end}: all agents are out of the box')
-            #     break
+            # if all agents are out of the simulation box, stop
+            if not self.swarm.agents: 
+                print(f'{tc.red}Fail{tc.end}: all agents are out of the box')
+                break
 
-            # PBC
-            for agent in self.swarm.agents:
-                if agent.coordinates[0] > self.swarm.length-1:
-                    agent.coordinates[0] -= self.swarm.length
-                if agent.coordinates[0] < 0:
-                    agent.coordinates[0] += self.swarm.length
-                if agent.coordinates[1] > self.swarm.height-1:
-                    agent.coordinates[1] -= self.swarm.height
-                if agent.coordinates[1] < 0:
-                    agent.coordinates[1] += self.swarm.height
+            # # PBC
+            # for agent in self.swarm.agents:
+            #     if agent.coordinates[0] > self.swarm.length-1:
+            #         agent.coordinates[0] -= self.swarm.length
+            #     if agent.coordinates[0] < 0:
+            #         agent.coordinates[0] += self.swarm.length
+            #     if agent.coordinates[1] > self.swarm.height-1:
+            #         agent.coordinates[1] -= self.swarm.height
+            #     if agent.coordinates[1] < 0:
+            #         agent.coordinates[1] += self.swarm.height
 
         return time_step*self.swarm.dt, count, success
 
 class Swarm:
-    def __init__(self, n_agents, spawn_center, spawn_radius, speed, 
-            visual_radius, sensing_noise, wind_noise, trust, length, height,
-            source_coordinates, reach_radius, dt, memory_time):
+    def __init__(self, 
+            n_agents, 
+            spawn_center, 
+            spawn_radius, 
+            speed, 
+            visual_radius, 
+            sensing_noise, 
+            wind_noise, 
+            trust, 
+            length, 
+            height,
+            source_coordinates, 
+            reach_radius, 
+            dt, 
+            memory_time,
+            decision_time,
+            threshold,
+            method,
+            mu,
+            sigma):
+
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
         self.spawn_center = spawn_center
@@ -129,6 +162,13 @@ class Swarm:
         self.sensing_noise = sensing_noise
         self.wind_noise = wind_noise
 
+        self.method = method
+
+        # # hack to avoid divisions by zero (could also be fixed by initialising private vel to random)
+        # if trust != 1.0: self.trust = trust
+        # else: self.trust = 0.9999999999
+        self.trust = trust
+
         self.length = length
         self.height = height
 
@@ -137,12 +177,13 @@ class Swarm:
 
         self.dt = dt
         self.memory_time = memory_time
+        self.decision_time = decision_time
+        self.threshold = threshold
 
-        # hack to avoid divisions by zero (could also be fixed by initialising private vel to random)
-        if trust != 1.0: self.trust = trust
-        else: self.trust = 0.9999999999
-
+        # lists to follow the trajectory, velocity and its norm of one agent
         self.traj = []
+        self.vel_t = []
+        self.norms = []
 
         # initialise empty list for the swarm of agents
         self.agents = []
@@ -150,6 +191,9 @@ class Swarm:
         # constants for the update of the exp. disc. running average of the public velocity
         self.c_exp = np.exp(-(self.dt/self.memory_time))
         self.c_exp2 = 1 - self.c_exp
+
+        self.mu = mu
+        self.sigma = sigma
 
         # extract uniformly random points within the initial spawn circle
         # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
@@ -159,74 +203,22 @@ class Swarm:
             theta = rng.random()*2*np.pi
             rand_x = self.spawn_center[0]+radius*np.cos(theta)
             rand_y = self.spawn_center[1]+radius*np.sin(theta)
-
             new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, 
-                    self.visual_radius, self.trust, self.wind_noise, self.dt)
+                    self.visual_radius, self.trust, self.wind_noise,
+                    self.decision_time, self.dt, self.mu, self.sigma)
             self.agents.append(new_agent)
 
-        # # initialise position of center of mass
-        # self.center_of_mass = np.array([0.0, 0.0])
-        # pos_x = [agent.coordinates[0] for agent in self.agents]
-        # pos_y = [agent.coordinates[1] for agent in self.agents]
-        # self.center_of_mass[0] = np.mean(pos_x)
-        # self.center_of_mass[1] = np.mean(pos_y)
-
-    def update(self, time_step):
-        removed, success = False, False
-
-        # self.traj.append(self.center_of_mass.copy())
+        # add the IC to the lists
         self.traj.append(self.agents[0].coordinates.copy())
+        self.vel_t.append(self.agents[0].combined_velocity.copy())
+        self.norms.append(norm(self.agents[0].combined_velocity))
 
-        # print(f'--timestep {time_step}--')
-        # print(f'v_priv = {self.agents[0].private_velocity}')
-        # print(f'v_pub = {self.agents[0].public_velocity}')
-        # print(f'v_comb = {self.agents[0].combined_velocity}')
-        # print('----------')
-        # print('')
-
-        self.update_private_velocity(time_step)
-
-        self.update_public_velocity(time_step)
-
-        for agent in self.agents:
-            # calculate combined_velocity (linear comb. of priv. and publ. cues)
-            agent.combined_velocity = (1-agent.trust)*agent.private_velocity + agent.trust*agent.public_velocity
-
-            # check if the odor source is within the reach radius of any of the agents
-            if agent.coordinates[0] < self.source_coordinates[0] + self.reach_radius:
-                coord_trasl = self.source_coordinates - agent.coordinates
-                # if it is, the agent moves directly towards the source
-                if norm(coord_trasl) < agent.visual_radius:
-                    agent.combined_velocity = coord_trasl/norm(coord_trasl)
-                    # check if the agent has reached the source
-                    if norm(coord_trasl) <= agent.speed*agent.dt:
-                        success = True
-
-            # update agent's coordinates
-            agent.coordinates += agent.speed*agent.dt*agent.combined_velocity/norm(agent.combined_velocity)
-
-            # # if an agent is out of the simulation box, remove it
-            # if (agent.coordinates[0] > self.length or agent.coordinates[0] < 0 or 
-            #     agent.coordinates[1] > self.height or agent.coordinates[1] < 0):
-            #     self.agents.remove(agent)
-            #     removed = True
-
-        # # update position of center of mass
-        # pos_x = [agent.coordinates[0] for agent in self.agents]
-        # pos_y = [agent.coordinates[1] for agent in self.agents]
-        # self.center_of_mass[0] = np.mean(pos_x)
-        # self.center_of_mass[1] = np.mean(pos_y)
-
-        # return the removed and success flags
-        return removed, success
-
-    # update the agents perception of the mean velocity of neighborrs (i.e. public cues)
-    def update_public_velocity(self, time_step):
-
+        # initialize public velocity of each agent
         for agent in self.agents:
             # find neighbors (i.e. other agents within visual_radius) of the agent
             self.detect_neighbors(agent)
             # if there are neighbors:
+            alone = False
             if agent.neighbors:
                 # reset sum
                 sum_vel = np.array([0, 0])
@@ -234,38 +226,116 @@ class Swarm:
                     sum_vel = sum_vel + neighbor.combined_velocity
                 # calculate instantaneous public velocity
                 instant_public_velocity = agent.speed*sum_vel/norm(sum_vel)
-            # otherwise, set it to 0
+            # otherwise, set alone flag to True
             else:
+                alone = True
                 instant_public_velocity = np.array([0, 0])
+            agent.public_velocity = instant_public_velocity.copy() 
+            agent.alone = alone
 
-        # # with the memory kernel (smart riemann sum)
-        #     agent.public_velocity_observations_sum += instant_public_velocity*np.exp(time_step*self.dt/self.memory_time)
-        #     agent.public_velocity = self.dt/self.memory_time * np.exp(-time_step*self.dt/self.memory_time) * agent.public_velocity_observations_sum
+        # # place agents on a circle
+        # for n_ag in range(self.n_agents):
+        #     if n_ag == 0:
+        #         new_agent = Agent(n_ag, self.spawn_center, self.speed, 
+        #                 self.visual_radius, self.trust, self.wind_noise,
+        #                 self.decision_time, self.dt)
+        #     else:
+        #         radius = self.spawn_radius
+        #         theta = (n_ag-1)*2*np.pi/(n_agents-1)
+        #         rand_x = self.spawn_center[0]+radius*np.cos(theta)
+        #         rand_y = self.spawn_center[1]+radius*np.sin(theta)
+        #         new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, 
+        #                 self.visual_radius, self.trust, self.wind_noise,
+        #                 self.decision_time, self.dt)
+        #    self.agents.append(new_agent)
 
-        # with the memory kernel (incremental approximation)
-            # incremental update rule for the exp. disc. running average
-            agent.public_velocity = self.c_exp*agent.public_velocity + self.c_exp2*instant_public_velocity
+    def update(self, time_step):
+        success = False
+        removed = False
+
+        # TODO with odor, the agent should decide if change from casting to surging only at every decision_time!
+        for agent in self.agents:
+            # update private and public velocity of the agent
+            self.update_private_velocity(agent, time_step)
+            self.update_public_velocity(agent)
+
+        for agent in self.agents:
+            # calculate combined velocity (linear comb. of priv. and publ. cues)
+            if not agent.alone:
+                agent.combined_velocity = (1-agent.trust)*agent.private_velocity + agent.trust*agent.public_velocity
+            else:
+                agent.combined_velocity = agent.private_velocity
+
+            # update agent's coordinates
+            agent.coordinates += agent.speed*agent.dt*agent.combined_velocity/norm(agent.combined_velocity)
+
+            # check if agent reached the target
+            if not success:
+                success = self.check_reach(agent)
+
+        self.traj.append(self.agents[0].coordinates.copy())
+        self.vel_t.append(self.agents[0].combined_velocity.copy())
+        self.norms.append(norm(self.agents[0].combined_velocity))
+
+        # if an agent is out of the simulation box, remove it
+        if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
+            agent.coordinates[1] > self.height-1 or agent.coordinates[1] < 0):
+            self.agents.remove(agent)
+            removed = True
+
+        # print(f'--timestep {time_step}--')
+        # print(f'v_priv0 = {self.agents[0].private_velocity}')
+        # print(f'v_pub0 = {self.agents[0].public_velocity}')
+        # print(f'v_comb0 = {self.agents[0].combined_velocity}')
+        # print('--------------\n')
+
+        # return the removed and success flags
+        return removed, success
+
+    # update the agents perception of the mean velocity of neighborrs (i.e. public cues)
+    def update_public_velocity(self, agent):
+    # def update_public_velocity(self, agent, time_step):
+        # find neighbors (i.e. other agents within visual_radius) of the agent
+        self.detect_neighbors(agent)
+        # if there are neighbors:
+        alone = False
+        if agent.neighbors:
+            # reset sum
+            sum_vel = np.array([0, 0])
+            for neighbor in agent.neighbors:
+                sum_vel = sum_vel + neighbor.combined_velocity
+            # calculate instantaneous public velocity
+            instant_public_velocity = agent.speed*sum_vel/norm(sum_vel)
+        # otherwise, set alone flag to True
+        else:
+            alone = True
+            instant_public_velocity = np.array([0, 0])
+
+        if self.method == 'no_kernel':
+            agent.public_velocity = instant_public_velocity.copy() 
 
         # # with the memory kernel (riemann sum)
-        #     # agent.public_velocity = dt/tau * exp(-n/tau) * sum(u(i*dt) exp(i*(dt/tau)))
-        #     agent.public_velocity_observations.append(instant_public_velocity)
-        #     weighted_sum = np.array([0, 0])
-        #     for i in range(len(agent.public_velocity_observations)):
-        #         weighted_sum = weighted_sum + agent.public_velocity_observations[i] * np.exp(i*self.dt/self.memory_time) 
-        #     agent.public_velocity = self.dt/self.memory_time * np.exp(-time_step*self.dt/self.memory_time) * weighted_sum
+        # agent.public_velocity_observations_sum += instant_public_velocity*np.exp(time_step*self.dt/self.memory_time)
+        # agent.public_velocity = self.dt/self.memory_time * np.exp(-time_step*self.dt/self.memory_time) * agent.public_velocity_observations_sum
 
-            # add noise to public velocity (random rotation)
-            if self.sensing_noise != 0:
-                random_angle = rng.uniform(-self.sensing_noise*np.pi, self.sensing_noise*np.pi)
-                random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
-                agent.public_velocity = np.matmul(random_rot_matrix, agent.public_velocity) 
+        # with the memory kernel (incremental approximation)
+        elif self.method == 'kernel':
+            agent.public_velocity = self.c_exp*agent.public_velocity + self.c_exp2*instant_public_velocity
+
+        # add noise to public velocity (random rotation)
+        if self.sensing_noise != 0:
+            random_angle = rng.uniform(-self.sensing_noise*np.pi, self.sensing_noise*np.pi)
+            random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
+            agent.public_velocity = np.matmul(random_rot_matrix, agent.public_velocity) 
+
+        # set agent's alone flag
+        agent.alone = alone
 
     # determine private behavior of the agents
-    def update_private_velocity(self, time_step):
-        for agent in self.agents:
-            # update private velocity according to the cast and surge program
-            if agent.sniffed: agent.surge()
-            else: agent.cast(time_step)
+    def update_private_velocity(self, agent, time_step):
+        # update private velocity according to the cast and surge program
+        if agent.sniffed: agent.surge()
+        else: agent.cast(time_step)
 
     # detect other agents within the visual_radius
     def detect_neighbors(self, agent):
@@ -276,15 +346,49 @@ class Swarm:
             if (candidate != agent) and (norm(coord_trasl) < agent.visual_radius):
                 agent.neighbors.append(candidate)
 
+    def check_reach(self, agent):
+        success = False
+
+        # check if the odor source is within the reach radius of any of the agents
+        coord_trasl = self.source_coordinates - agent.coordinates
+        if norm(coord_trasl) < self.reach_radius:
+            success = True
+
+        # # check if the odor source is within the reach radius of any of the agents
+        # if agent.coordinates[0] < self.source_coordinates[0] + self.reach_radius:
+        #     coord_trasl = self.source_coordinates - agent.coordinates
+        #     # if it is, the agent moves directly towards the source
+        #     if norm(coord_trasl) < self.reach_radius:
+        #         agent.combined_velocity = coord_trasl/norm(coord_trasl)
+        #         # check if the agent has reached the source
+        #         if norm(coord_trasl) <= agent.speed*agent.dt:
+        #             success = True
+
+        return success
+
 class Agent:
-    def __init__(self, label, coordinates, speed, visual_radius, trust, wind_noise, dt):
-        # parameters of the agent
+    def __init__(self, 
+            label, 
+            coordinates, 
+            speed, 
+            visual_radius, 
+            trust, 
+            wind_noise, 
+            decision_time, 
+            dt,
+            mu,
+            sigma):
+
         self.label = label
         self.coordinates = np.array(coordinates)
         self.speed = speed
-        self.dt = dt
         self.visual_radius = visual_radius
         self.trust = trust
+        self.wind_noise = wind_noise
+        self.decision_time = decision_time
+        self.dt = dt
+
+        self.alone = False
 
         # counters and flags for the surging phase
         self.t_prime: int = 0
@@ -304,39 +408,34 @@ class Agent:
         # flag to determine if a particle was sniffed
         self.sniffed: bool = False
 
-        # private and public velocity of the agent
-        # self.private_velocity = np.array([0.0, 0.0])
+        # # initial velocity of the agent
+        # self.private_velocity = self.speed*np.array([-np.sqrt(2)/2, -np.sqrt(2)/2]) 
+        # self.public_velocity = self.speed*np.array([-np.sqrt(2)/2, -np.sqrt(2)/2]) 
+        # self.combined_velocity = self.speed*np.array([-np.sqrt(2)/2, -np.sqrt(2)/2]) 
+
+        # self.private_velocity = np.array([-1.0, 0.0])
+        # self.public_velocity = np.array([-1.0, 0.0])
+        # self.combined_velocity = np.array([-1.0, 0.0])
+
         # self.public_velocity = np.array([0.0, 0.0])
-        # self.combined_velocity = np.array([0.0, 0.0]) 
+        self.mu = mu
+        self.sigma = sigma
+        random_angle = rng.gauss(mu, sigma)
+        self.combined_velocity = np.array([np.cos(random_angle), np.sin(random_angle)])
 
-        self.private_velocity = speed*np.array([-np.sqrt(2), -np.sqrt(2)])/2
-        self.public_velocity = speed*np.array([-np.sqrt(2), -np.sqrt(2)])/2
-        self.combined_velocity = speed*np.array([-np.sqrt(2), -np.sqrt(2)])/2 
-
-        # self.public_velocity_observations = [self.public_velocity.copy()]
-        self.public_velocity_observations = []
-        self.public_velocity_observations_sum = 0.0
-        # self.public_velocity_observations_sum = self.public_velocity.copy()
-
-        # # linear combination of the two 
-        # random_angle = rng.uniform(-np.pi/2, np.pi/2)
-        # random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
-        # self.combined_velocity = np.matmul(random_rot_matrix, np.array([-1.0, 0])) 
-
-        # # instantaneous velocity
-        # self.inst_velocity = np.copy(self.combined_velocity)
-
-        # noise on the estimate of the mean wind
-        self.wind_noise = wind_noise
+        # mean wind
         self.mean_wind = [1.0,0.0]
 
         # calculate how many steps in une casting unit
-        self.cast_steps = int(1/self.dt)
+        self.cast_steps = int(self.decision_time/self.dt)
 
+        # initial counters and flags for casting
         self.move_diagonal: bool = True
         self.diagonal_clock: int = 1
         self.crosswind_clock: int = 1
-        self.crosswind_multi: int = 1
+        self.crosswind_multi: int = 0
+
+        # self.public_velocity_observations_sum = np.array([0.0, 0.0])
 
     def extract_random_wind_estimate(self):
         # compute wind estimate as mean wind + noise
@@ -362,25 +461,6 @@ class Agent:
         if self.wind_noise != 0:
             self.extract_random_wind_estimate()
 
-        # # move diagonally for casting_steps
-        # if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, self.wind_estimate)
-        # else: direction_45 = np.matmul(self._rot_matrix_neg45, self.wind_estimate)
-        # # assign value to private velocity
-        # self.private_velocity = direction_45*self.speed
-        # # if self.diagonal_clock == self.cast_steps:
-        # if time_step == int((50/self.dt)/2):
-        #     # reset the clock for moving diagonally
-        #     self.diagonal_clock = 0
-        #     # set flag to move diagonally to False (now we want to go crosswind)
-        #     self.move_diagonal = False
-        #     # increase the multiplier for the crosswind movement
-        #     self.crosswind_multi += 1
-        #     # flip the direction for the next movement
-        #     self.flip_dir = not self.flip_dir
-        # # increase counter for diagonal movement
-        # self.diagonal_clock += 1
-
-
         # move diagonally for casting_steps
         if self.move_diagonal:
             if self.flip_dir: direction_45 = np.matmul(self._rot_matrix_45, self.wind_estimate)
@@ -393,12 +473,11 @@ class Agent:
                 # set flag to move diagonally to False (now we want to go crosswind)
                 self.move_diagonal = False
                 # increase the multiplier for the crosswind movement
-                self.crosswind_multi += 1
+                self.crosswind_multi += 2
                 # flip the direction for the next movement
                 self.flip_dir = not self.flip_dir
             # increase counter for diagonal movement
             self.diagonal_clock += 1
-
         # move crosswind for crosswind_multi*casting_steps
         else:
             if self.flip_dir: direction_crosswind = np.matmul(self._rot_matrix_90, self.wind_estimate)
