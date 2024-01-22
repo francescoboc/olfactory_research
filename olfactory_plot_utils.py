@@ -16,10 +16,10 @@ plt.rcParams['figure.constrained_layout.use'] = True
 
 plt.rcParams['font.size'] = 17 
 
-# plt.rcParams['legend.fontsize'] = 17 
+plt.rcParams['legend.fontsize'] = 14 
+plt.rcParams['legend.title_fontsize'] = 'small'
 # plt.rcParams['legend.handlelength'] = 1
 # plt.rcParams['legend.handletextpad'] = 0.5
-# plt.rcParams['legend.title_fontsize'] = 'small'
 
 plt.rc('text', usetex=True)
 # plt.rc('text.latex', preamble=r'\usepackage{bm}')
