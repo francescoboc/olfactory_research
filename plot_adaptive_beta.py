@@ -1,12 +1,24 @@
 from olfactory_lib import *
 import pandas as pd
 
-folder = 'adaptive_beta'
+rd = 0.2
+spawn_radius = 25*rd 
+shifts = np.linspace(0, 3, 6)*spawn_radius
+shift = shifts[5]
+visual_radius = 25*rd
+n_agents = 100
+threshold = 0.0005
+method = 'no_kernel'
+
+# folder = 'adaptive_beta'
 # filename = 'adaptive_beta_elastic_decay4_refined'
-filename = 'adaptive_beta_elastic_decay4'
+# filename = 'adaptive_beta_elastic_decay4'
+
+folder = 'results/turbulent/threshold_%f/vary_visual_radius/%s/vr%.3f_shift%.3f'%(threshold, method, visual_radius, shift)
 
 # load results in a dataframe
-results_raw = pd.read_pickle(f'results/{folder}/{filename}.pkl')
+# results_raw = pd.read_pickle(f'results/{folder}/{filename}.pkl')
+results_raw = pd.read_pickle(f'{folder}.pkl')
 
 trust_inf, trust_uninf = [], []
 for tu, ti in results_raw.index.values:
@@ -20,7 +32,7 @@ n_samples = len(results_raw.loc[(trust_uninf[0], trust_inf[0])]['times'])
 
 # calculate parameters
 v0 = results_raw.attrs['speed']
-Lx = results_raw.attrs['Lx']
+Lx = results_raw.attrs['lx']
 N = results_raw.attrs['n_agents']
 Ts = Lx/v0
 
@@ -28,7 +40,7 @@ times = np.zeros([len(trust_inf), len(trust_uninf)])
 times_std = times.copy()
 nagents = times.copy()
 nagents_std = times.copy()
-fails = times.copy()
+successes = times.copy()
 
 for i_tu in range(len(trust_uninf)):
     tu = trust_uninf[i_tu]
@@ -37,29 +49,28 @@ for i_tu in range(len(trust_uninf)):
 
         arrival_times = results_raw.loc[(tu, ti)]['times']
         arrival_agents = results_raw.loc[(tu, ti)]['n_agents']
-        fail_counter = results_raw.loc[(tu, ti)]['fails']
+        successes_bool = results_raw.loc[(tu, ti)]['successes']
 
         times[i_ti][i_tu] = np.mean(arrival_times)
         times[i_ti][i_tu] = arrival_times[0]
         times_std[i_ti][i_tu] = np.std(arrival_times)
         nagents[i_ti][i_tu] = np.mean(arrival_agents)
         nagents_std[i_ti][i_tu] = np.std(arrival_agents)
-        fails[i_ti][i_tu] = fail_counter
+        successes[i_ti][i_tu] = np.sum(successes_bool)
 
 x_lab, y_lab = results_raw.index.names[0], results_raw.index.names[1]
 x_ticks, y_ticks = trust_uninf, trust_inf
 
 plt.figure()
-# plt.imshow(times/Ts, origin='lower')
-plt.imshow(Ts/times, origin='lower', cmap='inferno')
-plt.colorbar(label='$T_s/T$')
-plt.title(f'Inverse time to reach source'); plt.xlabel(x_lab); plt.ylabel(y_lab);
+plt.imshow(times/Ts, origin='lower')
+plt.colorbar(label='$T/T_s$')
+plt.title(f'Time to reach source'); plt.xlabel(x_lab); plt.ylabel(y_lab);
 plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
 plt.figure()
-plt.imshow(fails/(fails+n_samples), origin='lower')
-plt.colorbar(label='Fraction of failed epi')
-plt.title(f'Fraction of failed episodes'); plt.xlabel(x_lab); plt.ylabel(y_lab)
+plt.imshow(successes/n_samples, origin='lower')
+plt.colorbar(label='Success ratio')
+plt.title(f'Success ratio'); plt.xlabel(x_lab); plt.ylabel(y_lab)
 plt.xticks(range(len(x_ticks)), labels=x_ticks); plt.yticks(range(len(y_ticks)), labels=y_ticks)
 
 # plt.figure()
