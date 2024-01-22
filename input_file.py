@@ -1,114 +1,95 @@
 import numpy as np 
 
-# folder where the output file is saved
-folder = 'results/turbulent/no_noise'
-# folder = 'results/turbulent/'
-
-# pad points to extend the simulation box
-pad_points = 200
-
 # plotting parameters 
-real_time_plot = False
-plot_flow = False
+real_time_plot = True
 save_frames = False
+save_gif = False
 pause_time = 0.001
 
-# read h5 flow file or local npy file
-read_h5 = True
-
-# visual_radius = 0.1 # Ra
-# visual_radius = 0.5 # Ra
-# visual_radius = 1 # Ra
-visual_radius = 5 # Ra
-# visual_radius = 10 # Ra
-
-# vertical shift of the initial position (in perc of height/2)
-shift = 0.5
-
-# radius within which the source is seen by the agents
-reach_radius = 0.4
-
-# time parameters
-decision_time = 1 # Δt
-
-# smelling threshold
-threshold = 0.0008
-
-# elastic constant
-kelast = 1
-
-# number of agents
-n_agents = 100 # N
-
-# do more runs at the same time
-parallel = True
-n_threads = 10 # number of threads used for parallelisation
- 
-# number of successful episodes to sample
+# if parallel is true, we scan several values of trust
+parallel = False
+n_threads = 10
 n_samples = 10
 
-# constant trust parameter
-trust = 0.85 # β
+# constrain the swarm 
+constrained = False
 
-# max number simulations to run to reach the sampling limit
+# use two values of the trust parameter for informed and uninformed agents
+adaptive_trust = False
+
+# max simulation time
+final_time = int(2e5)
+
+# swarm parameters
+rd = 0.2
+spawn_radius = 25*rd 
+
+# visual_radius = rd
+# visual_radius = 2*rd
+# visual_radius = 5*rd
+# visual_radius = 10*rd
+visual_radius = 25*rd
+
+olfactoy_radius = rd
+reach_radius = 1.0
+
+# initial conditions
+shifts = np.linspace(0, 3, 6)*spawn_radius
+shift = shifts[5]
+
+sigma = np.pi/20
+mus = np.linspace(1, 3/2, 6)*np.pi
+mu = mus[0]
+ 
+# beta (only for parallel = False option)
+trust = 0.5
+trust_informed = 0.1
+trust_uninformed = 0.7
+
+# trust values to check in the parallel run
+trust_init = 0.0
+trust_final = 1.0
+trust_step = 0.05
+
+# max number of simulations to do to try reaching n_samples
 limit = int(n_samples*10)
 
-# use elastic recall force
-elastic = True
+# delta t
+decision_time = 1
 
-# use a stochastic or a turbulent flow
-turbulent = True
+# tau
+memory_time = 1.0 *decision_time
 
-# use a different beta for informed and uninformed agents
-adaptive_beta = False
+# olfactory threshold
+threshold = 0.0005
 
-# trust parameter (β) values to check in a parallel run
-# trusts = np.round(np.arange(0.0, 1.1, 0.1),2) 
-trusts = np.round(np.arange(0.1, 1.0, 0.1),2) 
+# space bin for the odor field
+odor_delta_x = 0.1
 
-# these are relevant only if we are using an adaptive beta
-trust_uninform = 0.9
-trust_inform = 0.1
+# use the memory kernel for the public velocity or not
+# method = 'kernel'; dt = 0.01
+method = 'no_kernel'; dt = decision_time
 
-# decay time used both for beta and for the surging phase
-decay_time = 8
+# number of agents
+n_agents = 100 
 
-Rd = 0.4 # olfactory range
-Lx = 50 # distance from the source
+# distance from the source
+lx = 65
 
-# length of the simulation box (height is given by the flow data)
-length = 100
+# simulation box size
+length, height = 2.5*lx, 2.5*lx
 
-# parameters of the agents
-speed = 0.2 # v0
-olfactory_radius = Rd # Rd 
-memory_time = 1/decision_time # inverse of λ
+# noise on the estimate of the mean wind and on public velocity
 sensing_noise = 0.0 # eta
-wind_noise = 0.0 # noise on the estimate of the mean wind
-spawn_radius = 5 # Rb
+wind_noise = 0.0 
 
-# parameters of the particle cloud
-particle_dt = decision_time/10 # δt
-particle_rate = 10 # J
-flow_dt = particle_dt
+# v0
+speed = 0.2 
 
-# parameters of the stochastic flow
-fluct_intensity = 0.42
-flow_lengthscale = 10
-flow_corr_time = 5
-mean_wind = [1, 0]
-loop_cycles = 10
+# spawn position and source coordinates 
+spawn_center = [length/1.5, height/2 + shift]
+source_coordinates = [spawn_center[0]-lx, height/2]
 
-# max duration of the simulation
-Ts = Lx/speed # straight-path time
-final_time = 100*Ts 
-
-# name of the output results file
-filename = f'r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}'
-# filename = f'r280_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}_snoise{sensing_noise}_wnoise{wind_noise}'
-# filename = f'free_ra{visual_radius}_dt{decision_time}_thr{threshold}_k{kelast}_shift{shift}_N{n_agents}_snoise{sensing_noise}_wnoise{wind_noise}'
-
-# path of the turbulent flow
-if read_h5: path = '/storage/boccardo/odor_data_re280_small_source/r280_small_source.h5'
-else: path = 'flow/re280_small_source'
-
+# define folder and filename
+folder = 'results/unconstrained/shift%.3f'%shift
+filename = f'vr{visual_radius}_thr{threshold}_N{n_agents}_snoise{sensing_noise}_wnoise{wind_noise}'
