@@ -1,4 +1,3 @@
-from utils import *
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,6 +8,38 @@ import random, os, h5py
 import signal, sys
 signal.signal(signal.SIGINT, lambda x, y: sys.exit())
 
+# extract matplotlib default colors and markers
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+markers = list(plt.Line2D.markers.keys())[2:]
+
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['font.size'] = 17 
+
+# escape sequences to print colors in terminal
+class tc:
+    purple = '\033[95m'
+    blue = '\033[94m'
+    cyan = '\033[96m'
+    green = '\033[92m'
+    yellow = '\033[93m'
+    red = '\033[91m'
+    bold = '\033[1m'
+    ul = '\033[4m'
+    end = '\033[0m'
+
+def show_and_check_ipython():
+    try: __IPYTHON__; plt.ion()
+    except NameError: pass
+    plt.show()
+
+def norm(vector):
+    return (vector[0]**2 + vector[1]**2)**0.5
+
+def normalised(vector):
+    norm = (vector[0]**2 + vector[1]**2)**0.5
+    if norm != 0: return vector/norm
+    else: return vector
+
 def initialise_rng(seed):
     global rng 
     rng = random.Random(seed)
@@ -17,11 +48,11 @@ class Simulation:
     def __init__(self, 
             final_time, 
             swarm, 
-            cloud=None,
-            constrained=False,
-            real_time_plot=False, 
-            pause_time=0.001, 
-            save_frames=False):
+            cloud,
+            constrained,
+            real_time_plot, 
+            pause_time, 
+            save_frames):
 
         self.final_time = final_time
 
@@ -46,12 +77,9 @@ class Simulation:
                 fig = plt.figure(figsize=(13,8))
             else:
                 plt.gca().remove()
-
-            if self.cloud is not None:
-                self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(self.cloud.horizontal_shift-margin, 
-                    self.cloud.x_max + self.cloud.horizontal_shift+margin), ylim=(self.cloud.vertical_shift-margin, self.cloud.y_max + self.cloud.vertical_shift+margin))
-            else:
-                self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.swarm.length), ylim=(0, self.swarm.height))
+            margin = 10
+            # self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.swarm.length), ylim=(0, self.swarm.height))
+            self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(self.cloud.horizontal_shift-margin, self.cloud.x_max + self.cloud.horizontal_shift+margin), ylim=(self.cloud.vertical_shift-margin, self.cloud.y_max + self.cloud.vertical_shift+margin))
 
             self.axes.add_patch( plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2) )
             self.axes.add_patch( plt.Circle(self.swarm.source_coordinates, 0.3, color='k') )
@@ -60,19 +88,17 @@ class Simulation:
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
 
             # image of the odor cloud
-            if self.cloud is not None:
-                self.odor_image = self.axes.imshow(self.cloud.odor>self.swarm.threshold, extent=(self.cloud.horizontal_shift,
-                    self.cloud.x_max+self.cloud.horizontal_shift,self.cloud.vertical_shift,self.cloud.y_max+self.cloud.vertical_shift), cmap=colormap, alpha=0.33, origin='lower')
-                # self.odor_image = self.axes.imshow(self.cloud.odor, extent=(self.cloud.horizontal_shift,
-                    # self.cloud.x_max+self.cloud.horizontal_shift,self.cloud.vertical_shift,self.cloud.y_max+self.cloud.vertical_shift), cmap='viridis', origin='lower')
+            colormap='GnBu'
+            # colormap='Wistia' 
+            self.odor_image = self.axes.imshow(self.cloud.odor>self.swarm.threshold, extent=(self.cloud.horizontal_shift,self.cloud.x_max+self.cloud.horizontal_shift,self.cloud.vertical_shift,self.cloud.y_max+self.cloud.vertical_shift), cmap=colormap, alpha=0.33, origin='lower')
 
             # add agents points and visual circles
             index = 0
             for agent in self.swarm.agents:
                 color_id = min([len(colors), index%len(colors)]) 
-                agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[color_id], label=index)
-                visual_circle = plt.Circle(agent.coordinates, self.swarm.reach_radius, fill=False, color=colors[color_id], alpha=0.1)
-                self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle)
+                self.axes.add_patch( plt.Circle(agent.coordinates, 0.2, color=colors[3], label=index) )
+                self.axes.add_patch( plt.Circle(agent.coordinates, self.swarm.visual_radius, fill=False, color=colors[3], alpha=0.1) )
+                # self.axes.add_patch( plt.Circle(agent.coordinates, self.swarm.olfactory_radius, fill=False, color=colors[3], ls='--', alpha=0.1) )
                 index += 1
                 if index >= len(colors): index = 0
             plt.axis('off')
@@ -80,70 +106,57 @@ class Simulation:
     def run(self):
         # reset flags and timers
         success = False
-        # agent_removed = False
+        agent_removed = False
         time_step = 0
         count = 0
 
-        while True:
+        while time_step < self.tot_time_steps:
             # update the swarm
             if self.constrained: agent_removed, success = self.swarm.update_constrained(time_step)
-            # else: agent_removed, success = self.swarm.update(time_step)
-            else: self.swarm.update(time_step)
+            else: agent_removed, success = self.swarm.update(time_step)
 
             # update the odor cloud
-            if self.cloud is not None:
-                self.cloud.update()
+            self.cloud.update()
 
             # update global time step 
             time_step += 1
 
-            # # remove patches from axes in case an agent was removed
-            # if self.real_time_plot and agent_removed:
-            #     for patch in self.axes.patches:
-            #         if (patch.center[0] > self.swarm.length-1 or patch.center[0] < 0 or 
-            #             patch.center[1] > self.swarm.height -1 or patch.center[1] < 0):
-            #             patch.remove()
+            # remove patches from axes in case an agent was removed
+            if self.real_time_plot and agent_removed:
+                for patch in self.axes.patches:
+                    if (patch.center[0] > self.swarm.length-1 or patch.center[0] < 0 or 
+                        patch.center[1] > self.swarm.height -1 or patch.center[1] < 0):
+                        patch.remove()
 
             # plot in real time
             if self.real_time_plot:
-                if self.cloud is not None:
-                    self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
+                # if time_step%10 == 0:
+                self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 # self.odor_image.set_data(self.cloud.odor)
-                plt.title(rf'Time = {np.round(time_step*self.swarm.dt, 2)}')
-                # self.axes.plot(self.swarm.center_of_mass[0],self.swarm.center_of_mass[1],'.k',ms=1)
+                # plt.title(rf'Time = {np.round(time_step*self.swarm.dt, 2)}')
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}.png')
+                self.axes.scatter(self.swarm.agents[0].coordinates[0], self.swarm.agents[0].coordinates[1], marker='.', c='k', s=1) 
                 plt.pause(self.pause_time)
 
-            # # if an agent successuffly reached the source, stop
-            # if success: 
-            #     # count agents within a circle of size spawn_radius around the source
-            #     for candidate in self.swarm.agents:
-            #         coord_trasl = candidate.coordinates - self.swarm.source_coordinates
-            #         if norm(coord_trasl) < self.swarm.spawn_radius:
-            #             count += 1
-
+            # if an agent successuffly reached the source, stop
+            if success: 
+                # count agents within a circle of size spawn_radius around the source
+                for candidate in self.swarm.agents:
+                    coord_trasl = candidate.coordinates - self.swarm.source_coordinates
+                    if norm(coord_trasl) < self.swarm.spawn_radius:
+                        count += 1
                 # print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}, N. agents < Rb: {count}')
-                # print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}')
-                # break
-
-            # # if all agents are out of the simulation box, stop
-            # if not self.swarm.agents: 
-            #     print(f'{tc.red}Fail{tc.end}: all agents are out of the box')
-            #     break
-
-            # BREAK conditions
-            agents_arrived = len(self.swarm.reach_times) 
-            if agents_arrived == self.swarm.n_agents:
-                print(f'{tc.green}All agents reached the source{tc.green}')
+                print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}')
                 break
 
-            if self.final_time != 0 and time_step == self.tot_time_steps: 
-                print(f'{tc.blue}Agents at the source {agents_arrived}{tc.blue}')
+            # if all agents are out of the simulation box, stop
+            if not self.swarm.agents: 
+                print(f'{tc.red}Fail{tc.end}: all agents are out of the box')
                 break
 
             x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
             if max(x_coordinates) < (self.swarm.source_coordinates[0]-10):
-                print(f'{tc.red}All agents are past the source{tc.end}')
+                print(f'{tc.red}Fail{tc.end}: all agents are past the source')
                 break
 
             # # PBC
@@ -157,11 +170,12 @@ class Simulation:
             #     if agent.coordinates[1] < 0:
             #         agent.coordinates[1] += self.swarm.height
 
-        return self.swarm.reach_times, self.swarm.success 
+        if time_step == self.tot_time_steps: print(f'{tc.red}Fail{tc.end}: time is up')
+
+        return time_step*self.swarm.dt, count, success
 
 class Swarm:
-    def __init__(self,
-            private_behavior,
+    def __init__(self, 
             n_agents, 
             spawn_center, 
             spawn_radius, 
@@ -170,7 +184,10 @@ class Swarm:
             olfactory_radius,
             sensing_noise, 
             wind_noise, 
+            adaptive_trust,
             trust, 
+            trust_informed, 
+            trust_uninformed, 
             length, 
             height,
             source_coordinates, 
@@ -196,7 +213,10 @@ class Swarm:
         self.cloud = cloud
         self.method = method
 
+        self.adaptive_trust = adaptive_trust
         self.trust = trust
+        self.trust_informed = trust_informed
+        self.trust_uninformed = trust_uninformed
 
         self.length = length
         self.height = height
@@ -209,6 +229,11 @@ class Swarm:
         self.decision_time = decision_time
         self.threshold = threshold
 
+        # # lists to follow the trajectory, velocity and its norm of one agent
+        # self.traj = []
+        # self.vel_t = []
+        # self.norms = []
+
         # initialise empty list for the swarm of agents
         self.agents = []
 
@@ -218,18 +243,6 @@ class Swarm:
 
         self.mu = mu
         self.sigma = sigma
-
-        # determine private behavior of the agents
-        if private_behavior == 'cast_and_surge':
-            self.update_private_velocity = self.cast_and_surge
-        elif private_behavior == 'biased_rw':
-            self.update_private_velocity = self.biased_rw
-        else:
-            raise Exception('Unsupported private behavior')
-
-        # create empty lists for the reach times
-        self.reach_times = []
-        self.success = False
 
         # extract uniformly random points within the initial spawn circle
         # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
@@ -242,25 +255,31 @@ class Swarm:
             new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, self.trust, self.wind_noise, self.decision_time, self.dt, self.mu, self.sigma)
             self.agents.append(new_agent)
 
-        # initialize public velocity of each agent
-        for agent in self.agents:
-            # find neighbors (i.e. other agents within visual_radius) of the agent
-            self.detect_neighbors(agent)
-            # if there are neighbors:
-            alone = False
-            if agent.neighbors:
-                # reset sum
-                sum_vel = np.array([0, 0])
-                for neighbor in agent.neighbors:
-                    sum_vel = sum_vel + neighbor.combined_velocity
-                # calculate instantaneous public velocity
-                instant_public_velocity = agent.speed*normalised(sum_vel)
-            # otherwise, set alone flag to True
-            else:
-                alone = True
-                instant_public_velocity = np.array([0, 0])
-            agent.public_velocity = instant_public_velocity.copy() 
-            agent.alone = alone
+        # # add the IC to the lists
+        # self.traj.append(self.agents[0].coordinates.copy())
+        # self.vel_t.append(self.agents[0].combined_velocity.copy())
+        # self.norms.append(norm(self.agents[0].combined_velocity))
+
+        # # initialize public velocity of each agent
+        # for agent in self.agents:
+        #     # find neighbors (i.e. other agents within visual_radius) of the agent
+        #     self.detect_neighbors(agent)
+        #     # if there are neighbors:
+        #     alone = False
+        #     if agent.neighbors:
+        #         # reset sum
+        #         sum_vel = np.array([0, 0])
+        #         for neighbor in agent.neighbors:
+        #             sum_vel = sum_vel + neighbor.combined_velocity
+        #             # sum_vel = sum_vel + neighbor.combined_velocity*(1-neighbor.trust)
+        #         # calculate instantaneous public velocity
+        #         instant_public_velocity = agent.speed*normalised(sum_vel)
+        #     # otherwise, set alone flag to True
+        #     else:
+        #         alone = True
+        #         instant_public_velocity = np.array([0, 0])
+        #     agent.public_velocity = instant_public_velocity.copy() 
+        #     agent.alone = alone
 
         # # place agents on a circle
         # for n_ag in range(self.n_agents):
@@ -278,128 +297,71 @@ class Swarm:
         #                 self.decision_time, self.dt)
         #    self.agents.append(new_agent)
 
-        # # initialise position of center of mass
-        # pos_x = [agent.coordinates[0] for agent in self.agents]
-        # pos_y = [agent.coordinates[1] for agent in self.agents]
-        # self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
-        # self.com_history = [self.center_of_mass.copy()]
+        # initialise position of center of mass
+        pos_x = [agent.coordinates[0] for agent in self.agents]
+        pos_y = [agent.coordinates[1] for agent in self.agents]
+        self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
 
     def update(self, time_step):
-        # removed = False
+        success = False
+        removed = False
 
         # TODO with odor, the agent should decide if change from casting to surging only at every decision_time!
         for agent in self.agents:
             # sniff odor field
-            if self.cloud is not None:
-                self.sniff_odor(agent)
+            self.sniff_odor(agent)
 
-            # update private and public velocity of the agent
-            self.update_private_velocity(agent, time_step)
-            self.update_public_velocity(agent)
+            if agent.sniffed:
 
-        for agent in self.agents:
-            # calculate combined velocity (linear comb. of priv. and publ. cues)
-            if not agent.alone:
-                agent.combined_velocity = (1-agent.trust)*agent.private_velocity + agent.trust*agent.public_velocity
+                # SURGE (without changing the private vel)
+                if self.wind_noise != 0: self.extract_random_wind_estimate()
+
+                # update value of private velocity to move upwind
+                vel_surge = -agent.wind_estimate*agent.speed
+
+                # reset counters
+                agent.move_diagonal: bool = True
+                agent.diagonal_clock: int = 1
+                agent.crosswind_clock: int = 1
+                agent.crosswind_multi: int = 0
+
+                # update agent's coordinates
+                agent.coordinates += agent.speed*agent.dt*normalised(vel_surge)
+
             else:
-                agent.combined_velocity = agent.private_velocity
+                # CAST WITH HACK
+                agent.cast(time_step)
+                self.update_casting_velocity(agent)
 
-            # update agent's coordinates
-            agent.coordinates += agent.speed*agent.dt*normalised(agent.combined_velocity)
+                # calculate combined velocity (linear comb. of priv. and publ. cues)
+                agent.combined_velocity = (1-agent.trust)*agent.private_velocity + agent.trust*agent.public_velocity
+
+                # update agent's coordinates
+                agent.coordinates += agent.speed*agent.dt*normalised(agent.combined_velocity)
 
             # check if agent reached the target
-            # if not success: success = self.check_reach(agent)
-            if self.check_reach(agent):
-                self.reach_times.append(time_step*self.dt)
-                self.agents.remove(agent)
-                self.success = True
+            if not success: success = self.check_reach(agent)
+
+        # self.traj.append(self.agents[0].coordinates.copy())
+        # self.vel_t.append(self.agents[0].combined_velocity.copy())
+        # self.norms.append(norm(self.agents[0].combined_velocity))
 
         # if an agent is out of the simulation box, remove it
         if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
             agent.coordinates[1] > self.height-1 or agent.coordinates[1] < 0):
             self.agents.remove(agent)
-            # removed = True
-
-    def update_constrained(self, time_step):
-        success = False
-        removed = False
-
-        # calculate future coordinates of the agents
-        future_x, future_y = [], []
-        for agent in self.agents:
-            # sniff odor field
-            self.sniff_odor(agent)
-
-            # update private and public velocity of the agent
-            if self.adaptive_trust: self.update_private_velocity_adaptive_trust(agent, time_step)
-            else: self.update_private_velocity(agent, time_step)
-            self.update_public_velocity(agent)
-
-        for agent in self.agents:
-            # calculate combined velocity (linear comb. of priv. and publ. cues)
-            if not agent.alone:
-                agent.combined_velocity = (1-agent.trust)*agent.private_velocity + agent.trust*agent.public_velocity
-            else:
-                agent.combined_velocity = agent.private_velocity
-
-            # calculate future coordinates of the agent
-            future_coordinates = agent.coordinates + agent.speed*agent.dt*normalised(agent.combined_velocity)
-            future_x.append(future_coordinates[0]); future_y.append(future_coordinates[1])
-
-            # calculate instantaneous velocity of the agent as a finite difference
-            agent.instant_velocity = (future_coordinates - agent.coordinates)/agent.decision_time
-
-            # check if agent reached the target
-            if not success: success = self.check_reach(agent)
-
-        # calculate predicted future position of the center of mass
-        self.center_of_mass[0] = np.mean(future_x)
-        self.center_of_mass[1] = np.mean(future_y)
-
-        # calculate acceleration and update coordinates
-        for agent in self.agents:
-            coord_trasl = agent.coordinates - self.center_of_mass 
-            magnitude = norm(coord_trasl) 
-            if magnitude < self.spawn_radius: 
-                agent.acceleration = -1 * ( agent.instant_velocity - agent.combined_velocity )
-            else: 
-                agent.acceleration = -1 * ((magnitude - self.spawn_radius) * coord_trasl/magnitude 
-                        + agent.instant_velocity - agent.combined_velocity )
-
-            # update velocity and position
-            agent.instant_velocity += agent.acceleration*agent.decision_time
-            agent.coordinates += agent.instant_velocity*agent.decision_time
-
-            # check if agent reached the target
-            if not success: success = self.check_reach(agent)
-
-            # if an agent is out of the simulation box, remove it
-            if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
-                agent.coordinates[1] > self.height-1 or agent.coordinates[1] < 0):
-                self.agents.remove(agent)
-                removed = True
+            removed = True
 
         # return the removed and success flags
         return removed, success
 
     # update the agents perception of the mean velocity of neighborrs (i.e. public cues)
-    def update_public_velocity(self, agent):
-    # def update_public_velocity(self, agent, time_step):
-        # find neighbors (i.e. other agents within visual_radius) of the agent
-        self.detect_neighbors(agent)
-        # if there are neighbors:
-        alone = False
-        if agent.neighbors:
-            # reset sum
-            sum_vel = np.array([0, 0])
-            for neighbor in agent.neighbors:
-                sum_vel = sum_vel + neighbor.combined_velocity
-            # calculate instantaneous public velocity
-            instant_public_velocity = agent.speed*normalised(sum_vel)
-        # otherwise, set alone flag to True
-        else:
-            alone = True
-            instant_public_velocity = np.array([0, 0])
+    def update_casting_velocity(self, agent):
+
+        # sum_vel = agent.combined_velocity
+        instant_public_velocity = agent.speed*normalised(agent.combined_velocity.copy())
+
+        # instant_public_velocity = agent.speed*normalised(agent.combined_velocity)
 
         if self.method == 'no_kernel':
             agent.public_velocity = instant_public_velocity.copy() 
@@ -418,27 +380,14 @@ class Swarm:
             random_rot_matrix = [[np.cos(random_angle), -np.sin(random_angle)], [np.sin(random_angle), np.cos(random_angle)]]
             agent.public_velocity = np.matmul(random_rot_matrix, agent.public_velocity) 
 
-        # set agent's alone flag
-        agent.alone = alone
-
-    def cast_and_surge(self, agent, time_step):
-        # update private velocity according to the cast and surge program
-        if agent.sniffed: 
-            agent.surge()
-        else: 
-            agent.cast(time_step)
-
-    def biased_rw(self, agent, time_step):
-        pass
-
-    # detect other agents within the visual_radius
-    def detect_neighbors(self, agent):
-        # reset neighbors list
-        agent.neighbors = []
-        for candidate in self.agents:
-            coord_trasl = candidate.coordinates - agent.coordinates
-            if (candidate != agent) and (norm(coord_trasl) < self.visual_radius):
-                agent.neighbors.append(candidate)
+    # # detect other agents within the visual_radius
+    # def detect_neighbors(self, agent):
+    #     # reset neighbors list
+    #     agent.neighbors = []
+    #     for candidate in self.agents:
+    #         coord_trasl = candidate.coordinates - agent.coordinates
+    #         if (candidate != agent) and (norm(coord_trasl) < self.visual_radius):
+    #             agent.neighbors.append(candidate)
 
     # detect odor field within the olfactory_radius
     def sniff_odor(self, agent):
@@ -453,13 +402,13 @@ class Swarm:
                 agent.sniffed = True
 
     def check_reach(self, agent):
-        reached = False
+        success = False
         # check if the odor source is within the reach radius of any of the agents
         if agent.coordinates[0] < self.source_coordinates[0] + self.reach_radius:
             coord_trasl = self.source_coordinates - agent.coordinates
             if norm(coord_trasl) < self.reach_radius:
-                reached = True
-        return reached
+                success = True
+        return success
 
 class Agent:
     def __init__(self, 
@@ -539,26 +488,14 @@ class Agent:
             self.crosswind_multi = rng.randint(1,4) * 2
             self.crosswind_clock = rng.randint(1, self.crosswind_multi)
 
+        # self.public_velocity_observations_sum = np.array([0.0, 0.0])
+
     def extract_random_wind_estimate(self):
         # compute wind estimate as mean wind + noise
         self.wind_estimate[0] = self.mean_wind[0] + (2*rng.random()-1)*self.wind_noise
         self.wind_estimate[1] = self.mean_wind[1] + (2*rng.random()-1)*self.wind_noise
         # divide the wind estimate by its norm to obtain a unit vector
         self.wind_estimate = self.wind_estimate/norm(self.wind_estimate)
-
-    # cast and surge behavior 
-    # NB here and in cast() we only update the private velocity, we do NOT update the coordinates yet!
-    def surge(self):
-        if self.wind_noise != 0: self.extract_random_wind_estimate()
-
-        # update value of private velocity to move upwind
-        self.private_velocity = -self.wind_estimate*self.speed
-
-        # reset counters
-        self.move_diagonal: bool = True
-        self.diagonal_clock: int = 1
-        self.crosswind_clock: int = 1
-        self.crosswind_multi: int = 0
 
     def cast(self, time_step):
         if self.wind_noise != 0:
@@ -615,7 +552,6 @@ class Cloud_turbulent:
 
         # initialise the first frame randomly
         self.current_frame_id = rng.randint(0, self.total_frames-1) 
-        # self.current_frame_id = 0
 
         if read_h5: self.odor = np.array(self.data['odor'][str(self.current_frame_id)])
         else: self.odor = self._odor_frames[self.current_frame_id]
@@ -632,7 +568,7 @@ class Cloud_turbulent:
         self.x_values = np.arange(self.npoints_x)*self.delta_x
         self.y_values = np.arange(self.npoints_y)*self.delta_y
 
-        # calculate the shifts to match the box dimensions and source position
+        # calculate the shfts to match the box dimensions and source position
         original_source_coordinates = (self.x_max/8, self.y_max/2) #hardcoded
         self.horizontal_shift = source_coordinates[0] - original_source_coordinates[0]
         self.vertical_shift = source_coordinates[1] - original_source_coordinates[1]

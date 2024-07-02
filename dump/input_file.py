@@ -2,62 +2,67 @@ import numpy as np
 
 # plotting parameters 
 real_time_plot = True
-save_frames = False
+save_frames = True
 save_gif = False
 pause_time = 0.001
 
 # if parallel is true, we scan several values of trust
 parallel = False
-n_threads = 1
+n_threads = 2
 n_samples = 1
-
-private_behavior = 'cast_and_surge'
-# private_behavior = 'biased_rw'
 
 # constrain the swarm 
 constrained = False
 
-# initial conditions
-shifts = np.linspace(0, 3, 6)*spawn_radius
-shift = shifts[0]
+# use two values of the trust parameter for informed and uninformed agents
+adaptive_trust = False
 
-# distance from the source
-lx = 65
-
-# v0
-speed = 0.2 
-
-straight_distance = (lx**2 + shift**2)**0.5
-straight_time = straight_distance/speed
-
-# max simulation time 
-# (if 0 the simulation will wait for all the agents to arrive or to be past the source)
-# final_time = 10*straight_time
-final_time = 0
+# max simulation time
+final_time = int(5e2)
+# final_time = int(1)
 
 # swarm parameters
 rd = 0.2
 spawn_radius = 25*rd 
 
+# visual_radius = rd
+# visual_radius = 2*rd
 visual_radius = 5*rd
+# visual_radius = 10*rd
+# visual_radius = 25*rd
 
 olfactoy_radius = rd
-
 reach_radius = 1.0
+
+# initial conditions
+shifts = np.linspace(0, 3, 6)*spawn_radius
+shift = shifts[0]
 
 sigma = np.pi/20
 mus = np.linspace(1, 3/2, 6)*np.pi
 mu = mus[0]
  
 # beta (only for parallel = False option)
-trust = 0.1
+trust = 0.8
+trust_informed = 0.0
+trust_uninformed = 0.8
 
 # olfactory threshold
 threshold = 0.0005
+# threshold = 1.0
 
 # number of agents
-# n_agents = 100
-n_agents = 2
+n_agents = 100
+# n_agents = 2
+
+# # trust values to check in the parallel run
+# trust_init = 0.8
+# trust_final = 0.85
+# trust_step = 0.05
+
+# max number of simulations to do to try reaching n_samples
+# limit = int(n_samples*10)
+# limit = 4
 
 # delta t
 decision_time = 1
@@ -72,6 +77,10 @@ odor_delta_x = 0.1
 # method = 'kernel'; dt = 0.01
 method = 'no_kernel'; dt = decision_time
 
+# distance from the source
+# lx = 65
+lx = 50
+
 # simulation box size
 length, height = 2.5*lx, 2.5*lx
 
@@ -79,11 +88,13 @@ length, height = 2.5*lx, 2.5*lx
 sensing_noise = 0.0 # eta
 wind_noise = 0.0 
 
+# v0
+speed = 0.2 
+
 # spawn position and source coordinates 
 spawn_center = [length/1.5, height/2 + shift]
 source_coordinates = [spawn_center[0]-lx, height/2]
 
 # define folder and filename
-folder = f'results/unconstrained/shift{shift:.3f}'
-folder1 = f'vr{visual_radius}_thr{threshold}_N{n_agents}_snoise{sensing_noise}_wnoise{wind_noise}'
-full_folder = f'{folder}/{folder1}'
+folder = 'results/unconstrained/shift%.3f'%shift
+filename = f'vr{visual_radius}_thr{threshold}_N{n_agents}_snoise{sensing_noise}_wnoise{wind_noise}'

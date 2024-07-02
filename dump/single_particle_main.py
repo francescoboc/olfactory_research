@@ -1,15 +1,15 @@
-from  olfactory_lib import *
-from input_file import *
+from  single_particle_lib import *
+from single_particle_input import *
 import multiprocessing as mp
 import platform
 
 # in case we need to reload the libraries
 import sys
 from importlib import reload
-reload(sys.modules['olfactory_lib'])
-reload(sys.modules['input_file'])
-from  olfactory_lib import *
-from input_file import *
+reload(sys.modules['single_particle_lib'])
+reload(sys.modules['single_particle_input'])
+from  single_particle_lib import *
+from single_particle_input import *
 
 show_and_check_ipython()
 

@@ -9,7 +9,7 @@ mu = mus[5]
 
 # IC
 shifts = np.linspace(0, 3, 6)*spawn_radius
-shift = shifts[0]
+shift = shifts[5]
 
 threshold = 0.0005
 
@@ -49,8 +49,8 @@ optimal_betas = []
 # folder = 'results/casting/vary_initial_angle/%s/mu%.3f/'%(method,mu)
 # folder = 'results/casting/vary_initial_shift/%s/shift%.3f/'%(method,shift)
 
-folder = 'results/turbulent/threshold_%f/vary_initial_angle/%s/mu%.3f/'%(threshold,method,mu)
-# folder = 'results/turbulent/threshold_%f/vary_initial_shift/%s/shift%.3f'%(threshold,method,shift)
+# folder = 'results/turbulent/threshold_%f/vary_initial_angle/%s/mu%.3f/'%(threshold,method,mu)
+folder = 'results/old_results/turbulent/threshold_%f/vary_initial_shift/%s/shift%.3f'%(threshold,method,shift)
 
 times_avg, counts_avg, successes_avg = [], [], []
 times_std, counts_std, successes_std = [], [], []
@@ -126,3 +126,5 @@ show_and_check_ipython()
 # plt.xlabel(r'$\tau$')
 # plt.ylabel(r'Optimal $\beta$')
 
+logfile = np.load(f'{folder}/log.npy', allow_pickle=True).item()
+print(logfile)
