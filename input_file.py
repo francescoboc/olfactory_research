@@ -13,42 +13,41 @@ save_gif = 0
 pause_time = 0.001
 
 # if parallel is true, we scan several values of trust
-n_threads = 4
-n_samples = 4
+n_threads = 5
+n_samples = 5
 
 private_behavior = 'cast_and_surge'
 # private_behavior = 'biased_rw'
 
 # trust parameter aka beta
-trust = 0.8
+trust = 0.0
 
 # swarm parameters
 rd = 0.2
 spawn_radius = 25*rd 
-
 visual_radius = 5*rd
-
 olfactoy_radius = rd
-
 reach_radius = 1.0
 
 # initial conditions
 shifts = np.linspace(0, 5, 6)*spawn_radius
 shift = shifts[0]
 
+# distance from the source
+lx_max = 65
+lxs = np.linspace(0, 1, 6)*lx_max
+lx = lxs[0]
+
+# initial angle
 sigma = np.pi/3
 mus = np.linspace(1, 3/2, 6)*np.pi
 mu = mus[0]
  
-# distance from the source
-lx_max = 65
-lxs = np.linspace(0, 1, 6)*lx_max
-
 # v0
 speed = 0.2
 
-straight_distance = (lx**2 + shift**2)**0.5
-straight_time = straight_distance/speed
+# straight_distance = (lx**2 + shift**2)**0.5
+# straight_time = straight_distance/speed
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to arrive or to be past the source)
@@ -95,7 +94,7 @@ source_coordinates = [spawn_center[0]-lx, height/2]
 constrained = False
 
 # define folder and filename
-root_folder = 'results'
+root_folder = 'results_cs'
 folder = f'mu{mu:.3f}/lx{lx:.3f}/shift{shift:.3f}'
 folder1 = f'vr{visual_radius}_thr{threshold}_N{n_agents}_v{speed}_snoise{sensing_noise}_wnoise{wind_noise}'
 full_folder = f'{root_folder}/{folder}/{folder1}'
