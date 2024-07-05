@@ -21,7 +21,8 @@ class Simulation:
             constrained=False,
             real_time_plot=False, 
             pause_time=0.001, 
-            save_frames=False):
+            save_frames=False,
+            first_passage=True):
 
         self.final_time = final_time
 
@@ -39,6 +40,8 @@ class Simulation:
 
         # calculate total time steps
         self.tot_time_steps = int(self.final_time/self.swarm.dt)
+
+        self.first_passage = first_passage
 
         if self.real_time_plot:
             # create figure and axes for plotting
@@ -114,13 +117,14 @@ class Simulation:
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}.png')
                 plt.pause(self.pause_time)
 
-            # # if an agent successuffly reached the source, stop
-            # if success: 
-            #     # count agents within a circle of size spawn_radius around the source
-            #     for candidate in self.swarm.agents:
-            #         coord_trasl = candidate.coordinates - self.swarm.source_coordinates
-            #         if norm(coord_trasl) < self.swarm.spawn_radius:
-            #             count += 1
+            # if an agent successuffly reached the source, stop
+            if self.first_passage and self.swarm.success: 
+                # count agents within a circle of size spawn_radius around the source
+                for candidate in self.swarm.agents:
+                    coord_trasl = candidate.coordinates - self.swarm.source_coordinates
+                    if norm(coord_trasl) < self.swarm.spawn_radius:
+                        count += 1
+                break
 
                 # print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}, N. agents < Rb: {count}')
                 # print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}')
@@ -138,7 +142,7 @@ class Simulation:
                 break
 
             if self.final_time != 0 and time_step == self.tot_time_steps: 
-                print(f'{tc.blue}Agents at the source {agents_arrived}{tc.blue}')
+                print(f'{tc.blue}Agents arrived at the source: {agents_arrived}{tc.blue}')
                 break
 
             x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
@@ -157,7 +161,10 @@ class Simulation:
             #     if agent.coordinates[1] < 0:
             #         agent.coordinates[1] += self.swarm.height
 
-        return self.swarm.reach_times, self.swarm.success 
+        if self.first_passage:
+            return self.swarm.reach_times[0], self.swarm.success, count 
+        else:
+            return self.swarm.reach_times, self.swarm.success, count 
 
 class Swarm:
     def __init__(self,
@@ -308,7 +315,6 @@ class Swarm:
             agent.coordinates += agent.speed*agent.dt*normalised(agent.combined_velocity)
 
             # check if agent reached the target
-            # if not success: success = self.check_reach(agent)
             if self.check_reach(agent):
                 self.reach_times.append(time_step*self.dt)
                 self.agents.remove(agent)

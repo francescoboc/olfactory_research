@@ -1,4 +1,5 @@
 from  olfactory_lib import *
+import multiprocessing as mp
 from input_file import *
 import platform
 
@@ -12,8 +13,7 @@ from input_file import *
 
 show_and_check_ipython()
 
-def run_simulation():
-    print(f'\nTrust = {trust:.2f}')
+def run_simulation(n):
     # path of the turbulent flow
     if read_h5: path = '/storage/boccardo/odor_data_re280_small_source/r280_small_source.h5'
     else: path = 'flow/re280_small_source'
@@ -21,32 +21,54 @@ def run_simulation():
     seed = random.randrange(sys.maxsize)
     initialise_rng(seed)
     # create objects
-    cloud = Cloud_turbulent(path, read_h5, source_coordinates, odor_delta_x)
+    if no_odor: cloud = None
+    else: cloud = Cloud_turbulent(path, read_h5, source_coordinates, odor_delta_x)
     swarm = Swarm(private_behavior, n_agents, spawn_center, spawn_radius, speed, visual_radius, 
             olfactoy_radius, sensing_noise, wind_noise, trust, length, height, source_coordinates, 
             reach_radius, dt, memory_time, decision_time, threshold, cloud, method, mu, sigma)
     sim = Simulation(final_time, swarm, cloud, constrained, real_time_plot, pause_time, save_frames)
     # run simulation
-    reach_times, success = sim.run()
-    return reach_times, success, seed, sim
+    reach_times, success, count = sim.run()
+    print(f'sim {n+1}/{n_samples} done!')
+    return reach_times, success, count, seed, sim
 
 # read h5 flow file (on the cluster) or not
 if platform.node() == 'swift': read_h5 = False
 elif platform.node() == 'e4-seminara.csita.unige.local': read_h5 = True
 
-os.makedirs(f'{full_folder}/{trust}', exist_ok=True)
+if not dry_run:
+    os.makedirs(f'{full_folder}/{trust:.2f}', exist_ok=True)
+
+# print info to the terminal
+if dry_run: print(f'{tc.red}-----DRY RUN-----{tc.end}')
+print(folder)
+print(folder1)
+print(f'Trust = {trust:.2f}')
+
+if n_threads > 1:
+    assert real_time_plot == False, 'real time plot only available with 1 thread!'
+    pool = mp.Pool(processes = n_threads)
+    times_list, count_list, seed_list = [], [], []
+    for res in pool.map(run_simulation, range(n_samples)):
+        reach_times, count = res[0], res[2]
+
+        # NB if first_passage is True, reach_times is just a scalar
+        # reach_times, success, count, seed, sim = run_simulation(0)
+
+        times_list.append(reach_times)
+        # count_list.append(count)
+
+        if not dry_run:
+            np.savetxt(f'{full_folder}/{trust:.2f}/times.txt', times_list, fmt=('%.2f'))
+
+else:
+    reach_times, success, count, seed, sim = run_simulation(0)
 
 # attributes to save in logfile
 attributes = ['constrained', 'n_samples', 'final_time', 'memory_time', 'dt', 'rd', 'n_agents', 'visual_radius', 'spawn_radius', 'reach_radius', 'lx', 'length', 'height', 'speed', 'spawn_center', 'source_coordinates', 'shift', 'mu', 'sigma']
 # save logfile
 log = {}
 for attr in attributes: log[attr] = globals()[attr]
-np.save(f'{full_folder}/log', log)
+if not dry_run:
+    np.save(f'{full_folder}/log', log)
 
-# print info to the terminal
-print(f'Filename = {filename}')
-print(f'Visual radius = {visual_radius}, Threshold = {threshold}, N agents = {n_agents}')
-
-for n in range(n_samples):
-    reach_times, success, seed, sim = run_simulation()
-    np.save(f'{full_folder}/{trust}/reach_times_run{n}', reach_times)
