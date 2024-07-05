@@ -41,7 +41,8 @@ mus = np.linspace(1, 3/2, 6)*np.pi
 mu = mus[0]
  
 # distance from the source
-lx = 65
+lx_max = 65
+lxs = np.linspace(0, 1, 6)*lx_max
 
 # v0
 speed = 0.2
