@@ -18,6 +18,7 @@ class Simulation:
             final_time, 
             swarm, 
             cloud=None,
+            constrained=False,
             real_time_plot=False, 
             pause_time=0.001, 
             save_frames=False,
@@ -27,6 +28,8 @@ class Simulation:
 
         self.swarm = swarm
         self.cloud = cloud
+
+        self.constrained = constrained
 
         # flag to enable or disable real time plotting
         self.real_time_plot = real_time_plot
@@ -86,8 +89,9 @@ class Simulation:
 
         while True:
             # update the swarm
-            self.swarm.update(time_step)
-            # agent_removed, success = self.swarm.update(time_step)
+            if self.constrained: agent_removed, success = self.swarm.update_constrained(time_step)
+            # else: agent_removed, success = self.swarm.update(time_step)
+            else: self.swarm.update(time_step)
 
             # update the odor cloud
             if self.cloud is not None:
@@ -325,6 +329,68 @@ class Swarm:
         #     agent.coordinates[1] > self.height-1 or agent.coordinates[1] < 0):
         #     self.agents.remove(agent)
         #     # removed = True
+
+    def update_constrained(self, time_step):
+        success = False
+        removed = False
+
+        # calculate future coordinates of the agents
+        future_x, future_y = [], []
+        for agent in self.agents:
+            # sniff odor field
+            self.sniff_odor(agent)
+
+            # update private and public velocity of the agent
+            if self.adaptive_trust: self.update_private_velocity_adaptive_trust(agent, time_step)
+            else: self.update_private_velocity(agent, time_step)
+            self.update_public_velocity(agent)
+
+        for agent in self.agents:
+            # calculate combined velocity (linear comb. of priv. and publ. cues)
+            if not agent.alone:
+                agent.combined_velocity = (1-agent.trust)*agent.private_velocity + agent.trust*agent.public_velocity
+            else:
+                agent.combined_velocity = agent.private_velocity
+
+            # calculate future coordinates of the agent
+            future_coordinates = agent.coordinates + agent.speed*agent.dt*normalised(agent.combined_velocity)
+            future_x.append(future_coordinates[0]); future_y.append(future_coordinates[1])
+
+            # calculate instantaneous velocity of the agent as a finite difference
+            agent.instant_velocity = (future_coordinates - agent.coordinates)/agent.decision_time
+
+            # check if agent reached the target
+            if not success: success = self.check_reach(agent)
+
+        # calculate predicted future position of the center of mass
+        self.center_of_mass[0] = np.mean(future_x)
+        self.center_of_mass[1] = np.mean(future_y)
+
+        # calculate acceleration and update coordinates
+        for agent in self.agents:
+            coord_trasl = agent.coordinates - self.center_of_mass 
+            magnitude = norm(coord_trasl) 
+            if magnitude < self.spawn_radius: 
+                agent.acceleration = -1 * ( agent.instant_velocity - agent.combined_velocity )
+            else: 
+                agent.acceleration = -1 * ((magnitude - self.spawn_radius) * coord_trasl/magnitude 
+                        + agent.instant_velocity - agent.combined_velocity )
+
+            # update velocity and position
+            agent.instant_velocity += agent.acceleration*agent.decision_time
+            agent.coordinates += agent.instant_velocity*agent.decision_time
+
+            # check if agent reached the target
+            if not success: success = self.check_reach(agent)
+
+            # if an agent is out of the simulation box, remove it
+            if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
+                agent.coordinates[1] > self.height-1 or agent.coordinates[1] < 0):
+                self.agents.remove(agent)
+                removed = True
+
+        # return the removed and success flags
+        return removed, success
 
     # update the agents perception of the mean velocity of neighborrs (i.e. public cues)
     def update_public_velocity(self, agent):

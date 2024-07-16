@@ -26,7 +26,7 @@ def run_simulation(n):
     swarm = Swarm(private_behavior, n_agents, spawn_center, spawn_radius, speed, visual_radius, 
             olfactoy_radius, sensing_noise, wind_noise, trust, length, height, source_coordinates, 
             reach_radius, dt, memory_time, decision_time, threshold, cloud, method, mu, sigma)
-    sim = Simulation(final_time, swarm, cloud, constrained, real_time_plot, pause_time, save_frames)
+    sim = Simulation(final_time, swarm, cloud, real_time_plot, pause_time, save_frames)
     # run simulation
     reach_times, success, count = sim.run()
     print(f'sim {n+1}/{n_samples} done!')
@@ -50,7 +50,7 @@ if n_threads > 1:
     pool = mp.Pool(processes = n_threads)
     times_list, count_list, seed_list = [], [], []
     for res in pool.map(run_simulation, range(n_samples)):
-        reach_times, count = res[0], res[2]
+        reach_times, success, count = res[0], res[1], res[2]
 
         # NB if first_passage is True, reach_times is just a scalar
         # reach_times, success, count, seed, sim = run_simulation(0)
@@ -65,7 +65,7 @@ else:
     reach_times, success, count, seed, sim = run_simulation(0)
 
 # attributes to save in logfile
-attributes = ['constrained', 'n_samples', 'final_time', 'memory_time', 'dt', 'rd', 'n_agents', 'visual_radius', 'spawn_radius', 'reach_radius', 'lx', 'length', 'height', 'speed', 'spawn_center', 'source_coordinates', 'shift', 'mu', 'sigma']
+attributes = ['n_samples', 'final_time', 'memory_time', 'dt', 'rd', 'n_agents', 'visual_radius', 'spawn_radius', 'reach_radius', 'lx', 'length', 'height', 'speed', 'spawn_center', 'source_coordinates', 'shift', 'mu', 'sigma']
 # save logfile
 log = {}
 for attr in attributes: log[attr] = globals()[attr]

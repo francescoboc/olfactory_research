@@ -2,25 +2,31 @@ from utils import tc
 import numpy as np 
 
 # perform a test run without saving data
-dry_run = 0
+dry_run = 1
 
 no_odor = 1
 
 # plotting parameters 
-real_time_plot = 0
+real_time_plot = 1
 save_frames = 0
 save_gif = 0
 pause_time = 0.001
 
 # if parallel is true, we scan several values of trust
-n_threads = 5
-n_samples = 5
+n_threads = 1
+n_samples = 1
 
 private_behavior = 'cast_and_surge'
 # private_behavior = 'biased_rw'
 
 # trust parameter aka beta
-trust = 0.0
+# trust = 0.4
+# trust = 0.5
+# trust = 0.6
+# trust = 0.7
+# trust = 0.8
+# trust = 0.9
+# trust = 1.0
 
 # swarm parameters
 rd = 0.2
@@ -35,8 +41,8 @@ shift = shifts[0]
 
 # distance from the source
 lx_max = 65
-lxs = np.linspace(0, 1, 6)*lx_max
-lx = lxs[0]
+lxs = np.linspace(0, 1, 6)[1:]*lx_max
+lx = lxs[4]
 
 # initial angle
 sigma = np.pi/3
@@ -80,7 +86,7 @@ odor_delta_x = 0.1
 method = 'no_kernel'; dt = decision_time
 
 # simulation box size
-length, height = 2.5*lx, 2.5*lx
+length, height = 5.0*lx, 5.0*lx
 
 # noise on the estimate of the mean wind and on public velocity
 sensing_noise = 0.0 # eta
@@ -90,11 +96,8 @@ wind_noise = 0.0
 spawn_center = [length/1.5, height/2 + shift]
 source_coordinates = [spawn_center[0]-lx, height/2]
 
-# constrain the swarm 
-constrained = False
-
 # define folder and filename
 root_folder = 'results_cs'
-folder = f'mu{mu:.3f}/lx{lx:.3f}/shift{shift:.3f}'
+folder = f'mu{mu:.3f}_sigma{sigma:.3f}/lx{lx:.3f}/shift{shift:.3f}'
 folder1 = f'vr{visual_radius}_thr{threshold}_N{n_agents}_v{speed}_snoise{sensing_noise}_wnoise{wind_noise}'
 full_folder = f'{root_folder}/{folder}/{folder1}'

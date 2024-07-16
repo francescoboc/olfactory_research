@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
 # extract matplotlib default colors and markers
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -14,8 +13,8 @@ plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
 plt.rcParams['figure.constrained_layout.use'] = True
 
-plt.rcParams['legend.fontsize'] = 14 
-plt.rcParams['legend.title_fontsize'] = 'small'
+# plt.rcParams['legend.fontsize'] = 14 
+# plt.rcParams['legend.title_fontsize'] = 'small'
 # plt.rcParams['legend.handlelength'] = 1
 # plt.rcParams['legend.handletextpad'] = 0.5
 
@@ -39,14 +38,14 @@ def show_and_check_ipython():
     except NameError: pass
     plt.show()
 
-def shaded_errorbar(x, y, yerr, lab=None, c=None, ls='-', m='o', alpha=0.1):
+def shaded_errorbar(x, y, yerr, label=None, c=None, ls='-', m='o', alpha=0.1):
     below = np.array(y)-np.array(yerr)
     above = np.array(y)+np.array(yerr)
     if c is not None:
-        plt.plot(x, y, marker=m, color=c, ls=ls, label=lab)
+        plt.plot(x, y, marker=m, color=c, ls=ls, label=label)
         plt.fill_between(x, below, above, color=c, alpha=alpha)
     else:
-        plt.plot(x, y, marker=m, ls=ls, label=lab)
+        plt.plot(x, y, marker=m, ls=ls, label=label)
         plt.fill_between(x, below, above, alpha=alpha)
 
 # escape sequences to print colors in terminal
