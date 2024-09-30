@@ -26,7 +26,7 @@ def run_simulation(n):
     swarm = Swarm(private_behavior, n_agents, spawn_center, spawn_radius, speed, visual_radius, 
             olfactoy_radius, sensing_noise, wind_noise, trust, length, height, source_coordinates, 
             reach_radius, dt, memory_time, decision_time, threshold, cloud, method, mu, sigma)
-    sim = Simulation(final_time, swarm, cloud, real_time_plot, pause_time, save_frames)
+    sim = Simulation(final_time, swarm, cloud, real_time_plot, pause_time, save_frames, first_passage)
     # run simulation
     reach_times, success, count = sim.run()
     print(f'sim {n+1}/{n_samples} done!')
@@ -72,3 +72,10 @@ for attr in attributes: log[attr] = globals()[attr]
 if not dry_run:
     np.save(f'{full_folder}/log', log)
 
+# run_n = sys.argv[1]
+# print(run_n)
+
+# coord_folder = f'coordinates/detection_cone/vr{visual_radius}/trust{trust}'
+# os.makedirs(f'{coord_folder}/run{run_n}', exist_ok=True)
+# np.save(f'{coord_folder}/run{run_n}/coord_x', sim.swarm.coord_x)
+# np.save(f'{coord_folder}/run{run_n}/coord_y', sim.swarm.coord_y)

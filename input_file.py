@@ -7,7 +7,7 @@ dry_run = 1
 no_odor = 1
 
 # plotting parameters 
-real_time_plot = 1
+real_time_plot = 0
 save_frames = 0
 save_gif = 0
 pause_time = 0.001
@@ -20,21 +20,43 @@ private_behavior = 'cast_and_surge'
 # private_behavior = 'biased_rw'
 
 # trust parameter aka beta
+# trust = 0.0
+# trust = 0.1
+# trust = 0.2
+# trust = 0.3
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-# trust = 0.9
+trust = 0.9
+# trust = 0.95
+# trust = 0.99
 # trust = 1.0
+
+rand_casting_direction = True
+
+rand_casting_steps = 100
+# rand_casting_steps = 20
+# rand_casting_steps = 0
 
 # swarm parameters
 rd = 0.2
 spawn_radius = 25*rd 
-visual_radius = 5*rd
+
+# visual_radius = 0
+# visual_radius = 5*rd
+visual_radius = 2*spawn_radius
+
 olfactoy_radius = rd
 reach_radius = 1.0
 
+# initial angle
+sigma = np.pi/3
+# sigma = 0
+mus = np.linspace(1, 3/2, 6)*np.pi
+mu = mus[0]
+ 
 # initial conditions
 shifts = np.linspace(0, 5, 6)*spawn_radius
 shift = shifts[0]
@@ -43,12 +65,8 @@ shift = shifts[0]
 lx_max = 65
 lxs = np.linspace(0, 1, 6)[1:]*lx_max
 lx = lxs[4]
+# lx = 200
 
-# initial angle
-sigma = np.pi/3
-mus = np.linspace(1, 3/2, 6)*np.pi
-mu = mus[0]
- 
 # v0
 speed = 0.2
 
@@ -57,8 +75,9 @@ speed = 0.2
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to arrive or to be past the source)
-# final_time = 10*straight_time
-final_time = 0
+# final_time = 0
+# final_time = 2500
+final_time = 500
 
 # measure only fpt or all the reach times
 first_passage = True

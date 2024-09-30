@@ -70,8 +70,10 @@ class Simulation:
             index = 0
             for agent in self.swarm.agents:
                 color_id = min([len(colors), index%len(colors)]) 
-                agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[color_id], label=index)
-                visual_circle = plt.Circle(agent.coordinates, self.swarm.visual_radius, fill=False, color=colors[color_id], alpha=0.1)
+                # agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[color_id], label=index)
+                agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[3], label=index)
+                # visual_circle = plt.Circle(agent.coordinates, self.swarm.visual_radius, fill=False, color=colors[color_id], alpha=0.1)
+                visual_circle = plt.Circle(agent.coordinates, self.swarm.visual_radius, fill=False, color=colors[3], alpha=0.1)
                 self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle)
                 index += 1
                 if index >= len(colors): index = 0
@@ -109,7 +111,7 @@ class Simulation:
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 # self.odor_image.set_data(self.cloud.odor)
                 plt.title(rf'Time = {np.round(time_step*self.swarm.dt, 2)}')
-                # self.axes.plot(self.swarm.center_of_mass[0],self.swarm.center_of_mass[1],'.k',ms=1)
+                # self.axes.plot(self.swarm.center_of_mass[0],self.swarm.center_of_mass[1],'.r',ms=1)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}.png')
                 plt.pause(self.pause_time)
 
@@ -141,10 +143,10 @@ class Simulation:
                 print(f'{tc.blue}Agents arrived at the source: {agents_arrived}{tc.end}')
                 break
 
-            x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
-            if max(x_coordinates) < (self.swarm.source_coordinates[0]-10):
-                print(f'{tc.red}All agents are past the source{tc.end}')
-                break
+            # x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
+            # if max(x_coordinates) < (self.swarm.source_coordinates[0]-10):
+            #     print(f'{tc.red}All agents are past the source{tc.end}')
+            #     break
 
             # # PBC
             # for agent in self.swarm.agents:
@@ -168,7 +170,7 @@ class Simulation:
 
 class Swarm:
     def __init__(self,
-            private_behavior,
+           private_behavior,
             n_agents, 
             spawn_center, 
             spawn_radius, 
@@ -182,6 +184,8 @@ class Swarm:
             height,
             source_coordinates, 
             reach_radius, 
+            rand_casting_steps,
+            rand_casting_direction,
             dt, 
             memory_time,
             decision_time,
@@ -211,6 +215,8 @@ class Swarm:
         self.source_coordinates = source_coordinates
         self.reach_radius = reach_radius
 
+        self.rand_casting_steps = rand_casting_steps
+        self.rand_casting_direction = rand_casting_direction
         self.dt = dt
         self.memory_time = memory_time
         self.decision_time = decision_time
@@ -242,32 +248,31 @@ class Swarm:
         self.reach_times = []
         self.success = False
 
-        # # extract uniformly random points within the initial spawn circle
-        # # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
-        # for n_ag in range(self.n_agents):
-        #     # spawn each agent randomly in the circle
-        #     radius = self.spawn_radius*np.sqrt(rng.random())
-        #     theta = rng.random()*2*np.pi
-        #     rand_x = self.spawn_center[0]+radius*np.cos(theta)
-        #     rand_y = self.spawn_center[1]+radius*np.sin(theta)
-        #     new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, self.trust, self.wind_noise, self.decision_time, self.dt, self.mu, self.sigma)
-        #     self.agents.append(new_agent)
-
-        # place agents on a circle
+        # extract uniformly random points within the initial spawn circle
+        # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
+        self.coord_x, self.coord_y = {}, {}
         for n_ag in range(self.n_agents):
-            if n_ag == 0:
-                new_agent = Agent(n_ag, self.spawn_center, self.speed, 
-                        self.visual_radius, self.trust, self.wind_noise,
-                        self.decision_time, self.dt)
-            else:
-                radius = self.spawn_radius
-                theta = (n_ag-1)*2*np.pi/(n_agents-1)
-                rand_x = self.spawn_center[0]+radius*np.cos(theta)
-                rand_y = self.spawn_center[1]+radius*np.sin(theta)
-                new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, 
-                        self.visual_radius, self.trust, self.wind_noise,
-                        self.decision_time, self.dt)
-           self.agents.append(new_agent)
+            # spawn each agent randomly in the circle
+            radius = self.spawn_radius*np.sqrt(rng.random())
+            theta = rng.random()*2*np.pi
+            rand_x = self.spawn_center[0]+radius*np.cos(theta)
+            rand_y = self.spawn_center[1]+radius*np.sin(theta)
+            new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, self.trust, self.wind_noise, self.decision_time, self.rand_casting_steps, self.rand_casting_direction, self.dt, self.mu, self.sigma)
+            self.agents.append(new_agent)
+            self.coord_x[n_ag] = [rand_x]
+            self.coord_y[n_ag] = [rand_y]
+
+        # # place agents on a circle
+        # self.coord_x, self.coord_y = {}, {}
+        # for n_ag in range(self.n_agents):
+        #     radius = self.spawn_radius
+        #     theta = (n_ag)*2*np.pi/(n_agents)
+        #     pos_x = self.spawn_center[0]+radius*np.cos(theta)
+        #     pos_y = self.spawn_center[1]+radius*np.sin(theta)
+        #     new_agent = Agent(n_ag, [pos_x, pos_y], self.speed, self.trust, self.wind_noise, self.decision_time, self.rand_casting_steps, self.rand_casting_direction, self.dt, self.mu, self.sigma)
+        #     self.agents.append(new_agent)
+        #     self.coord_x[n_ag] = [pos_x]
+        #     self.coord_y[n_ag] = [pos_y]
 
         # initialize public velocity of each agent
         for agent in self.agents:
@@ -289,11 +294,18 @@ class Swarm:
             agent.public_velocity = instant_public_velocity.copy() 
             agent.alone = alone
 
-        # # initialise position of center of mass
-        # pos_x = [agent.coordinates[0] for agent in self.agents]
-        # pos_y = [agent.coordinates[1] for agent in self.agents]
-        # self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
-        # self.com_history = [self.center_of_mass.copy()]
+        # initialise position of center of mass
+        pos_x = [agent.coordinates[0] for agent in self.agents]
+        pos_y = [agent.coordinates[1] for agent in self.agents]
+        self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
+        self.com_history = [self.center_of_mass.copy()]
+
+        # sum_vel = np.array([0, 0])
+        # for agent in self.agents:
+            # self.update_private_velocity(agent, 0)
+            # sum_vel = sum_vel + agent.private_velocity
+        # self.wt_history = [sum_vel/self.n_agents]
+        self.wt_history = []
 
     def update(self, time_step):
         # removed = False
@@ -308,7 +320,9 @@ class Swarm:
             # update private and public velocity of the agent
             self.update_private_velocity(agent, time_step)
 
-            self.update_public_velocity(agent)
+            # self.update_public_velocity(agent)
+            sum_vel = self.update_public_velocity(agent)
+            norm_sum_vels.append(norm(sum_vel)/agent.speed)
 
         maximum = 0
         for agent in self.agents:
@@ -330,15 +344,30 @@ class Swarm:
 
             # update agent's coordinates
             agent.coordinates += agent.speed*agent.dt*normalised(agent.combined_velocity)
+            self.coord_x[agent.label].append(agent.coordinates[0])
+            self.coord_y[agent.label].append(agent.coordinates[1])
 
             # check if agent reached the target
             if self.check_reach(agent):
                 self.reach_times.append(time_step*self.dt)
-                self.agents.remove(agent)
+                # TODO era importante rimuoverlo??
+                # self.agents.remove(agent)
                 self.success = True
 
-        # TODO check max for ALL couples i,j not only j
         self.max_diff.append(maximum)
+
+        self.norm_sum_vels_avg.append(np.mean(norm_sum_vels))
+        self.norm_sum_vels_std.append(np.std(norm_sum_vels))
+
+        pos_x = [agent.coordinates[0] for agent in self.agents]
+        pos_y = [agent.coordinates[1] for agent in self.agents]
+        self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
+        self.com_history.append(self.center_of_mass.copy())
+
+        sum_vel = np.array([0, 0])
+        for agent in self.agents:
+            sum_vel = sum_vel + agent.private_velocity
+        self.wt_history.append(sum_vel/self.n_agents)
 
         # # if an agent is out of the simulation box, remove it
         # if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
@@ -364,6 +393,7 @@ class Swarm:
         else:
             alone = True
             instant_public_velocity = np.array([0, 0])
+            sum_vel = np.array([0, 0])
 
         if self.method == 'no_kernel':
             agent.public_velocity = instant_public_velocity.copy() 
@@ -384,6 +414,8 @@ class Swarm:
 
         # set agent's alone flag
         agent.alone = alone
+
+        return sum_vel
 
     def cast_and_surge(self, agent, time_step):
         # update private velocity according to the cast and surge program
@@ -416,14 +448,16 @@ class Swarm:
             if np.any(self.cloud.odor[mask]>self.threshold):
                 agent.sniffed = True
 
+    # TODO check reach is disabled/enabled manually!
     def check_reach(self, agent):
-        reached = False
-        # check if the odor source is within the reach radius of any of the agents
-        if agent.coordinates[0] < self.source_coordinates[0] + self.reach_radius:
-            coord_trasl = self.source_coordinates - agent.coordinates
-            if norm(coord_trasl) < self.reach_radius:
-                reached = True
-        return reached
+        return False
+        # reached = False
+        # # check if the odor source is within the reach radius of any of the agents
+        # if agent.coordinates[0] < self.source_coordinates[0] + self.reach_radius:
+        #     coord_trasl = self.source_coordinates - agent.coordinates
+        #     if norm(coord_trasl) < self.reach_radius:
+        #         reached = True
+        # return reached
 
 class Agent:
     def __init__(self, 
@@ -433,6 +467,8 @@ class Agent:
             trust, 
             wind_noise, 
             decision_time, 
+            rand_casting_steps,
+            rand_casting_direction,
             dt,
             mu,
             sigma):
@@ -443,6 +479,8 @@ class Agent:
         self.trust = trust
         self.wind_noise = wind_noise
         self.decision_time = decision_time
+        self.rand_casting_steps = rand_casting_steps
+        self.rand_casting_direction = rand_casting_direction
         self.dt = dt
 
         self.alone = False
@@ -485,23 +523,31 @@ class Agent:
         # calculate how many steps in une casting unit
         self.cast_steps = int(self.decision_time/self.dt)
 
-        # # initial counters and flags for casting
-        # self.diagonal_clock: int = 1
-        # self.move_diagonal: bool = True
-        # self.crosswind_multi: int = 0
-        # self.crosswind_clock: int = 1
-
-        # random initial counters and flags for casting
+        # initial counters and flags for casting
         self.diagonal_clock: int = 1
-        self.flip_dir = rng.choice([True, False])
-        if rng.random()<0.2:
-            self.move_diagonal: bool = True
-            self.crosswind_multi: int = 0
-            self.crosswind_clock: int = 1
+        self.move_diagonal: bool = True
+        self.crosswind_multi: int = 0
+        self.crosswind_clock: int = 1
+
+        if self.rand_casting_direction:
+            self.flip_dir = rng.choice([True, False])
         else:
-            self.move_diagonal: bool = False
-            self.crosswind_multi = rng.randint(1,4) * 2
-            self.crosswind_clock = rng.randint(1, self.crosswind_multi)
+            self.flip_dir = False
+
+        for i in range(rng.randint(0, self.rand_casting_steps)):
+            self.cast(i)
+
+        # # random initial counters and flags for casting
+        # self.diagonal_clock: int = 1
+        # self.flip_dir = rng.choice([True, False])
+        # if rng.random()<0.1:
+        #     self.move_diagonal: bool = True
+        #     self.crosswind_multi: int = 0
+        #     self.crosswind_clock: int = 1
+        # else:
+        #     self.move_diagonal: bool = False
+        #     self.crosswind_multi = rng.randint(1,4) * 2
+        #     self.crosswind_clock = rng.randint(1, self.crosswind_multi)
 
     def extract_random_wind_estimate(self):
         # compute wind estimate as mean wind + noise
