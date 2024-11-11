@@ -23,6 +23,7 @@ def get_convexhulls(hb, prob_list):
 
 # trust parameter aka beta
 # trust = 0.0
+
 # trust = 0.1
 # trust = 0.2
 # trust = 0.3
@@ -32,8 +33,10 @@ def get_convexhulls(hb, prob_list):
 # trust = 0.7
 # trust = 0.8
 trust = 0.9
+
 # trust = 0.95
 # trust = 0.99
+
 # trust = 1.0
 
 # swarm parameters
@@ -56,7 +59,6 @@ if trust==0.1:
 else:
     n_runs = 50
 
-# final_time = 2500
 final_time = 500
 # final_time = 0
 
@@ -137,14 +139,11 @@ if final_time == 0:
 flattened_xs = all_xs.flatten()
 flattened_ys = all_ys.flatten()
 
-margin_x = 40
-bound_x = [source_coordinates[0]-margin_x, spawn_center[0]+spawn_radius+1]
-# plt.axvline(bound_x[0], c='k'); plt.axvline(bound_x[1], c='k')
-margin_y = 40
-bound_y = [spawn_center[1]+spawn_radius+margin_y, spawn_center[1]-spawn_radius-margin_y]
-# plt.axhline(bound_y[0], c='k'); plt.axhline(bound_y[1], c='k')
-
 gridsize = 200
+margin_x = 40
+margin_y = 40
+bound_x = [source_coordinates[0]-margin_x, spawn_center[0]+spawn_radius+1]
+bound_y = [spawn_center[1]+spawn_radius+margin_y, spawn_center[1]-spawn_radius-margin_y]
 
 plt.figure()
 
@@ -152,6 +151,7 @@ norm = len(flattened_xs)
 hb = plt.hexbin(flattened_xs, flattened_ys, gridsize=gridsize, 
         C=np.ones_like(flattened_ys)/norm,
         reduce_C_function=np.sum,
+        bins='log',
         extent=[*bound_x, *bound_y], cmap='cividis')
 
 cb = plt.colorbar(orientation='horizontal')

@@ -46,7 +46,7 @@ print(folder1)
 print(f'Trust = {trust:.2f}')
 
 if n_threads > 1:
-    assert real_time_plot == False, 'real time plot only available with 1 thread!'
+    assert real_time_plot == False, 'Real time plot only available with 1 thread!'
     pool = mp.Pool(processes = n_threads)
     times_list, count_list, seed_list = [], [], []
     for res in pool.map(run_simulation, range(n_samples)):
@@ -75,7 +75,7 @@ if not dry_run:
 # run_n = sys.argv[1]
 # print(run_n)
 
-# coord_folder = f'coordinates/detection_cone/vr{visual_radius}/trust{trust}'
-# os.makedirs(f'{coord_folder}/run{run_n}', exist_ok=True)
-# np.save(f'{coord_folder}/run{run_n}/coord_x', sim.swarm.coord_x)
-# np.save(f'{coord_folder}/run{run_n}/coord_y', sim.swarm.coord_y)
+coord_folder = f'coordinates/detection_cone/vr{visual_radius}/trust{trust}'
+os.makedirs(f'{coord_folder}/run{run_n}', exist_ok=True)
+np.save(f'{coord_folder}/run{run_n}/coord_x', sim.swarm.coord_x)
+np.save(f'{coord_folder}/run{run_n}/coord_y', sim.swarm.coord_y)

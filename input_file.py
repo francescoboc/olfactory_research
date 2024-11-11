@@ -2,7 +2,7 @@ from utils import tc
 import numpy as np 
 
 # perform a test run without saving data
-dry_run = 1
+dry_run = 0
 
 no_odor = 1
 
@@ -13,26 +13,29 @@ save_gif = 0
 pause_time = 0.001
 
 # if parallel is true, we scan several values of trust
-n_threads = 1
-n_samples = 1
+n_threads = 10
+n_samples = 10
 
 private_behavior = 'cast_and_surge'
 # private_behavior = 'biased_rw'
 
 # trust parameter aka beta
 # trust = 0.0
+
 # trust = 0.1
 # trust = 0.2
 # trust = 0.3
-# trust = 0.4
+trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
+
+# trust = 1.0
+
 # trust = 0.95
 # trust = 0.99
-# trust = 1.0
 
 rand_casting_direction = True
 
@@ -52,31 +55,27 @@ olfactoy_radius = rd
 reach_radius = 1.0
 
 # initial angle
-sigma = np.pi/3
+# sigma = np.pi/3
+sigma = np.pi
 # sigma = 0
 mus = np.linspace(1, 3/2, 6)*np.pi
 mu = mus[0]
  
 # initial conditions
 shifts = np.linspace(0, 5, 6)*spawn_radius
-shift = shifts[0]
+shift = shifts[2]
 
 # distance from the source
 lx_max = 65
 lxs = np.linspace(0, 1, 6)[1:]*lx_max
 lx = lxs[4]
-# lx = 200
 
 # v0
 speed = 0.2
 
-# straight_distance = (lx**2 + shift**2)**0.5
-# straight_time = straight_distance/speed
-
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to arrive or to be past the source)
 # final_time = 0
-# final_time = 2500
 final_time = 500
 
 # measure only fpt or all the reach times

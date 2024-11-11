@@ -257,17 +257,17 @@ class Swarm:
         for n_ag in range(self.n_agents):
             if n_ag == 0:
                 new_agent = Agent(n_ag, self.spawn_center, self.speed, 
-                        self.visual_radius, self.trust, self.wind_noise,
-                        self.decision_time, self.dt)
+                        self.trust, self.wind_noise, self.decision_time, 
+                        self.dt, self.mu, self.sigma)
             else:
                 radius = self.spawn_radius
                 theta = (n_ag-1)*2*np.pi/(n_agents-1)
                 rand_x = self.spawn_center[0]+radius*np.cos(theta)
                 rand_y = self.spawn_center[1]+radius*np.sin(theta)
                 new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, 
-                        self.visual_radius, self.trust, self.wind_noise,
-                        self.decision_time, self.dt)
-           self.agents.append(new_agent)
+                        self.trust, self.wind_noise, self.decision_time, 
+                        self.dt, self.mu, self.sigma)
+            self.agents.append(new_agent)
 
         # initialize public velocity of each agent
         for agent in self.agents:
