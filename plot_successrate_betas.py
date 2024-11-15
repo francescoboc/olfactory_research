@@ -33,15 +33,20 @@ spawn_radius = 25*rd
 # visual_radius = 5*rd
 visual_radius = 2*spawn_radius
 
-sigma = 0
+# sigma = 0
+# sigma = np.pi
+sigma = np.pi/2
 # sigma = np.pi/3
+
+mu = 3.141
+# mu = 4.712
 
 rand_casting_steps = 100
 # rand_casting_steps = 20
 # rand_casting_steps = 0
 
-# final_time = 500
-final_time = 0
+final_time = 500
+# final_time = 0
 
 gridsize = 200
 margin_x = 40
@@ -58,9 +63,9 @@ fig1, ax1 = plt.subplots()
 i=0
 for trust in trusts:
     if final_time == 0:
-        coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/sigma{sigma:.2f}_randsteps{rand_casting_steps}/wait_for_reach/trust{trust}'
+        coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/wait_for_reach/trust{trust}'
     else:
-        coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
+        coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
     variables = np.load(f'{coord_folder}/log.npy', allow_pickle=True).item()
     spawn_center = variables['spawn_center']
@@ -121,7 +126,7 @@ for trust in trusts:
 
 ax.legend(title=r'$\beta$', ncol=2)
 
-ax.set_title(rf'$R_0={prob}$')
+ax.set_title(rf'$P_0={prob}$')
 # ax.plot(*source_coordinates, '+r')
 ax.axhline(spawn_center[1], c='k', lw=1, ls='--')
 ax.add_patch( plt.Circle(spawn_center, spawn_radius, fill=False, color='k', ls='--') )

@@ -12,7 +12,7 @@ plt.rcParams['lines.markerfacecolor'] = 'none'
 plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
-plt.rcParams['figure.constrained_layout.use'] = True
+# plt.rcParams['figure.constrained_layout.use'] = True
 
 # plt.rcParams['legend.fontsize'] = 14 
 # plt.rcParams['legend.title_fontsize'] = 'small'

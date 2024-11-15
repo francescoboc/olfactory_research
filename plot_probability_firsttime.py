@@ -30,8 +30,8 @@ def get_convexhull(hb, pr):
 # trust = 0.3
 # trust = 0.4
 # trust = 0.5
-trust = 0.6
-# trust = 0.7
+# trust = 0.6
+trust = 0.7
 # trust = 0.8
 # trust = 0.9
 
@@ -54,6 +54,9 @@ visual_radius = 2*spawn_radius
 sigma = 0
 # sigma = np.pi/3
 
+# mu = 3.141
+mu = 4.712
+
 rand_casting_steps = 100
 # rand_casting_steps = 20
 # rand_casting_steps = 0
@@ -65,9 +68,9 @@ final_time = 500
 # final_time = 0
 
 if final_time == 0:
-    coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/sigma{sigma:.2f}_randsteps{rand_casting_steps}/wait_for_reach/trust{trust}'
+    coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/wait_for_reach/trust{trust}'
 else:
-    coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
+    coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
 variables = np.load(f'{coord_folder}/log.npy', allow_pickle=True).item()
 spawn_center = variables['spawn_center']
@@ -163,8 +166,8 @@ cb = plt.colorbar(hb, orientation='horizontal')
 
 centerline = spawn_center[1]
 
-# prob_list = [0, 0.01]
-prob_list = [0]
+prob_list = [0, 0.01]
+# prob_list = [0]
 
 i=0
 max_y, min_y = centerline, centerline

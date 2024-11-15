@@ -16,6 +16,7 @@ def initialise_rng(seed):
 class Simulation:
     def __init__(self, 
             final_time, 
+            final_x,
             swarm, 
             cloud=None,
             real_time_plot=False, 
@@ -24,6 +25,7 @@ class Simulation:
             first_passage=True):
 
         self.final_time = final_time
+        self.final_x = final_x
 
         self.swarm = swarm
         self.cloud = cloud
@@ -51,10 +53,10 @@ class Simulation:
                 self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(self.cloud.horizontal_shift-margin, 
                     self.cloud.x_max + self.cloud.horizontal_shift+margin), ylim=(self.cloud.vertical_shift-margin, self.cloud.y_max + self.cloud.vertical_shift+margin))
             else:
-                self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(0, self.swarm.length), ylim=(0, self.swarm.height))
+                self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(-10, self.swarm.length), ylim=(-self.swarm.height/2, self.swarm.height/2))
 
             self.axes.add_patch( plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2) )
-            self.axes.add_patch( plt.Circle(self.swarm.source_coordinates, 0.3, color='k') )
+            # self.axes.add_patch( plt.Circle(self.swarm.source_coordinates, 0.3, color='k') )
 
             # add patches for source and spawn circle 
             spawn_circle = plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2)
@@ -124,29 +126,23 @@ class Simulation:
                         count += 1
                 break
 
-                # print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}, N. agents < Rb: {count}')
-                # print(f'{tc.green}Success{tc.end} at time {time_step*self.swarm.dt:.2f}')
-                # break
-
-            # # if all agents are out of the simulation box, stop
-            # if not self.swarm.agents: 
-            #     print(f'{tc.red}Fail{tc.end}: all agents are out of the box')
+            # # BREAK conditions
+            # agents_arrived = len(self.swarm.reach_times) 
+            # if agents_arrived == self.swarm.n_agents:
+            #     print(f'{tc.green}All agents reached the source{tc.end}')
             #     break
 
-            # BREAK conditions
-            agents_arrived = len(self.swarm.reach_times) 
-            if agents_arrived == self.swarm.n_agents:
-                print(f'{tc.green}All agents reached the source{tc.end}')
-                break
 
-            if self.final_time != 0 and time_step == self.tot_time_steps: 
-                print(f'{tc.blue}Agents arrived at the source: {agents_arrived}{tc.end}')
-                break
+            # if final_time is 0, check if the last agent passed the final_x point
+            if self.final_time == 0:
+                x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
+                if min(x_coordinates) >= self.final_x:
+                    break
 
-            # x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
-            # if max(x_coordinates) < (self.swarm.source_coordinates[0]-10):
-            #     print(f'{tc.red}All agents are past the source{tc.end}')
-            #     break
+            # otherwise, check if we reached final_time
+            else:
+                if time_step == self.tot_time_steps: 
+                    break
 
             # # PBC
             # for agent in self.swarm.agents:
@@ -159,20 +155,19 @@ class Simulation:
             #     if agent.coordinates[1] < 0:
             #         agent.coordinates[1] += self.swarm.height
 
-        if self.first_passage:
-            if self.swarm.success:
-                return self.swarm.reach_times[0], self.swarm.success, count 
-            else:
-                return np.inf, self.swarm.success, count 
+        # if self.first_passage:
+        #     if self.swarm.success:
+        #         return self.swarm.reach_times[0], self.swarm.success, count 
+        #     else:
+        #         return np.inf, self.swarm.success, count 
 
-        else:
-            return self.swarm.reach_times, self.swarm.success, count 
+        # else:
+        #     return self.swarm.reach_times, self.swarm.success, count 
 
 class Swarm:
     def __init__(self,
-           private_behavior,
+            private_behavior,
             n_agents, 
-            spawn_center, 
             spawn_radius, 
             speed, 
             visual_radius, 
@@ -182,8 +177,6 @@ class Swarm:
             trust, 
             length, 
             height,
-            source_coordinates, 
-            reach_radius, 
             rand_casting_steps,
             rand_casting_direction,
             dt, 
@@ -197,7 +190,6 @@ class Swarm:
 
         # parameters of the agents and initial spawn conditions
         self.n_agents = n_agents
-        self.spawn_center = spawn_center
         self.spawn_radius = spawn_radius
         self.speed = speed
         self.visual_radius = visual_radius
@@ -207,13 +199,13 @@ class Swarm:
         self.cloud = cloud
         self.method = method
 
+        # spawn center fixed at the origin
+        self.spawn_center = (0, 0)
+
         self.trust = trust
 
         self.length = length
         self.height = height
-
-        self.source_coordinates = source_coordinates
-        self.reach_radius = reach_radius
 
         self.rand_casting_steps = rand_casting_steps
         self.rand_casting_direction = rand_casting_direction
@@ -232,9 +224,9 @@ class Swarm:
         self.mu = mu
         self.sigma = sigma
 
-        self.norm_sum_vels_avg = []
-        self.norm_sum_vels_std = []
-        self.max_diff = []
+        # self.norm_sum_vels_avg = []
+        # self.norm_sum_vels_std = []
+        # self.max_diff = []
 
         # determine private behavior of the agents
         if private_behavior == 'cast_and_surge':
@@ -311,7 +303,7 @@ class Swarm:
         # removed = False
 
         # TODO with odor, the agent should decide if change from casting to surging only at every decision_time!
-        norm_sum_vels = []
+        # norm_sum_vels = []
         for agent in self.agents:
             # sniff odor field
             if self.cloud is not None:
@@ -322,7 +314,7 @@ class Swarm:
 
             # self.update_public_velocity(agent)
             sum_vel = self.update_public_velocity(agent)
-            norm_sum_vels.append(norm(sum_vel)/agent.speed)
+            # norm_sum_vels.append(norm(sum_vel)/agent.speed)
 
         maximum = 0
         for agent in self.agents:
@@ -347,27 +339,27 @@ class Swarm:
             self.coord_x[agent.label].append(agent.coordinates[0])
             self.coord_y[agent.label].append(agent.coordinates[1])
 
-            # check if agent reached the target
-            if self.check_reach(agent):
-                self.reach_times.append(time_step*self.dt)
-                # TODO era importante rimuoverlo??
-                # self.agents.remove(agent)
-                self.success = True
+            # # check if agent reached the target
+            # if self.check_reach(agent):
+            #     self.reach_times.append(time_step*self.dt)
+            #     # TODO era importante rimuoverlo??
+            #     # self.agents.remove(agent)
+            #     self.success = True
 
-        self.max_diff.append(maximum)
+        # self.max_diff.append(maximum)
 
-        self.norm_sum_vels_avg.append(np.mean(norm_sum_vels))
-        self.norm_sum_vels_std.append(np.std(norm_sum_vels))
+        # self.norm_sum_vels_avg.append(np.mean(norm_sum_vels))
+        # self.norm_sum_vels_std.append(np.std(norm_sum_vels))
 
-        pos_x = [agent.coordinates[0] for agent in self.agents]
-        pos_y = [agent.coordinates[1] for agent in self.agents]
-        self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
-        self.com_history.append(self.center_of_mass.copy())
+        # pos_x = [agent.coordinates[0] for agent in self.agents]
+        # pos_y = [agent.coordinates[1] for agent in self.agents]
+        # self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
+        # self.com_history.append(self.center_of_mass.copy())
 
-        sum_vel = np.array([0, 0])
-        for agent in self.agents:
-            sum_vel = sum_vel + agent.private_velocity
-        self.wt_history.append(sum_vel/self.n_agents)
+        # sum_vel = np.array([0, 0])
+        # for agent in self.agents:
+        #     sum_vel = sum_vel + agent.private_velocity
+        # self.wt_history.append(sum_vel/self.n_agents)
 
         # # if an agent is out of the simulation box, remove it
         # if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
@@ -448,17 +440,6 @@ class Swarm:
             if np.any(self.cloud.odor[mask]>self.threshold):
                 agent.sniffed = True
 
-    # TODO check reach is disabled/enabled manually!
-    def check_reach(self, agent):
-        return False
-        # reached = False
-        # # check if the odor source is within the reach radius of any of the agents
-        # if agent.coordinates[0] < self.source_coordinates[0] + self.reach_radius:
-        #     coord_trasl = self.source_coordinates - agent.coordinates
-        #     if norm(coord_trasl) < self.reach_radius:
-        #         reached = True
-        # return reached
-
 class Agent:
     def __init__(self, 
             label, 
@@ -491,13 +472,13 @@ class Agent:
         self.flip_dir: bool = False
 
         # rotation matrices for 45deg and 90deg rotations
-        self._rot_matrix_45 = [[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]]
-        self._rot_matrix_neg45 = [[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]]
-        self._rot_matrix_90 = [[0, -1], [1, 0]]
+        self._rot_matrix_45 = -np.array([[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]])
+        self._rot_matrix_neg45 = -np.array([[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]])
+        self._rot_matrix_90 = -np.array([[0, -1], [1, 0]])
 
         # these attributes are updated by the Swarm() class:
         # estimate of the local wind velocity 
-        self.wind_estimate = np.array([1.0, 0.0])
+        self.wind_estimate = -np.array([1.0, 0.0])
         # list of other agents within the visual_radius
         self.neighbors = []
         # flag to determine if a particle was sniffed
@@ -518,7 +499,7 @@ class Agent:
         self.combined_velocity = np.array([np.cos(random_angle), np.sin(random_angle)])
 
         # mean wind
-        self.mean_wind = [1.0,0.0]
+        self.mean_wind = -np.array([1.0,0.0])
 
         # calculate how many steps in une casting unit
         self.cast_steps = int(self.decision_time/self.dt)
