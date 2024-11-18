@@ -136,6 +136,7 @@ class Simulation:
             # if final_time is 0, check if the last agent passed the final_x point
             if self.final_time == 0:
                 x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
+                print(min(x_coordinates))
                 if min(x_coordinates) >= self.final_x:
                     break
 
@@ -143,6 +144,11 @@ class Simulation:
             else:
                 if time_step == self.tot_time_steps: 
                     break
+
+            # if all agents are out of the simulation box, stop
+            if not self.swarm.agents: 
+                print(f'All agents are out of the box')
+                break
 
             # # PBC
             # for agent in self.swarm.agents:
@@ -361,11 +367,10 @@ class Swarm:
         #     sum_vel = sum_vel + agent.private_velocity
         # self.wt_history.append(sum_vel/self.n_agents)
 
-        # # if an agent is out of the simulation box, remove it
-        # if (agent.coordinates[0] > self.length-1 or agent.coordinates[0] < 0 or 
-        #     agent.coordinates[1] > self.height-1 or agent.coordinates[1] < 0):
-        #     self.agents.remove(agent)
-        #     # removed = True
+        # if an agent is out of the simulation box, remove it
+        if (agent.coordinates[1] > self.height or agent.coordinates[1] < -self.height):
+            self.agents.remove(agent)
+            # removed = True
 
     # update the agents perception of the mean velocity of neighborrs (i.e. public cues)
     def update_public_velocity(self, agent):

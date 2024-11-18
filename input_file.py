@@ -7,7 +7,7 @@ dry_run = 0
 no_odor = 1
 
 # plotting parameters 
-real_time_plot = 1
+real_time_plot = 0
 save_frames = 0
 save_gif = 0
 pause_time = 0.001
@@ -24,9 +24,9 @@ private_behavior = 'cast_and_surge'
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
-# trust = 0.7
+trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
 # trust = 1.0
 
@@ -53,29 +53,18 @@ reach_radius = 1.0
 # sigma = np.pi
 sigma = 0
 
-# mus = np.linspace(1, 3/2, 6)*np.pi
-# mu = mus[0]
-
 mu = 0
+# mu = np.pi/2
  
-# # initial conditions
-# shifts = np.linspace(0, 5, 6)*spawn_radius
-# shift = shifts[2]
-
-# # distance from the source
-# lx_max = 65
-# lxs = np.linspace(0, 1, 6)[1:]*lx_max
-# lx = lxs[4]
-
 # v0
 speed = 0.2
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to reach final_x)
-# final_time = 0
-final_time = 500
+final_time = 0
+# final_time = 500
 
-final_x = 100
+final_x = 50
 
 # measure only fpt or all the reach times
 first_passage = True
