@@ -7,7 +7,7 @@ dry_run = 0
 no_odor = 1
 
 # plotting parameters 
-real_time_plot = 0
+real_time_plot = 1
 save_frames = 0
 save_gif = 0
 pause_time = 0.001

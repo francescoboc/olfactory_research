@@ -477,9 +477,9 @@ class Agent:
         self.flip_dir: bool = False
 
         # rotation matrices for 45deg and 90deg rotations
-        self._rot_matrix_45 = -np.array([[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]])
-        self._rot_matrix_neg45 = -np.array([[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]])
-        self._rot_matrix_90 = -np.array([[0, -1], [1, 0]])
+        self._rot_matrix_45 = np.array([[-2**(-0.5), 2**(-0.5)], [2**(-0.5), 2**(-0.5)]])
+        self._rot_matrix_neg45 = np.array([[-2**(-0.5), 2**(-0.5)], [-2**(-0.5), -2**(-0.5)]])
+        self._rot_matrix_90 = np.array([[0, -1], [1, 0]])
 
         # these attributes are updated by the Swarm() class:
         # estimate of the local wind velocity 
