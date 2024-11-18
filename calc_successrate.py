@@ -2,6 +2,7 @@ from scipy.spatial import ConvexHull
 from utils import *
 from tqdm import tqdm
 from select_file import *
+import os
 
 if final_time == 0:
     coord_folder = f'coordinates/hexbin/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
@@ -23,9 +24,9 @@ bound_y = [-offset, offset]
 
 try:
     if center_of_mass:
-        success_rate = np.load(f'{coord_folder}/com_successrate_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy', allow_pickle=True)
+        success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
     else:
-        success_rate = np.load(f'{coord_folder}/successrate_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy', allow_pickle=True)
+        success_rate = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
 
     print('Hexbin data already exists!')
 
@@ -80,7 +81,7 @@ except:
         total_sum = np.sum(count_sums, axis=0)
         success_rate = total_sum/n_runs
 
-        success_rate.dump(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy')
+        success_rate.dump(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy')
 
     else:
         count_sums = []
@@ -108,5 +109,5 @@ except:
         total_sum = np.sum(count_sums, axis=0)
         success_rate = total_sum/n_runs
 
-        success_rate.dump(f'{hexbin_folder}/successrate_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy')
+        success_rate.dump(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy')
 
