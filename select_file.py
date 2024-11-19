@@ -3,9 +3,9 @@ pi = 3.141
 # trust parameter
 # trust = 0.0
 
-trust = 0.1
+# trust = 0.1
 # trust = 0.2
-# trust = 0.3
+trust = 0.3
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
@@ -15,8 +15,8 @@ trust = 0.1
 
 # trust = 1.0
 
-# check only center of mass or consider all the agents
-center_of_mass = 0
+# # check only center of mass or consider all the agents
+# center_of_mass = 1
 
 # swarm parameters
 rd = 0.2
@@ -24,7 +24,7 @@ spawn_radius = 25*rd
 
 # visual_radius = 0
 # visual_radius = 5*rd
-visual_radius = 2*spawn_radius
+visual_radius = 100*spawn_radius
 
 # random initial casting clock
 rand_casting_steps = 100
@@ -41,8 +41,8 @@ sigma = 0
 # sigma = pi/2
 # sigma = pi
 
-# n_runs = 50
-n_runs = 2
+n_runs = 50
+# n_runs = 2
 
 # final_time = 500
 final_time = 0

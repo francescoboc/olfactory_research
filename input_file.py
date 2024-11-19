@@ -7,7 +7,7 @@ dry_run = 0
 no_odor = 1
 
 # plotting parameters 
-real_time_plot = 1
+real_time_plot = 0
 save_frames = 0
 save_gif = 0
 pause_time = 0.001
@@ -24,9 +24,9 @@ private_behavior = 'cast_and_surge'
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
-trust = 0.7
+# trust = 0.7
 # trust = 0.8
-# trust = 0.9
+trust = 0.9
 
 # trust = 1.0
 
@@ -42,16 +42,15 @@ spawn_radius = 25*rd
 
 # visual_radius = 0
 # visual_radius = 5*rd
-visual_radius = 2*spawn_radius
+visual_radius = 100*spawn_radius
 
 olfactoy_radius = rd
-reach_radius = 1.0
 
 # initial angle
+sigma = 0
 # sigma = np.pi/3
 # sigma = np.pi/2
 # sigma = np.pi
-sigma = 0
 
 mu = 0
 # mu = np.pi/2
@@ -64,7 +63,7 @@ speed = 0.2
 final_time = 0
 # final_time = 500
 
-final_x = 50
+final_x = 100
 
 # measure only fpt or all the reach times
 first_passage = True
