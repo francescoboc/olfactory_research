@@ -1,62 +1,32 @@
-from scipy.spatial import ConvexHull
 from utils import *
-from tqdm import tqdm
 from select_file import *
-
-
-def get_convexhull(hb, pr):
-    probs = hb.get_array()
-    bin_centers = hb.get_offsets()
-
-    hulls, points = [], []
-
-    # find indices of bins above threshold
-    if pr==1:
-        selected_bins = probs >= pr
-    else:
-        selected_bins = probs > pr
-
-    # filter x_coords to only include non-zero bins
-    selected_xs = bin_centers[selected_bins, 0]
-    selected_ys = bin_centers[selected_bins, 1]
-
-    # use ConvexHull to find the outermost boundary around the non-zero bins
-    points = np.column_stack([selected_xs, selected_ys])
-
-    hull = ConvexHull(points)
-
-    return hull, points
-
-prob_list = [1.0]
+import sys
 
 if final_time == 0:
-    coord_folder = f'coordinates/hexbin/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
     hexbin_folder = f'hexbins/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
-    os.makedirs(hexbin_folder, exist_ok=True)
+    com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
 else:
-    coord_folder = f'coordinates/hexbin/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
-    hexbin_folder = f'hexbins/hexbin/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
-    os.makedirs(hexbin_folder, exist_ok=True)
+    hexbin_folder = f'hexbins/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
+    com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
 try:
-    if center_of_mass:
-        success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy', allow_pickle=True)
-    else:
-        success_rate = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy', allow_pickle=True)
+    success_rate = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
 
-    print('Hexbin data loaded!')
+    print('Success rate data loaded!')
 
 except:
-    print('No hexbin data found!')
+    print('No success rate data found!')
+    sys.exit()
 
-run_n = 0
-coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
-coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
+plt.figure()
+
+coord_x = np.load(f'{com_coord_folder}/run0/coord_x.npy', allow_pickle=True).item()
+coord_y = np.load(f'{com_coord_folder}/run0/coord_y.npy', allow_pickle=True).item()
+
 x = coord_x[0]
 y = coord_y[0]
 
-plt.figure('Success rate')
-hb = plt.hexbin(x, y, gridsize=gridsize, extent=[*bound_x, *bound_y])
+hb = plt.hexbin(x, y, gridsize=gridsize, extent=[*bound_x, *bound_y], cmap='viridis')
 
 # Create a mask for bins where the x-coordinate is less than a threshold
 x_threshold = final_x
@@ -70,86 +40,94 @@ hb.set_clim(np.min(success_rate), np.max(success_rate))
 
 cb = plt.colorbar(hb, label='Average succcess rate')
 
-centerline = 0
-
 i=0
-max_y, min_y = centerline, centerline
 for pr in prob_list:
     hull, points = get_convexhull(hb, pr)
 
+    # calculate exploration cone width
+    if pr == prob_selected:
+        min_cone, max_cone = min(points[:,1]), max(points[:,1])
+        cone_width = max_cone - min_cone
+        cone_color = i
+
     s=0
     for simplex in hull.simplices:
-
-        # SHIFT points
         xs = points[simplex, 0]
         ys = points[simplex, 1]
 
-        if center_of_mass:
-            for j in range(len(ys)):
-                if ys[j] > centerline: ys[j]+=spawn_radius
-                else: ys[j]-=spawn_radius
-
-                # find max and min
-                if ys[j] > max_y: max_y = ys[j]
-                if ys[j] < min_y: min_y = ys[j]
-
-        if s==0: plt.plot(xs, ys, c=colors[i+1], lw=1, label=prob_list[i])
-        else: plt.plot(xs, ys, c=colors[i+1], lw=1)
+        if s==0: plt.plot(xs, ys, c=colors[i], lw=1, label=rf'$P\geq{prob_list[i]}$')
+        else: plt.plot(xs, ys, c=colors[i], lw=1)
 
         s+=1
     i+=1
 
-# if not center_of_mass:
-#     # add axploration area vlines
-#     bin_values = hb.get_array()
-#     bin_centers = hb.get_offsets()
+plt.text(final_x+2, max_cone, f'Width: {cone_width:.1f}', ha='left', va='bottom', c=colors[cone_color])
+# plt.text(-spawn_radius, spawn_radius, f'{spawn_radius*2:.1f}', ha='right', va='bottom', c=colors[cone_color])
 
-#     # Find indices of non-zero bins (where the count is > 0)
-#     nonzero_bins = bin_values > 0
-
-#     # Filter x_coords to only include non-zero bins
-#     nonzero_xs = bin_centers[nonzero_bins, 0]
-#     nonzero_ys = bin_centers[nonzero_bins, 1]
-
-#     min_nonzero_x = min(nonzero_xs)
-
-#     max_nonzero_y = max(nonzero_ys)
-#     min_nonzero_y = min(nonzero_ys)
+plt.legend(title='Contour')
 
 # else:
-#     plt.axhline(max_y, c='w', lw=1, alpha=0.7)
-#     plt.axhline(min_y, c='w', lw=1, alpha=0.7)
+if center_of_mass:
 
-#     exploration_area = max_y - min_y
-#     # plt.text(source_coordinates[0], max_y, f'{exploration_area:.1f}', ha='left', va='bottom', c='w', alpha=0.7)
-#     # plt.text(spawn_center[0], spawn_center[1]+spawn_radius, f'{spawn_radius*2:.1f}', ha='left', va='bottom', c='w', alpha=0.7)
+    std_x, std_y = [], []
+    mean_x, mean_y = [], []
 
-#     # calculate L(t)
-#     std_x_avg = []
-#     for entry in std_x:
-#         std_x_avg.append(np.mean(entry))
-#     std_y_avg = []
-#     for entry in std_y:
-#         std_y_avg.append(np.mean(entry))
+    for run_n in range(n_runs):
 
-#     com_x_avg = []
-#     com_x_std = []
-#     for entry in mean_x:
-#         com_x_avg.append(np.mean(entry))
-#         com_x_std.append(np.std(entry))
-#     com_y_avg = []
-#     com_y_std = []
-#     for entry in mean_y:
-#         com_y_avg.append(np.mean(entry))
-#         com_y_std.append(np.std(entry))
+        com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy')
+        com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy')
+        com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy')
+        com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy')
 
-#     total_std_y = np.array(com_y_std) + 2*np.array(std_y_avg)
+        n_timesteps = len(com_x) 
 
-#     shaded_errorbar(com_x_avg, com_y_avg, yerr=total_std_y, lab='std', m='', c='w', alpha=0.3)
+        for t in range(n_timesteps):
 
-#     # shaded_errorbar(com_x_avg, com_y_avg, yerr=spawn_radius, lab='std', m='', c='w', alpha=0.3)
+            # calculate l(t)
+            try:
+                std_x[t].append(com_x_std[t])
+                std_y[t].append(com_y_std[t])
+            except:
+                std_x.append([com_x_std[t]])
+                std_y.append([com_y_std[t]])
 
-plt.legend()
+            try:
+                mean_x[t].append(com_x[t])
+                mean_y[t].append(com_y[t])
+            except:
+                mean_x.append([com_x[t]])
+                mean_y.append([com_y[t]])
+
+    # calculate L(t)
+    total_std_x_avg = []
+    for entry in std_x:
+        total_std_x_avg.append(np.mean(entry))
+    total_std_y_avg = []
+    for entry in std_y:
+        total_std_y_avg.append(np.mean(entry))
+
+    total_com_x_avg = []
+    total_com_x_std = []
+    for entry in mean_x:
+        total_com_x_avg.append(np.mean(entry))
+        total_com_x_std.append(np.std(entry))
+    total_com_y_avg = []
+    total_com_y_std = []
+    for entry in mean_y:
+        total_com_y_avg.append(np.mean(entry))
+        total_com_y_std.append(np.std(entry))
+
+    TOT_STD_Y = np.array(total_com_y_std) + np.array(total_std_y_avg)*2
+
+    # cut anything that is above final_x
+    cut = min(np.flatnonzero(np.array(total_com_x_avg)>final_x))
+
+    shaded_errorbar(total_com_x_avg[:cut], total_com_y_avg[:cut], yerr=TOT_STD_Y[:cut], lab='std', m='', c='w', alpha=0.3)
+
+    cone_width_com = 2*max(TOT_STD_Y[:cut])
+
+    plt.text(final_x+2, -cone_width_com/2, f'Width: {cone_width_com:.1f}', ha='left', va='top', c='w', alpha=0.5)
+
 
 # set background (non-explored parts of space) same color as min of colorbar
 plt.gca().set_facecolor(cb.cmap(0))
@@ -161,7 +139,7 @@ distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
 bin_idx = np.argmin(distances)
 success_rate_source = success_rate[bin_idx]
 plt.plot(x, y, '+r')
-plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+1, f'{success_rate_source:.1f}', ha='center', va='bottom', c='r')
+plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+2, f'{success_rate_source:.1f}', ha='center', va='bottom', c='r')
 
 plt.title(rf'$\beta={trust}$')
 plt.axhline(0, c='r', lw=1, ls='--', alpha=1.0)

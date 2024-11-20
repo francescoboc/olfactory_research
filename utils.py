@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.spatial import ConvexHull
 
 # extract matplotlib default colors and markers
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -77,3 +78,23 @@ def normalised(vector):
     if norm != 0: return vector/norm
     else: return vector
 
+def get_convexhull(hb, pr):
+    probs = hb.get_array()
+    bin_centers = hb.get_offsets()
+
+    hulls, points = [], []
+
+    # find indices of bins above threshold
+    if pr==1: selected_bins = probs >= pr
+    else: selected_bins = probs > pr
+
+    # filter x_coords to only include non-zero bins
+    selected_xs = bin_centers[selected_bins, 0]
+    selected_ys = bin_centers[selected_bins, 1]
+
+    # use ConvexHull to find the outermost boundary around the non-zero bins
+    points = np.column_stack([selected_xs, selected_ys])
+
+    hull = ConvexHull(points)
+
+    return hull, points

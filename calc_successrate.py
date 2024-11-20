@@ -1,7 +1,7 @@
 from scipy.spatial import ConvexHull
 from utils import *
-from tqdm import tqdm
 from select_file import *
+from tqdm import tqdm
 import os
 
 if final_time == 0:
@@ -20,11 +20,6 @@ else:
 variables = np.load(f'{coord_folder}/log.npy', allow_pickle=True).item()
 spawn_radius = variables['spawn_radius']
 n_agents = variables['n_agents']  
-n_timesteps = variables['final_time'] + 1  
-
-traj_center = final_x/2
-bound_x = [traj_center - offset, traj_center + offset]
-bound_y = [-offset, offset]
 
 try:
     success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
@@ -111,4 +106,3 @@ except:
     coord_y = np.load(f'{coord_folder}/run0/coord_y.npy', allow_pickle=True).item()
     np.save(f'{com_coord_folder}/run0/coord_x', coord_x)
     np.save(f'{com_coord_folder}/run0/coord_y', coord_y)
-
