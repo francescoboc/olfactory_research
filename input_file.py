@@ -18,7 +18,7 @@ private_behavior = 'cast_and_surge'
 # trust parameter aka beta
 # trust = 0.0
 
-# trust = 0.1
+trust = 0.1
 # trust = 0.2
 # trust = 0.3
 # trust = 0.4
@@ -26,7 +26,7 @@ private_behavior = 'cast_and_surge'
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
 # trust = 1.0
 

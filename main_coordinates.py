@@ -37,14 +37,14 @@ elif platform.node() == 'e4-seminara.csita.unige.local': read_h5 = True
 print(f'Trust = {trust:.2f}')
 
 if final_time == 0:
-    coord_folder = f'coordinates/hexbin/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
+    coord_folder = f'coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
 else:
-    coord_folder = f'coordinates/hexbin/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
+    coord_folder = f'coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
 os.makedirs(coord_folder, exist_ok=True)
 
 # save logfile
-attributes = ['final_time', 'final_x', 'memory_time', 'dt', 'rd', 'n_agents', 'visual_radius', 'spawn_radius', 'reach_radius', 'length', 'height', 'speed', 'mu', 'sigma']
+attributes = ['final_time', 'final_x', 'memory_time', 'dt', 'rd', 'n_agents', 'visual_radius', 'spawn_radius', 'length', 'height', 'speed', 'mu', 'sigma']
 log = {}
 for attr in attributes: log[attr] = globals()[attr]
 np.save(f'{coord_folder}/log', log)

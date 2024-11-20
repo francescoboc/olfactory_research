@@ -136,7 +136,6 @@ class Simulation:
             # if final_time is 0, check if the last agent passed the final_x point
             if self.final_time == 0:
                 x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
-                print(min(x_coordinates))
                 if min(x_coordinates) >= self.final_x:
                     break
 
