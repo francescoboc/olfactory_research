@@ -7,29 +7,37 @@ trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
 straight_line_time = np.sqrt(l_x**2 + h_y**2)
 
+print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}')
+
 fpts, rates = [], []
 for trust in trusts:
-    fpts.append(plot_first_passage(trust, l_x, h_y, False, False))
-    rates.append(plot_successrate(trust, l_x, h_y, False, False))
+    fpt_source, fpt_found = plot_first_passage(trust, l_x, h_y, False)
+    success_rate_source, rate_found = plot_successrate(trust, l_x, h_y, False)
+    if fpt_found and rate_found:
+        fpts.append(fpt_source)
+        rates.append(success_rate_source)
+    else:
+        print(f'Trust {trust}: FPT={fpt_found}, RATE={rate_found}')
 
-# convert lists into numpy arrays for easier manipulation
-fpts = np.array(fpts)
-rates = np.array(rates)
+if not on_cluster:
+    # convert lists into numpy arrays for easier manipulation
+    fpts = np.array(fpts)
+    rates = np.array(rates)
 
-fig, ax1 = plt.subplots()
-ax2 = ax1.twinx()
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
 
-fpt_plot = ax1.plot(trusts, fpts/straight_line_time, color=colors[0], label='FPT')
-rate_plot = ax2.plot(trusts, rates, color=colors[1], label='Success rate')
+    fpt_plot = ax1.plot(trusts, fpts/straight_line_time, color=colors[0], label='FPT')
+    rate_plot = ax2.plot(trusts, rates, color=colors[1], label='Success rate')
 
-all_plots = fpt_plot + rate_plot
-labels = [p.get_label() for p in all_plots]
-plt.legend(all_plots, labels)
+    all_plots = fpt_plot + rate_plot
+    labels = [p.get_label() for p in all_plots]
+    plt.legend(all_plots, labels)
 
-ax1.set_ylabel('First passage time')
-ax2.set_ylabel('Success rate')
-ax2.set_ylim(-0.02, 1.02)
+    ax1.set_ylabel('First passage time')
+    ax2.set_ylabel('Success rate')
+    ax2.set_ylim(-0.02, 1.02)
 
-ax1.set_xlabel('Trust')
+    ax1.set_xlabel('Trust')
 
-show_and_check_ipython()
+    show_and_check_ipython()
