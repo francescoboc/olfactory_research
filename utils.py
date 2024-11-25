@@ -43,11 +43,10 @@ def print_attributes(dataframe):
     for key in dataframe.attrs.keys():
         print(f'{key} = {dataframe.attrs[key]}')
 
-if not on_cluster:
-    def show_and_check_ipython():
-        try: __IPYTHON__; plt.ion()
-        except NameError: pass
-        plt.show()
+def show_and_check_ipython():
+    try: __IPYTHON__; plt.ion()
+    except NameError: pass
+    plt.show()
 
 def shaded_errorbar(x, y, yerr, lab=None, c=None, ls='-', m='o', alpha=0.1):
     below = np.array(y)-np.array(yerr)

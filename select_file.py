@@ -1,4 +1,4 @@
-pi = 3.141
+import numpy as np
 
 # trust parameter
 # trust = 0.0
@@ -15,8 +15,8 @@ trust = 0.8
 
 # trust = 1.0
 
-# check only center of mass or consider all the agents
-center_of_mass = 1
+# # check only center of mass or consider all the agents
+# center_of_mass = 1
 
 # swarm parameters
 rd = 0.2
@@ -31,16 +31,17 @@ rand_casting_steps = 100
 # rand_casting_steps = 20
 # rand_casting_steps = 0
 
-# average angle of initial distribution
+# average of initial distribution of angles
 mu = 0
-# mu = pi/4
-# mu = pi/2
+# mu = np.pi/4
+# mu = np.pi/2
 
-# std of initial distribution
+# std of initial distribution of angles
 sigma = 0
-# sigma = pi/2
-# sigma = pi
+# sigma = np.pi/2
+# sigma = np.pi
 
+# number of realisations
 n_runs = 50
 # n_runs = 2
 
