@@ -22,7 +22,7 @@ class Simulation:
             real_time_plot=False, 
             pause_time=0.001, 
             save_frames=False,
-            first_passage=True):
+            ):
 
         self.final_time = final_time
         self.final_x = final_x
@@ -39,8 +39,6 @@ class Simulation:
 
         # calculate total time steps
         self.tot_time_steps = int(self.final_time/self.swarm.dt)
-
-        self.first_passage = first_passage
 
         if self.real_time_plot:
             # create figure and axes for plotting
@@ -117,14 +115,14 @@ class Simulation:
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}.png')
                 plt.pause(self.pause_time)
 
-            # if an agent successuffly reached the source, stop
-            if self.first_passage and self.swarm.success: 
-                # count agents within a circle of size spawn_radius around the source
-                for candidate in self.swarm.agents:
-                    coord_trasl = candidate.coordinates - self.swarm.source_coordinates
-                    if norm(coord_trasl) < self.swarm.spawn_radius:
-                        count += 1
-                break
+            # # if an agent successuffly reached the source, stop
+            # if self.first_passage and self.swarm.success: 
+            #     # count agents within a circle of size spawn_radius around the source
+            #     for candidate in self.swarm.agents:
+            #         coord_trasl = candidate.coordinates - self.swarm.source_coordinates
+            #         if norm(coord_trasl) < self.swarm.spawn_radius:
+            #             count += 1
+            #     break
 
             # # BREAK conditions
             # agents_arrived = len(self.swarm.reach_times) 
