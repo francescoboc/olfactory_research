@@ -1,4 +1,4 @@
-from  mod_olfactory_lib import *
+from  olfactory_lib_coordinates import *
 import multiprocessing as mp
 from input_file import *
 import platform
@@ -17,7 +17,7 @@ def run_simulation(n):
             olfactoy_radius, sensing_noise, wind_noise, trust, length, height, 
             rand_casting_steps, rand_casting_direction, dt, memory_time, decision_time, 
             threshold, cloud, method, mu, sigma)
-    sim = Simulation(final_time, final_x, swarm, cloud, real_time_plot, pause_time, save_frames, first_passage)
+    sim = Simulation(final_time, final_x, swarm, cloud, real_time_plot, pause_time, save_frames)
 
     # # run simulation
     # reach_times, success, count = sim.run()
@@ -34,12 +34,13 @@ elif platform.node() == 'e4-seminara.csita.unige.local': read_h5 = True
 # print info to the terminal
 # print(folder)
 # print(folder1)
-print(f'Trust = {trust:.2f}')
+print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}')
+print(f'trust = {trust:.2f}')
 
 if final_time == 0:
-    coord_folder = f'coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
+    coord_folder = f'../storage/coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
 else:
-    coord_folder = f'coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
+    coord_folder = f'../storage/coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
 os.makedirs(coord_folder, exist_ok=True)
 
