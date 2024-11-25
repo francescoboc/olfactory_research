@@ -10,8 +10,8 @@ pi = 3.141
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
-# trust = 0.8
-trust = 0.9
+trust = 0.8
+# trust = 0.9
 
 # trust = 1.0
 
@@ -34,15 +34,15 @@ rand_casting_steps = 100
 # average angle of initial distribution
 mu = 0
 # mu = pi/4
+# mu = pi/2
 
 # std of initial distribution
 sigma = 0
-# sigma = pi/3
 # sigma = pi/2
 # sigma = pi
 
-# n_runs = 50
-n_runs = 2
+n_runs = 50
+# n_runs = 2
 
 # final_time = 500
 final_time = 0
@@ -50,8 +50,8 @@ final_time = 0
 final_x = 100
 
 # distance from source and shift from centerline
-l_x = 35
-h_y = 8
+l_x = 50
+h_y = 5
 
 # hexbin parameters
 gridsize = 200
@@ -68,3 +68,5 @@ prob_selected = prob_list[-1]
 traj_center = final_x/2
 bound_x = [traj_center - offset, traj_center + offset]
 bound_y = [-offset, offset]
+
+n_agents = 100
