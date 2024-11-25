@@ -2,6 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.spatial import ConvexHull
+import platform
+
+# detect if running on cluster or laptop
+if platform.node() == 'swift': on_cluster = False
+elif platform.node() == 'e4-seminara.csita.unige.local': on_cluster = True
 
 # extract matplotlib default colors and markers
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -38,10 +43,11 @@ def print_attributes(dataframe):
     for key in dataframe.attrs.keys():
         print(f'{key} = {dataframe.attrs[key]}')
 
-def show_and_check_ipython():
-    try: __IPYTHON__; plt.ion()
-    except NameError: pass
-    plt.show()
+if not on_cluster:
+    def show_and_check_ipython():
+        try: __IPYTHON__; plt.ion()
+        except NameError: pass
+        plt.show()
 
 def shaded_errorbar(x, y, yerr, lab=None, c=None, ls='-', m='o', alpha=0.1):
     below = np.array(y)-np.array(yerr)
