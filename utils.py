@@ -65,11 +65,6 @@ class tc:
     ul = '\033[4m'
     end = '\033[0m'
 
-def show_and_check_ipython():
-    try: __IPYTHON__; plt.ion()
-    except NameError: pass
-    plt.show()
-
 def norm(vector):
     return (vector[0]**2 + vector[1]**2)**0.5
 
