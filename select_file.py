@@ -10,13 +10,13 @@ import numpy as np
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
-trust = 0.8
-# trust = 0.9
+# trust = 0.8
+trust = 0.9
 
 # trust = 1.0
 
-# # check only center of mass or consider all the agents
-# center_of_mass = 1
+# check only center of mass or consider all the agents
+center_of_mass = 0
 
 # swarm parameters
 rd = 0.2
@@ -45,14 +45,16 @@ sigma = 0
 n_runs = 50
 # n_runs = 2
 
-# final_time = 500
-final_time = 0
+final_time = 500
+# final_time = 0
 
 final_x = 100
 
 # distance from source and shift from centerline
 l_x = 50
-h_y = 5
+h_y = 0 
+
+# l_x, h_y = 70, 7
 
 # hexbin parameters
 gridsize = 200
@@ -69,5 +71,8 @@ prob_selected = prob_list[-1]
 traj_center = final_x/2
 bound_x = [traj_center - offset, traj_center + offset]
 bound_y = [-offset, offset]
+
+width = bound_x[1] - bound_x[0]
+hex_radius = width / (gridsize * np.sqrt(3))
 
 n_agents = 100

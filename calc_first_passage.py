@@ -2,6 +2,12 @@ from utils import *
 from select_file import *
 from tqdm import tqdm
 import os
+from matplotlib.patches import RegularPolygon
+
+# Function to check if a point is inside a hexagon
+def is_point_in_hexagon(x, y, hex_center):
+    hexagon = RegularPolygon(hex_center, numVertices=6, radius=hex_radius, orientation=np.radians(30))
+    return hexagon.contains_point((x, y))
 
 if final_time == 0:
     coord_folder = f'../storage/coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
@@ -65,9 +71,13 @@ except:
             for agent_id in range(n_agents):
                 x, y = run_xs[agent_id, t], run_ys[agent_id, t]
 
-                # Calculate the distance to each hexbin center and find the closest bin
-                distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
-                bin_idx = np.argmin(distances)
+                for bin_idx, hex_center in enumerate(bin_coords):
+                    if is_point_in_hexagon(x, y, hex_center):
+                        fpt_bins[bin_idx] = min(fpt_bins[bin_idx], t)
+
+                # # Calculate the distance to each hexbin center and find the closest bin
+                # distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
+                # bin_idx = np.argmin(distances)
 
                 # Store the minimum timestep as the first passage time for the bin
                 fpt_bins[bin_idx] = min(fpt_bins[bin_idx], t)
