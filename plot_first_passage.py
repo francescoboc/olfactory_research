@@ -48,6 +48,12 @@ def plot_first_passage(trust, l_x, h_y, plot=True):
         mask_below_threshold = x_edges > x_threshold
         avg_fpt = np.ma.masked_where(mask_below_threshold, avg_fpt)
 
+        # noralize the fpts by the straight line path
+        for i in range(len(bin_coords)):
+            x_s, y_s = bin_coords[i][0], bin_coords[i][1]
+            straight_line_time = np.sqrt((x_s-spawn_radius)**2 + y_s**2)/speed
+            avg_fpt[i] /= straight_line_time
+
         # Update the hexbin plot to show first passage times
         hb.set_array(avg_fpt)
 
@@ -58,11 +64,19 @@ def plot_first_passage(trust, l_x, h_y, plot=True):
         bin_idx = np.argmin(distances)
         fpt_source = avg_fpt[bin_idx]
 
-        if plot:
-            plt.colorbar(hb, label='Average first passage time')
+        x1, y1 = 70, 7
+        distances = np.sqrt((bin_coords[:, 0] - x1)**2 + (bin_coords[:, 1] - y1)**2)
+        bin_idx1 = np.argmin(distances)
+        fpt_source1 = avg_fpt[bin_idx1]
 
-            plt.plot(x, y, '+r')
+        if plot:
+            plt.colorbar(hb, label='Normalised average first passage time')
+
+            plt.plot(x, y, 'or')
             plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+2, f'{fpt_source:.2f}', ha='center', va='bottom', c='r')
+
+            plt.plot(x1, y1, 'sr')
+            plt.text(bin_coords[bin_idx1,0], bin_coords[bin_idx1,1]+2, f'{fpt_source1:.2f}', ha='center', va='bottom', c='r')
 
             # Ensure the color limits are set according to first passage time
             plt.clim(np.min(avg_fpt), np.max(avg_fpt)) 
@@ -88,6 +102,9 @@ def plot_first_passage(trust, l_x, h_y, plot=True):
 
             plt.xlim(*bound_x)
             plt.ylim(*bound_y)
+
+            # plt.gca().invert_xaxis()
+            # plt.savefig(f'beta{trust}.png')
 
             show_and_check_ipython()
     else:
