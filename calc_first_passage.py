@@ -3,11 +3,18 @@ from select_file import *
 from tqdm import tqdm
 import os
 from matplotlib.patches import RegularPolygon
+from scipy.spatial import cKDTree  # Fast spatial indexing
 
 # Function to check if a point is inside a hexagon
 def is_point_in_hexagon(x, y, hex_center):
     hexagon = RegularPolygon(hex_center, numVertices=6, radius=hex_radius, orientation=np.radians(30))
     return hexagon.contains_point((x, y))
+
+# print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}')
+# trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+# for trust in trusts:
+
+print(trust)
 
 if final_time == 0:
     coord_folder = f'../storage/coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
@@ -63,6 +70,9 @@ except:
         bin_coords = hb.get_offsets()  # The coordinates of each hexbin center
         n_bins = len(bin_coords)
 
+        # Build a KDTree for fast nearest-neighbor search
+        kdtree = cKDTree(bin_coords)
+
         # Initialize first passage time array with inf (for bins that are not visited)
         fpt_bins = np.full(n_bins, np.inf)
 
@@ -71,9 +81,14 @@ except:
             for agent_id in range(n_agents):
                 x, y = run_xs[agent_id, t], run_ys[agent_id, t]
 
-                for bin_idx, hex_center in enumerate(bin_coords):
-                    if is_point_in_hexagon(x, y, hex_center):
-                        fpt_bins[bin_idx] = min(fpt_bins[bin_idx], t)
+                # Use KDTree to find nearby bins within the hex radius
+                nearby_bins = kdtree.query_ball_point((x, y), hex_radius)
+
+                # Perform the geometric check only for nearby bins
+                for bin_idx in nearby_bins:
+                   hex_center = bin_coords[bin_idx]
+                   if is_point_in_hexagon(x, y, hex_center):
+                       fpt_bins[bin_idx] = min(fpt_bins[bin_idx], t)
 
                 # # Calculate the distance to each hexbin center and find the closest bin
                 # distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)

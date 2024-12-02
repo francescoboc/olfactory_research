@@ -37,24 +37,22 @@ mu = 0
 # mu = np.pi/2
 
 # std of initial distribution of angles
-sigma = 0
+# sigma = 0
 # sigma = np.pi/2
-# sigma = np.pi
+sigma = np.pi
 
 # number of realisations
 n_runs = 50
 # n_runs = 2
 
-final_time = 500
-# final_time = 0
+# final_time = 500
+final_time = 0
 
 final_x = 100
 
 # distance from source and shift from centerline
 l_x = 50
 h_y = 0 
-
-# l_x, h_y = 70, 7
 
 # hexbin parameters
 gridsize = 200
