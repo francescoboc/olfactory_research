@@ -55,7 +55,7 @@ for trust in trusts:
 
 ax.legend(title=r'Trust parameter $\beta$', ncol=2)
 
-ax.set_title(rf'Contour: $P \geq {pr}$')
+ax.set_title(rf'Contour: $P \geq {pr}$, Fixed final time')
 
 ax.axhline(0, c='r', lw=1, ls='--', alpha=1.0)
 ax.add_patch( plt.Circle((0,0), spawn_radius, fill=False, color='r', ls='--', alpha=1.0, lw=1) )
@@ -74,5 +74,7 @@ if sigma > 0:
     ax.add_patch(wedge)
 
 ax.axis('equal')
+
+# plt.gca().invert_xaxis()
 
 show_and_check_ipython()

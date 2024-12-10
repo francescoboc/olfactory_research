@@ -1,243 +1,172 @@
-from scipy.spatial import ConvexHull
 from utils import *
-from tqdm import tqdm
+from select_file import *
 
-def get_convexhull(hb, pr):
-    probs = hb.get_array()
-    bin_centers = hb.get_offsets()
+com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust0.1'
 
-    hulls, points = [], []
+dicts_folder = f'beta_dicts/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
-    # find indices of bins above threshold
-    selected_bins = probs > pr
+# load the data dict
+prob_betas = np.load(f'{dicts_folder}/prob_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 
-    # filter x_coords to only include non-zero bins
-    selected_xs = bin_centers[selected_bins, 0]
-    selected_ys = bin_centers[selected_bins, 1]
+probability = prob_betas[trust]
 
-    # use ConvexHull to find the outermost boundary around the non-zero bins
-    points = np.column_stack([selected_xs, selected_ys])
+plt.figure()
 
-    hull = ConvexHull(points)
+hb = plt.hexbin([0], [0], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap='cividis')
 
-    return hull, points
-
-# trust parameter aka beta
-# trust = 0.0
-
-# trust = 0.1
-# trust = 0.2
-# trust = 0.3
-# trust = 0.4
-# trust = 0.5
-# trust = 0.6
-trust = 0.7
-# trust = 0.8
-# trust = 0.9
-
-# trust = 0.95
-# trust = 0.99
-
-# trust = 1.0
-
-# check the trajectories of all the agents or only the center of mass
-center_of_mass = 0
-
-# swarm parameters
-rd = 0.2
-spawn_radius = 25*rd 
-
-# visual_radius = 0
-# visual_radius = 5*rd
-visual_radius = 2*spawn_radius
-
-sigma = 0
-# sigma = np.pi/3
-
-# mu = 3.141
-mu = 4.712
-
-rand_casting_steps = 100
-# rand_casting_steps = 20
-# rand_casting_steps = 0
-
-n_runs = 50
-# n_runs = 10
-
-final_time = 500
-# final_time = 0
-
-if final_time == 0:
-    coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/wait_for_reach/trust{trust}'
-else:
-    coord_folder = f'coordinates/first_passage_grid/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
-
-variables = np.load(f'{coord_folder}/log.npy', allow_pickle=True).item()
-spawn_center = variables['spawn_center']
-spawn_radius = variables['spawn_radius']
-lx = variables['lx']
-source_coordinates = variables['source_coordinates']
-n_agents = variables['n_agents']  
-n_timesteps = variables['final_time'] + 1  
-
-gridsize = 200
-margin_x = 40
-margin_y = 40
-bound_x = [source_coordinates[0]-margin_x, spawn_center[0]+spawn_radius+1]
-bound_y = [spawn_center[1]+spawn_radius+margin_y, spawn_center[1]-spawn_radius-margin_y]
-
-try:
-    if center_of_mass:
-        probability = np.load(f'{coord_folder}/com_probability_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy', allow_pickle=True)
-    else:
-        probability = np.load(f'{coord_folder}/probability_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy', allow_pickle=True)
-    print('Passage counts data loaded!')
-
-except:
-
-    print('No passage counts data found, computing...')
-    if center_of_mass:
-        count_sums = []
-        for run_n in tqdm(range(n_runs), ascii=' █'):
-            coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
-            coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
-
-            n_timesteps = len(coord_x[0]) 
-
-            centers_of_mass_x = []
-            centers_of_mass_y = []
-
-            # Calculate center of mass for each timestep
-            for t in range(n_timesteps):
-                com_x = np.mean([coord_x[agent_id][t] for agent_id in range(n_agents)])
-                com_y = np.mean([coord_y[agent_id][t] for agent_id in range(n_agents)])
-                centers_of_mass_x.append(com_x)
-                centers_of_mass_y.append(com_y)
-
-            # # Calculate hexbin for the center of mass trajectory
-            hb = plt.hexbin(centers_of_mass_x, centers_of_mass_y, gridsize=gridsize, extent=[*bound_x, *bound_y])
-
-            plt.close()
-
-            bin_values = hb.get_array()
-            bin_values[np.nonzero(bin_values)] = 1  # Count each bin only once
-            count_sums.append(bin_values)
-
-        total_sum = np.sum(count_sums, axis=0)
-        probability = total_sum/n_runs
-
-        probability.dump(f'{coord_folder}/com_probability_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy')
-
-    else:
-        count_sums = []
-        for run_n in tqdm(range(n_runs), ascii=' █'):
-            coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
-            coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
-
-            n_timesteps = len(coord_x[0]) 
-
-            counts = []
-            for agent_id in range(n_agents):
-                x = coord_x[agent_id]
-                y = coord_y[agent_id]
-                hb = plt.hexbin(x, y, gridsize=gridsize, extent=[*bound_x, *bound_y])
-                plt.close()
-                bin_values = hb.get_array()
-                bin_values[np.nonzero(bin_values)]=1
-                counts.append(bin_values)
-            count_sums.append(np.sum(counts, axis=0))
-
-        total_sum = np.sum(count_sums, axis=0)
-        probability = total_sum/(n_agents*n_runs)
-
-        probability.dump(f'{coord_folder}/probability_gridsize{gridsize}_margx{margin_x}_margy{margin_y}.npy')
-
-run_n = 0
-coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
-coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
-x = coord_x[0]
-y = coord_y[0]
-hb = plt.hexbin(x, y, gridsize=gridsize, extent=[*bound_x, *bound_y])
+# Create a mask for bins where the x-coordinate is less than a threshold
+x_threshold = final_x
+bin_coords = hb.get_offsets()  
+x_edges, y_edges = bin_coords.T
+mask_below_threshold = x_edges > x_threshold
+probability[mask_below_threshold] = 0
 
 hb.set_array(probability)
-hb.set_clim(min(hb.get_array()), max(hb.get_array()))  
+hb.set_clim(np.min(probability), np.max(probability))  
 
-cb = plt.colorbar(hb, orientation='horizontal')
+# Calculate the distance to each hexbin center and find the closest bin to the source
+x, y = l_x, h_y
+bin_coords = hb.get_offsets()  
+distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
+bin_idx = np.argmin(distances)
+probability_source = probability[bin_idx]
 
-centerline = spawn_center[1]
+try:
+    x1, y1 = l_x1, h_y1
+    distances = np.sqrt((bin_coords[:, 0] - x1)**2 + (bin_coords[:, 1] - y1)**2)
+    bin_idx1 = np.argmin(distances)
+    probability_source1 = probability[bin_idx1]
+except: pass
 
-prob_list = [0, 0.01]
-# prob_list = [0]
+cb = plt.colorbar(hb, label='Probability of presence')
 
 i=0
-max_y, min_y = centerline, centerline
 for pr in prob_list:
     hull, points = get_convexhull(hb, pr)
 
+    # # calculate exploration cone width
+    # if pr == prob_selected:
+    #     min_cone, max_cone = min(points[:,1]), max(points[:,1])
+    #     cone_width = max_cone - min_cone
+    #     cone_color = i
+
     s=0
     for simplex in hull.simplices:
-
-        # SHIFT points
         xs = points[simplex, 0]
         ys = points[simplex, 1]
 
-        if center_of_mass:
-            for j in range(len(ys)):
-                if ys[j] > centerline: ys[j]+=spawn_radius
-                else: ys[j]-=spawn_radius
-
-                # find max and min
-                if ys[j] > max_y: max_y = ys[j]
-                if ys[j] < min_y: min_y = ys[j]
-
-        if s==0: plt.plot(xs, ys, c=colors[i], lw=1, label=prob_list[i])
+        if s==0: plt.plot(xs, ys, c=colors[i], lw=1, label=rf'$P\geq{prob_list[i]}$')
         else: plt.plot(xs, ys, c=colors[i], lw=1)
-
         s+=1
     i+=1
+plt.legend(title='Contour')
 
-if not center_of_mass:
-    # add axploration area vlines
-    bin_values = hb.get_array()
-    bin_centers = hb.get_offsets()
+# plt.text(final_x+2, max_cone, f'Width: {cone_width:.1f}', ha='left', va='bottom', c=colors[cone_color])
+# plt.text(-spawn_radius, spawn_radius, f'{spawn_radius*2:.1f}', ha='right', va='bottom', c=colors[cone_color])
 
-    # Find indices of non-zero bins (where the count is > 0)
-    nonzero_bins = bin_values > 0
+# else:
+if center_of_mass:
 
-    # Filter x_coords to only include non-zero bins
-    nonzero_xs = bin_centers[nonzero_bins, 0]
-    nonzero_ys = bin_centers[nonzero_bins, 1]
+    std_x, std_y = [], []
+    mean_x, mean_y = [], []
 
-    min_nonzero_x = min(nonzero_xs)
+    for run_n in range(n_runs):
 
-    max_nonzero_y = max(nonzero_ys)
-    min_nonzero_y = min(nonzero_ys)
+        com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy')
+        com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy')
+        com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy')
+        com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy')
 
-    plt.axhline(max_nonzero_y, c='w', lw=1, alpha=0.7)
-    plt.axhline(min_nonzero_y, c='w', lw=1, alpha=0.7)
+        n_timesteps = len(com_x) 
 
-    exploration_area = max_nonzero_y - min_nonzero_y
-    plt.text(min_nonzero_x, max_nonzero_y, f'{exploration_area:.1f}', ha='left', va='bottom', c='w', alpha=0.7)
-    plt.text(spawn_center[0], spawn_center[1]+spawn_radius, f'{spawn_radius*2:.1f}', ha='left', va='bottom', c='w', alpha=0.7)
+        for t in range(n_timesteps):
 
-else:
-    plt.axhline(max_y, c='w', lw=1, alpha=0.7)
-    plt.axhline(min_y, c='w', lw=1, alpha=0.7)
+            # calculate l(t)
+            try:
+                std_x[t].append(com_x_std[t])
+                std_y[t].append(com_y_std[t])
+            except:
+                std_x.append([com_x_std[t]])
+                std_y.append([com_y_std[t]])
 
-    exploration_area = max_y - min_y
-    plt.text(source_coordinates[0], max_y, f'{exploration_area:.1f}', ha='left', va='bottom', c='w', alpha=0.7)
-    plt.text(spawn_center[0], spawn_center[1]+spawn_radius, f'{spawn_radius*2:.1f}', ha='left', va='bottom', c='w', alpha=0.7)
+            try:
+                mean_x[t].append(com_x[t])
+                mean_y[t].append(com_y[t])
+            except:
+                mean_x.append([com_x[t]])
+                mean_y.append([com_y[t]])
 
-plt.legend()
+    # calculate L(t)
+    total_std_x_avg = []
+    for entry in std_x:
+        total_std_x_avg.append(np.mean(entry))
+    total_std_y_avg = []
+    for entry in std_y:
+        total_std_y_avg.append(np.mean(entry))
+
+    total_com_x_avg = []
+    total_com_x_std = []
+    for entry in mean_x:
+        total_com_x_avg.append(np.mean(entry))
+        total_com_x_std.append(np.std(entry))
+    total_com_y_avg = []
+    total_com_y_std = []
+    for entry in mean_y:
+        total_com_y_avg.append(np.mean(entry))
+        total_com_y_std.append(np.std(entry))
+
+    TOT_STD_Y = np.array(total_com_y_std) + np.array(total_std_y_avg)*2
+
+    # cut anything that is above final_x
+    if final_time == 0:
+        cut = min(np.flatnonzero(np.array(total_com_x_avg)>final_x))
+        total_com_x_avg = total_com_x_avg[:cut]
+        total_com_y_avg = total_com_y_avg[:cut]
+        TOT_STD_Y = TOT_STD_Y[:cut]
+
+    shaded_errorbar(total_com_x_avg, total_com_y_avg, yerr=TOT_STD_Y, lab='std', m='', c='w', alpha=0.3)
+
+    cone_width_com = 2*max(TOT_STD_Y)
+
+    plt.text(final_x+2, -cone_width_com/2, f'Width: {cone_width_com:.2f}', ha='left', va='top', c='w', alpha=0.5)
+
+    # plt.plot(com_x, com_y, '-k')
+
 
 # set background (non-explored parts of space) same color as min of colorbar
 plt.gca().set_facecolor(cb.cmap(0))
 
-plt.title(rf'$\beta={trust}$')
-plt.plot(*source_coordinates, 'or', alpha=0.5)
-plt.axhline(centerline, c='w', lw=1, ls='--', alpha=0.7)
-plt.gca().add_patch( plt.Circle(spawn_center, spawn_radius, fill=False, color='w', ls='--', alpha=0.7) )
+plt.plot(x, y, 'or', zorder=10)
+plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+2, f'{probability_source:.2f}', ha='center', va='bottom', c='r')
 
-plt.axis('equal')
+try:
+    plt.plot(x1, y1, 'sr')
+    plt.text(bin_coords[bin_idx1,0], bin_coords[bin_idx1,1]+2, f'{probability_source1:.2f}', ha='center', va='bottom', c='r')
+except: pass
+
+plt.title(rf'$\beta={trust}$')
+plt.axhline(0, c='r', lw=1, ls='--', alpha=0.7)
+plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=False, color='r', ls='--', alpha=0.7, lw=1) )
+
+arrow_length = 5
+hl = 1.5 
+dx = arrow_length * np.cos(mu)
+dy = arrow_length * np.sin(mu)
+plt.arrow(0, 0, dx, dy, head_width=1.5, head_length=hl, width=0.4, fc='k', ec='k', zorder=2)
+
+if sigma > 0:
+    import matplotlib.patches as patches
+    up = np.degrees(mu) - np.degrees(sigma) / 2 
+    dwn = np.degrees(mu) + np.degrees(sigma) / 2 
+    wedge = patches.Wedge((0, 0), arrow_length+hl, up, dwn, color='k', alpha=0.3, zorder=1)
+    plt.gca().add_patch(wedge)
+
+plt.axis('scaled')
+
+plt.xlim(*bound_x)
+plt.ylim(*bound_y)
+
+# plt.gca().invert_xaxis()
+# plt.savefig(f'beta{trust}.png')
 
 show_and_check_ipython()

@@ -1,43 +1,57 @@
 from utils import *
 from select_file import *
-from plot_first_passage import plot_first_passage
-from plot_successrate import plot_successrate
 
-trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+dicts_folder = f'beta_dicts/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
-straight_line_time = np.sqrt(l_x**2 + h_y**2)
+# load the data dicts
+fpt_betas = np.load(f'{dicts_folder}/fpt_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
+rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 
-print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}')
+print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, r_v={visual_radius}')
+
+bin_coords = np.load(f'{dicts_folder}/bin_coords_gridsize{gridsize}_offset{offset}.npy')
+
+straight_line_times = get_straight_line_times(bin_coords, spawn_radius, speed)
+
+# TODO add error bars
 
 fpts, rates = [], []
 for trust in trusts:
-    fpt_source, fpt_found = plot_first_passage(trust, l_x, h_y, False)
-    success_rate_source, rate_found = plot_successrate(trust, l_x, h_y, False)
-    if fpt_found and rate_found:
-        fpts.append(fpt_source)
-        rates.append(success_rate_source)
-    else:
-        print(f'Trust {trust}: FPT={fpt_found}, RATE={rate_found}')
 
-if not on_cluster:
-    # convert lists into numpy arrays for easier manipulation
-    fpts = np.array(fpts)
-    rates = np.array(rates)
+    # extract the map at the current beta
+    fpt_map = fpt_betas[trust]
+    rate_map = rate_betas[trust]
 
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
+    bin_idx = get_closest_bin(bin_coords, l_x, h_y)
 
-    fpt_plot = ax1.plot(trusts, fpts/straight_line_time, color=colors[0], label='FPT')
-    rate_plot = ax2.plot(trusts, rates, color=colors[1], label='Success rate')
+    fpt_source = fpt_map[bin_idx]/straight_line_times[bin_idx]
+    success_rate_source = rate_map[bin_idx]
 
-    all_plots = fpt_plot + rate_plot
-    labels = [p.get_label() for p in all_plots]
-    plt.legend(all_plots, labels)
+    fpts.append(fpt_source)
+    rates.append(success_rate_source)
 
-    ax1.set_ylabel('First passage time')
-    ax2.set_ylabel('Success rate')
-    ax2.set_ylim(-0.02, 1.02)
+# convert lists into numpy arrays for easier manipulation
+fpts = np.array(fpts)
+rates = np.array(rates)
 
-    ax1.set_xlabel('Trust')
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
 
-    show_and_check_ipython()
+fpt_plot = ax1.plot(trusts, fpts, 'o-', color=colors[0], label=r'$\tau$')
+rate_plot = ax2.plot(trusts, rates, 's--', color=colors[1], label=r'$\rho$')
+
+all_plots = fpt_plot + rate_plot
+labels = [p.get_label() for p in all_plots]
+plt.legend(all_plots, labels)
+
+ax1.set_ylabel(r'Average normalized FPT $\tau$')
+ax2.set_ylabel(r'Average success rate $\rho$')
+ax2.set_ylim(-0.02, 1.02)
+
+ax1.set_xlabel(r'Trust $\beta$')
+
+plt.title(rf'$\mu={mu:.2f}, \sigma={sigma:.2f}, L={l_x}, H={h_y}, r_v={visual_radius}$')
+
+ax1.axhline(1, lw=1, c='k', alpha=0.5)
+
+show_and_check_ipython()
