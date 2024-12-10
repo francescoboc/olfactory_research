@@ -4,16 +4,22 @@ import numpy as np
 # trust = 0.0
 
 # trust = 0.1
-# trust = 0.2
+trust = 0.2
 # trust = 0.3
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
 # trust = 1.0
+
+trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+# set the thresholds for the success rate and presence probability
+rate_threshold = 1.0
+prob_threshold = 0.2
 
 # check only center of mass or consider all the agents
 center_of_mass = 0
@@ -36,10 +42,10 @@ mu = 0
 # mu = np.pi/4
 # mu = np.pi/2
 
-# std of initial distribution of angles
-# sigma = 0
+# standard deviation of initial distribution of angles
+sigma = 0
 # sigma = np.pi/2
-sigma = np.pi
+# sigma = np.pi
 
 # number of realisations
 n_runs = 50
@@ -52,18 +58,25 @@ final_x = 100
 
 # distance from source and shift from centerline
 l_x = 50
-h_y = 0 
+h_y = 10 
+
+# secondary source
+l_x1 = 70
+h_y1 = 7 
 
 # hexbin parameters
 gridsize = 200
 # gridsize = 300
 offset = 100
 
-# list of probabilities to plot contours of success rate
-prob_list = [1.0, 0.5, 0.0]
+# list of rates to plot contours of success rate
+rates_list = [0.0, 0.5, 1.0]
 
 # selected probability threshold to plot exploration cone width
-prob_selected = prob_list[-1]
+rate_selected = rates_list[-1]
+
+# list of probabilitis to plot contours of probability of presence
+prob_list = [0.0, 0.01, 0.1]
 
 # calculate hexbin related variables (don't change this)
 traj_center = final_x/2
@@ -73,4 +86,8 @@ bound_y = [-offset, offset]
 width = bound_x[1] - bound_x[0]
 hex_radius = width / (gridsize * np.sqrt(3))
 
+# number of agents
 n_agents = 100
+
+# agent's speed
+speed = 0.2

@@ -98,3 +98,40 @@ def get_convexhull(hb, pr):
     hull = ConvexHull(points)
 
     return hull, points
+
+def get_closest_bin(bin_coords, l_x, h_y):
+    # Calculate the distance to each hexbin center and find the closest bin to the source
+    x, y = l_x, h_y
+    distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
+    bin_idx = np.argmin(distances)
+    return bin_idx
+
+def get_straight_line_times(bin_coords, spawn_radius, speed):
+    straight_line_times = []
+    for i in range(len(bin_coords)):
+        x_s, y_s = bin_coords[i][0], bin_coords[i][1]
+        straight_line_times.append(np.sqrt((x_s-spawn_radius)**2 + y_s**2)/speed)
+    return straight_line_times
+
+def add_decorations():
+    from select_file import spawn_radius, mu, sigma, bound_x, bound_y
+    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=True, color='w', ls='', alpha=1, lw=0) )
+    plt.axhline(0, c='r', lw=1, ls='--', alpha=0.7)
+    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=False, color='r', ls='--', alpha=0.7, lw=1) )
+
+    arrow_length = 5
+    hl = 1.5 
+    dx = arrow_length * np.cos(mu)
+    dy = arrow_length * np.sin(mu)
+    plt.arrow(0, 0, dx, dy, head_width=1.5, head_length=hl, width=0.4, fc='k', ec='k', zorder=2)
+
+    if sigma > 0:
+        import matplotlib.patches as patches
+        up = np.degrees(mu) - np.degrees(sigma) / 2 
+        dwn = np.degrees(mu) + np.degrees(sigma) / 2 
+        wedge = patches.Wedge((0, 0), arrow_length+hl, up, dwn, color='k', alpha=0.3, zorder=1)
+        plt.gca().add_patch(wedge)
+
+    plt.axis('scaled')
+    plt.xlim(*bound_x)
+    plt.ylim(*bound_y)

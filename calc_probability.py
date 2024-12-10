@@ -42,9 +42,11 @@ except:
             hb = plt.hexbin(x, y, gridsize=gridsize, extent=[*bound_x, *bound_y])
             plt.close()
             bin_values = hb.get_array()
+
             # only look for first passage (only count the first visit to the bin)
             bin_values[np.nonzero(bin_values)]=1
             counts.append(bin_values)
+
         count_sum = np.sum(counts, axis=0)
         count_sums.append(count_sum)
 
