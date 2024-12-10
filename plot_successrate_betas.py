@@ -52,4 +52,6 @@ ax.set_title(rf'Contour: $P \geq {pr}$, Fixed final time')
 
 add_decorations()
 
+# plt.gca().invert_xaxis()
+
 show_and_check_ipython()
