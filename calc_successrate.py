@@ -56,7 +56,6 @@ for trust in trusts:
                 counts.append(bin_values)
 
             count_sum = np.sum(counts, axis=0)
-<<<<<<< HEAD
 
             # only count for success rate (if at least an agent was in the bin, set it to 1)
             count_sum[np.where(count_sum > 1)] = 1
@@ -94,8 +93,6 @@ for trust in trusts:
 
             plt.close()
 
-=======
-
             # only count for success rate (if at least an agent was in the bin, set it to 1)
             count_sum[np.where(count_sum > 1)] = 1
             count_sums.append(count_sum)
@@ -128,12 +125,10 @@ for trust in trusts:
                 com_x_std.append(x_std)
                 com_y_std.append(y_std)
 
-<<<<<<< HEAD
             hb = plt.hexbin(com_x, com_y, gridsize=gridsize, extent=[*bound_x, *bound_y])
 
             plt.close()
 
->>>>>>> b6603728f8443d89b7c300248ad82652efa5a7ae
             bin_values = hb.get_array()
             bin_values[np.nonzero(bin_values)] = 1  # Count each bin only once
             count_sums.append(bin_values)
@@ -155,13 +150,3 @@ for trust in trusts:
     #     coord_y = np.load(f'{coord_folder}/run0/coord_y.npy', allow_pickle=True).item()
     #     np.save(f'{com_coord_folder}/run0/coord_x', coord_x)
     #     np.save(f'{com_coord_folder}/run0/coord_y', coord_y)
-<<<<<<< HEAD
-=======
-=======
-#     # also copy the coordinates of run 0, we need them to build the hexbin
-#     coord_x = np.load(f'{coord_folder}/run0/coord_x.npy', allow_pickle=True).item()
-#     coord_y = np.load(f'{coord_folder}/run0/coord_y.npy', allow_pickle=True).item()
-#     np.save(f'{com_coord_folder}/run0/coord_x', coord_x)
-#     np.save(f'{com_coord_folder}/run0/coord_y', coord_y)
->>>>>>> 6b19220de8cd8d23b37ff325df3ff3c2643bb748
->>>>>>> b6603728f8443d89b7c300248ad82652efa5a7ae
