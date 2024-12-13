@@ -4,9 +4,9 @@ import numpy as np
 # trust = 0.0
 
 # trust = 0.1
-trust = 0.2
+# trust = 0.2
 # trust = 0.3
-# trust = 0.4
+trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
@@ -19,7 +19,7 @@ trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
 # set the thresholds for the success rate and presence probability
 rate_threshold = 1.0
-prob_threshold = 0.2
+prob_threshold = 0.04
 
 # check only center of mass or consider all the agents
 center_of_mass = 0
@@ -51,8 +51,8 @@ sigma = 0
 n_runs = 50
 # n_runs = 2
 
-# final_time = 500
-final_time = 0
+final_time = 500
+# final_time = 0
 
 final_x = 100
 

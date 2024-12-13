@@ -104,8 +104,8 @@ except:
 
     success_rate.dump(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy')
 
-    # also copy the coordinates of run 0, we need them to build the hexbin
-    coord_x = np.load(f'{coord_folder}/run0/coord_x.npy', allow_pickle=True).item()
-    coord_y = np.load(f'{coord_folder}/run0/coord_y.npy', allow_pickle=True).item()
-    np.save(f'{com_coord_folder}/run0/coord_x', coord_x)
-    np.save(f'{com_coord_folder}/run0/coord_y', coord_y)
+#     # also copy the coordinates of run 0, we need them to build the hexbin
+#     coord_x = np.load(f'{coord_folder}/run0/coord_x.npy', allow_pickle=True).item()
+#     coord_y = np.load(f'{coord_folder}/run0/coord_y.npy', allow_pickle=True).item()
+#     np.save(f'{com_coord_folder}/run0/coord_x', coord_x)
+#     np.save(f'{com_coord_folder}/run0/coord_y', coord_y)

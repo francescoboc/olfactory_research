@@ -4,6 +4,7 @@ from select_file import *
 com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust0.1'
 
 dicts_folder = f'beta_dicts/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
+# dicts_folder = f'beta_dicts/scrambled_agents/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
 # load the data dict
 rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
@@ -55,14 +56,14 @@ for pr in rates_list:
         xs = points[simplex, 0]
         ys = points[simplex, 1]
 
-        if s==0: plt.plot(xs, ys, c=colors[i], lw=1, label=rf'$P\geq{rates_list[i]}$')
+        if s==0: plt.plot(xs, ys, c=colors[i], lw=1, label=rf'$\rho\geq{rates_list[i]}$')
         else: plt.plot(xs, ys, c=colors[i], lw=1)
         s+=1
     i+=1
 plt.legend(title='Contour')
 
-# plt.text(final_x+2, max_cone, f'Width: {cone_width:.1f}', ha='left', va='bottom', c=colors[cone_color])
-# plt.text(-spawn_radius, spawn_radius, f'{spawn_radius*2:.1f}', ha='right', va='bottom', c=colors[cone_color])
+plt.text(final_x+2, max_cone, f'Width: {cone_width:.1f}', ha='left', va='bottom', c=colors[cone_color])
+plt.text(-spawn_radius, spawn_radius, f'{spawn_radius*2:.1f}', ha='right', va='bottom', c=colors[cone_color])
 
 # else:
 if center_of_mass:
