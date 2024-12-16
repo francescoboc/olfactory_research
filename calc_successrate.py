@@ -27,7 +27,7 @@ for trust in trusts:
     n_agents = variables['n_agents']  
 
     try:
-        success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
+        # success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
         success_rate = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
 
         print('Success rate data already exists!')
@@ -93,42 +93,6 @@ for trust in trusts:
 
             plt.close()
 
-            # only count for success rate (if at least an agent was in the bin, set it to 1)
-            count_sum[np.where(count_sum > 1)] = 1
-            count_sums.append(count_sum)
-
-        total_sum = np.sum(count_sums, axis=0)
-        success_rate = total_sum/n_runs
-
-        success_rate.dump(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy')
-
-        # CENTER OF MASS
-        count_sums = []
-        for run_n in tqdm(range(n_runs), ascii=' █'):
-            coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
-            coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
-
-            n_timesteps = len(coord_x[0]) 
-
-            com_x, com_y = [], []
-            com_x_std, com_y_std = [], []
-
-            # calculate center of mass for each timestep
-            for t in range(n_timesteps):
-                x_mean = np.mean([coord_x[agent_id][t] for agent_id in range(n_agents)])
-                y_mean = np.mean([coord_y[agent_id][t] for agent_id in range(n_agents)])
-                com_x.append(x_mean)
-                com_y.append(y_mean)
-
-                x_std = np.std([coord_x[agent_id][t] for agent_id in range(n_agents)])
-                y_std = np.std([coord_y[agent_id][t] for agent_id in range(n_agents)])
-                com_x_std.append(x_std)
-                com_y_std.append(y_std)
-
-            hb = plt.hexbin(com_x, com_y, gridsize=gridsize, extent=[*bound_x, *bound_y])
-
-            plt.close()
-
             bin_values = hb.get_array()
             bin_values[np.nonzero(bin_values)] = 1  # Count each bin only once
             count_sums.append(bin_values)
@@ -143,10 +107,4 @@ for trust in trusts:
         total_sum = np.sum(count_sums, axis=0)
         success_rate = total_sum/n_runs
 
-        success_rate.dump(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy')
-
-    #     # also copy the coordinates of run 0, we need them to build the hexbin
-    #     coord_x = np.load(f'{coord_folder}/run0/coord_x.npy', allow_pickle=True).item()
-    #     coord_y = np.load(f'{coord_folder}/run0/coord_y.npy', allow_pickle=True).item()
-    #     np.save(f'{com_coord_folder}/run0/coord_x', coord_x)
-    #     np.save(f'{com_coord_folder}/run0/coord_y', coord_y)
+        # success_rate.dump(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy')

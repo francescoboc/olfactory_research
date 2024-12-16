@@ -289,11 +289,11 @@ class Swarm:
             agent.public_velocity = instant_public_velocity.copy() 
             agent.alone = alone
 
-        # initialise position of center of mass
-        pos_x = [agent.coordinates[0] for agent in self.agents]
-        pos_y = [agent.coordinates[1] for agent in self.agents]
-        self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
-        self.com_history = [self.center_of_mass.copy()]
+        # # initialise position of center of mass
+        # pos_x = [agent.coordinates[0] for agent in self.agents]
+        # pos_y = [agent.coordinates[1] for agent in self.agents]
+        # self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
+        # self.com_history = [self.center_of_mass.copy()]
 
         # sum_vel = np.array([0, 0])
         # for agent in self.agents:
@@ -359,10 +359,10 @@ class Swarm:
         # self.center_of_mass = np.array([np.mean(pos_x), np.mean(pos_y)])
         # self.com_history.append(self.center_of_mass.copy())
 
-        # sum_vel = np.array([0, 0])
-        # for agent in self.agents:
-        #     sum_vel = sum_vel + agent.private_velocity
-        # self.wt_history.append(sum_vel/self.n_agents)
+        sum_vel = np.array([0, 0])
+        for agent in self.agents:
+            sum_vel = sum_vel + agent.private_velocity
+        self.wt_history.append(sum_vel/self.n_agents)
 
         # if an agent is out of the simulation box, remove it
         if (agent.coordinates[1] > self.height or agent.coordinates[1] < -self.height):

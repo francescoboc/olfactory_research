@@ -7,15 +7,18 @@ dicts_folder = f'beta_dicts/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randst
 # dicts_folder = f'beta_dicts/scrambled_agents/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
 # load the data dict
-rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
+if center_of_mass:
+    rate_betas = np.load(f'{dicts_folder}/com_rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
+else:
+    rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 
 success_rate = rate_betas[trust]
 
 plt.figure()
 
-hb = plt.hexbin([0], [0], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap='cividis')
+hb = plt.hexbin([], [], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap='cividis')
 
-# Create a mask for bins where the x-coordinate is less than a threshold
+# create a mask for bins where the x-coordinate is less than a threshold
 x_threshold = final_x
 bin_coords = hb.get_offsets()  
 x_edges, y_edges = bin_coords.T
@@ -25,12 +28,14 @@ success_rate[mask_below_threshold] = 0
 hb.set_array(success_rate)
 hb.set_clim(np.min(success_rate), np.max(success_rate))  
 
-# Calculate the distance to each hexbin center and find the closest bin to the source
-x, y = l_x, h_y
-bin_coords = hb.get_offsets()  
-distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
-bin_idx = np.argmin(distances)
-success_rate_source = success_rate[bin_idx]
+# calculate the distance to each hexbin center and find the closest bin to the source
+try:
+    x, y = l_x, h_y
+    bin_coords = hb.get_offsets()  
+    distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
+    bin_idx = np.argmin(distances)
+    success_rate_source = success_rate[bin_idx]
+except: pass
 
 try:
     x1, y1 = l_x1, h_y1
@@ -62,83 +67,84 @@ for pr in rates_list:
     i+=1
 plt.legend(title='Contour')
 
-plt.text(final_x+2, max_cone, f'Width: {cone_width:.1f}', ha='left', va='bottom', c=colors[cone_color])
-plt.text(-spawn_radius, spawn_radius, f'{spawn_radius*2:.1f}', ha='right', va='bottom', c=colors[cone_color])
+# plt.text(final_x+2, max_cone, f'Width: {cone_width:.1f}', ha='left', va='bottom', c=colors[cone_color])
+# plt.text(-spawn_radius, spawn_radius, f'{spawn_radius*2:.1f}', ha='right', va='bottom', c=colors[cone_color])
 
-# else:
-if center_of_mass:
+# if center_of_mass:
 
-    std_x, std_y = [], []
-    mean_x, mean_y = [], []
+#     std_x, std_y = [], []
+#     mean_x, mean_y = [], []
 
-    for run_n in range(n_runs):
+#     for run_n in range(n_runs):
 
-        com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy')
-        com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy')
-        com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy')
-        com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy')
+#         com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy')
+#         com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy')
+#         com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy')
+#         com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy')
 
-        n_timesteps = len(com_x) 
+#         n_timesteps = len(com_x) 
 
-        for t in range(n_timesteps):
+#         for t in range(n_timesteps):
 
-            # calculate l(t)
-            try:
-                std_x[t].append(com_x_std[t])
-                std_y[t].append(com_y_std[t])
-            except:
-                std_x.append([com_x_std[t]])
-                std_y.append([com_y_std[t]])
+#             # calculate l(t)
+#             try:
+#                 std_x[t].append(com_x_std[t])
+#                 std_y[t].append(com_y_std[t])
+#             except:
+#                 std_x.append([com_x_std[t]])
+#                 std_y.append([com_y_std[t]])
 
-            try:
-                mean_x[t].append(com_x[t])
-                mean_y[t].append(com_y[t])
-            except:
-                mean_x.append([com_x[t]])
-                mean_y.append([com_y[t]])
+#             try:
+#                 mean_x[t].append(com_x[t])
+#                 mean_y[t].append(com_y[t])
+#             except:
+#                 mean_x.append([com_x[t]])
+#                 mean_y.append([com_y[t]])
 
-    # calculate L(t)
-    total_std_x_avg = []
-    for entry in std_x:
-        total_std_x_avg.append(np.mean(entry))
-    total_std_y_avg = []
-    for entry in std_y:
-        total_std_y_avg.append(np.mean(entry))
+#     # calculate L(t)
+#     total_std_x_avg = []
+#     for entry in std_x:
+#         total_std_x_avg.append(np.mean(entry))
+#     total_std_y_avg = []
+#     for entry in std_y:
+#         total_std_y_avg.append(np.mean(entry))
 
-    total_com_x_avg = []
-    total_com_x_std = []
-    for entry in mean_x:
-        total_com_x_avg.append(np.mean(entry))
-        total_com_x_std.append(np.std(entry))
-    total_com_y_avg = []
-    total_com_y_std = []
-    for entry in mean_y:
-        total_com_y_avg.append(np.mean(entry))
-        total_com_y_std.append(np.std(entry))
+#     total_com_x_avg = []
+#     total_com_x_std = []
+#     for entry in mean_x:
+#         total_com_x_avg.append(np.mean(entry))
+#         total_com_x_std.append(np.std(entry))
+#     total_com_y_avg = []
+#     total_com_y_std = []
+#     for entry in mean_y:
+#         total_com_y_avg.append(np.mean(entry))
+#         total_com_y_std.append(np.std(entry))
 
-    TOT_STD_Y = np.array(total_com_y_std) + np.array(total_std_y_avg)*2
+#     TOT_STD_Y = np.array(total_com_y_std) + np.array(total_std_y_avg)*2
 
-    # cut anything that is above final_x
-    if final_time == 0:
-        cut = min(np.flatnonzero(np.array(total_com_x_avg)>final_x))
-        total_com_x_avg = total_com_x_avg[:cut]
-        total_com_y_avg = total_com_y_avg[:cut]
-        TOT_STD_Y = TOT_STD_Y[:cut]
+#     # cut anything that is above final_x
+#     if final_time == 0:
+#         cut = min(np.flatnonzero(np.array(total_com_x_avg)>final_x))
+#         total_com_x_avg = total_com_x_avg[:cut]
+#         total_com_y_avg = total_com_y_avg[:cut]
+#         TOT_STD_Y = TOT_STD_Y[:cut]
 
-    shaded_errorbar(total_com_x_avg, total_com_y_avg, yerr=TOT_STD_Y, lab='std', m='', c='w', alpha=0.3)
+#     shaded_errorbar(total_com_x_avg, total_com_y_avg, yerr=TOT_STD_Y, lab='std', m='', c='w', alpha=0.3)
 
-    cone_width_com = 2*max(TOT_STD_Y)
+#     cone_width_com = 2*max(TOT_STD_Y)
 
-    plt.text(final_x+2, -cone_width_com/2, f'Width: {cone_width_com:.2f}', ha='left', va='top', c='w', alpha=0.5)
+#     plt.text(final_x+2, -cone_width_com/2, f'Width: {cone_width_com:.2f}', ha='left', va='top', c='w', alpha=0.5)
 
-    # plt.plot(com_x, com_y, '-k')
+#     # plt.plot(com_x, com_y, '-k')
 
 
 # set background (non-explored parts of space) same color as min of colorbar
 plt.gca().set_facecolor(cb.cmap(0))
 
-plt.plot(x, y, 'or', zorder=10)
-plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+2, f'{success_rate_source:.1f}', ha='center', va='bottom', c='r')
+try:
+    plt.plot(x, y, 'or', zorder=10)
+    plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+2, f'{success_rate_source:.1f}', ha='center', va='bottom', c='r')
+except: pass
 
 try:
     plt.plot(x1, y1, 'sr')
@@ -167,8 +173,4 @@ plt.axis('scaled')
 plt.xlim(*bound_x)
 plt.ylim(*bound_y)
 
-# plt.gca().invert_xaxis()
-# plt.savefig(f'beta{trust}.png')
-
 show_and_check_ipython()
-
