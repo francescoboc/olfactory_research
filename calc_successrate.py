@@ -27,7 +27,6 @@ for trust in trusts:
     n_agents = variables['n_agents']  
 
     try:
-        # success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
         success_rate = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
 
         print('Success rate data already exists!')
@@ -66,45 +65,45 @@ for trust in trusts:
 
         success_rate.dump(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy')
 
-        # CENTER OF MASS
-        count_sums = []
-        for run_n in tqdm(range(n_runs), ascii=' █'):
-            coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
-            coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
+        # # CENTER OF MASS
+        # count_sums = []
+        # for run_n in tqdm(range(n_runs), ascii=' █'):
+        #     coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
+        #     coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
 
-            n_timesteps = len(coord_x[0]) 
+        #     n_timesteps = len(coord_x[0]) 
 
-            com_x, com_y = [], []
-            com_x_std, com_y_std = [], []
+        #     com_x, com_y = [], []
+        #     com_x_std, com_y_std = [], []
 
-            # calculate center of mass for each timestep
-            for t in range(n_timesteps):
-                x_mean = np.mean([coord_x[agent_id][t] for agent_id in range(n_agents)])
-                y_mean = np.mean([coord_y[agent_id][t] for agent_id in range(n_agents)])
-                com_x.append(x_mean)
-                com_y.append(y_mean)
+        #     # calculate center of mass for each timestep
+        #     for t in range(n_timesteps):
+        #         x_mean = np.mean([coord_x[agent_id][t] for agent_id in range(n_agents)])
+        #         y_mean = np.mean([coord_y[agent_id][t] for agent_id in range(n_agents)])
+        #         com_x.append(x_mean)
+        #         com_y.append(y_mean)
 
-                x_std = np.std([coord_x[agent_id][t] for agent_id in range(n_agents)])
-                y_std = np.std([coord_y[agent_id][t] for agent_id in range(n_agents)])
-                com_x_std.append(x_std)
-                com_y_std.append(y_std)
+        #         x_std = np.std([coord_x[agent_id][t] for agent_id in range(n_agents)])
+        #         y_std = np.std([coord_y[agent_id][t] for agent_id in range(n_agents)])
+        #         com_x_std.append(x_std)
+        #         com_y_std.append(y_std)
 
-            hb = plt.hexbin(com_x, com_y, gridsize=gridsize, extent=[*bound_x, *bound_y])
+        #     # hb = plt.hexbin(com_x, com_y, gridsize=gridsize, extent=[*bound_x, *bound_y])
+        #     # plt.close()
+        #     # bin_values = hb.get_array()
+        #     # bin_values[np.nonzero(bin_values)] = 1  # Count each bin only once
+        #     # count_sums.append(bin_values)
 
-            plt.close()
+        #     # save coordinates and std of center of mass
+        #     os.makedirs(f'{com_coord_folder}/run{run_n}', exist_ok=True)
+        #     np.save(f'{com_coord_folder}/run{run_n}/com_x', com_x)
+        #     np.save(f'{com_coord_folder}/run{run_n}/com_y', com_y)
+        #     np.save(f'{com_coord_folder}/run{run_n}/com_x_std', com_x_std)
+        #     np.save(f'{com_coord_folder}/run{run_n}/com_y_std', com_y_std)
 
-            bin_values = hb.get_array()
-            bin_values[np.nonzero(bin_values)] = 1  # Count each bin only once
-            count_sums.append(bin_values)
+        #     # also copy wt_history
+        #     wt_history = np.load(f'{coord_folder}/run{run_n}/wt_history.npy', allow_pickle=True).item()
+        #     np.save(f'{com_coord_folder}/run{run_n}/coord_y', coord_y)
 
-            # save coordinates and std of center of mass
-            os.makedirs(f'{com_coord_folder}/run{run_n}', exist_ok=True)
-            np.save(f'{com_coord_folder}/run{run_n}/com_x', com_x)
-            np.save(f'{com_coord_folder}/run{run_n}/com_y', com_y)
-            np.save(f'{com_coord_folder}/run{run_n}/com_x_std', com_x_std)
-            np.save(f'{com_coord_folder}/run{run_n}/com_y_std', com_y_std)
-
-        total_sum = np.sum(count_sums, axis=0)
-        success_rate = total_sum/n_runs
-
-        # success_rate.dump(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy')
+        # total_sum = np.sum(count_sums, axis=0)
+        # success_rate = total_sum/n_runs

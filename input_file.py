@@ -26,8 +26,8 @@ private_behavior = 'cast_and_surge'
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
-trust = 0.8
-# trust = 0.9
+# trust = 0.8
+trust = 0.9
 
 # trust = 1.0
 
