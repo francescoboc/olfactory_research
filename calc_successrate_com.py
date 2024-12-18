@@ -8,7 +8,7 @@ import os
 print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}')
 
 for trust in trusts:
-    print(trust)
+    print(f'trust = {trust:.2f}')
 
     if final_time == 0:
         coord_folder = f'../storage/coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'

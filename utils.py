@@ -135,3 +135,10 @@ def add_decorations():
     plt.axis('scaled')
     plt.xlim(*bound_x)
     plt.ylim(*bound_y)
+
+def truncate_and_stack(array_list):
+    # Find the length of the shortest array
+    min_length = min(len(arr) for arr in array_list)
+    
+    # Truncate all arrays to the shortest length and stack
+    return np.stack([arr[:min_length] for arr in array_list])

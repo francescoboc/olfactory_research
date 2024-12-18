@@ -60,13 +60,15 @@ theta_com = []
 normvs = []
 for i in range(len(x_t)):
     normv = norm([x_t[i], y_t[i]])
-    normvs.append(normv)
+    # normvs.append(normv)
+
     # th = np.arccos(x_t[i]/normv)
     th = np.arcsin(y_t[i]/normv)
     # th = np.arctan2(y_t[i], x_t[i])
     theta_com.append(th)
 
-normv_mean = np.mean(normvs)
+# normv_mean = np.mean(normvs)
+
 # normv_std = np.std(normvs)
 
 wt = sim.swarm.wt_history.copy()
@@ -99,7 +101,7 @@ for t in range(len(x_t)-1):
 # plt.ylabel(r'$\theta_{CM}$')
 # plt.legend()
 
-# normv = speed
+normv_mean = speed
 
 com_x_theo, com_y_theo = [com_x[0]], [com_y[0]]
 new_x, new_y = com_x[0].copy(), com_y[0].copy()
