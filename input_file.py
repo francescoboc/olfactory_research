@@ -70,7 +70,7 @@ final_time = 0
 final_x = 100
 
 # number of agents
-n_agents = 100
+n_agents = 20
 
 # agent's speed
 speed = 0.2

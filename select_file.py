@@ -87,7 +87,8 @@ width = bound_x[1] - bound_x[0]
 hex_radius = width / (gridsize * np.sqrt(3))
 
 # number of agents
-n_agents = 100
+# n_agents = 100
+n_agents = 10
 
 # agent's speed
 speed = 0.2
