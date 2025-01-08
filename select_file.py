@@ -47,6 +47,11 @@ sigma = 0
 # sigma = np.pi/2
 # sigma = np.pi
 
+# number of agents
+# n_agents = 100
+# n_agents = 20
+n_agents = 10
+
 # number of realisations
 n_runs = 50
 # n_runs = 2
@@ -85,10 +90,6 @@ bound_y = [-offset, offset]
 
 width = bound_x[1] - bound_x[0]
 hex_radius = width / (gridsize * np.sqrt(3))
-
-# number of agents
-# n_agents = 100
-n_agents = 10
 
 # agent's speed
 speed = 0.2

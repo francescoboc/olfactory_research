@@ -4,31 +4,29 @@ from select_file import *
 from tqdm import tqdm
 import os
 
-print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}, n_ag={n_agents}')
+# print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}, n_ag={n_agents}')
 
 for trust in trusts:
-    print(trust)
-
     if final_time == 0:
         coord_folder = f'../storage/coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
         hexbin_folder = f'hexbins/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
-        os.makedirs(hexbin_folder, exist_ok=True)
     else:
         coord_folder = f'../storage/coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
         hexbin_folder = f'hexbins/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
-        os.makedirs(hexbin_folder, exist_ok=True)
 
     try:
         success_rate = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
 
-        print('Success rate data already exists!')
+        print(f'{trust} Success rate data already exists!')
 
     except:
-        print('No success rate data found, computing...')
+        print(f'{trust} No success rate data found, computing...')
+        os.makedirs(hexbin_folder, exist_ok=True)
 
         # INDIVIDUAL AGENTS
         count_sums = []
-        for run_n in tqdm(range(n_runs), ascii=' █'):
+        # for run_n in tqdm(range(n_runs), ascii=' █'):
+        for run_n in range(n_runs):
             coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
             coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
 
@@ -56,4 +54,3 @@ for trust in trusts:
         success_rate = total_sum/n_runs
 
         success_rate.dump(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy')
-

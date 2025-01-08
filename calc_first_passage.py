@@ -10,11 +10,9 @@ def is_point_in_hexagon(x, y, hex_center):
     hexagon = RegularPolygon(hex_center, numVertices=6, radius=hex_radius, orientation=np.radians(30))
     return hexagon.contains_point((x, y))
 
-print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}, n_ag={n_agents}')
+# print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}, n_ag={n_agents}')
 
 for trust in trusts:
-    print(trust)
-
     if final_time == 0:
         coord_folder = f'../storage/coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
         hexbin_folder = f'hexbins/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
@@ -27,13 +25,14 @@ for trust in trusts:
     try:
         avg_fpt = np.load(f'{hexbin_folder}/avg_fpt_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
 
-        print('FPT data already exists!')
+        print(f'{trust} FPT data already exists!')
 
     except:
-        print('No FPT data found, computing...')
+        print(f'{trust} No FPT data found, computing...')
 
         fpt_bins_runs = []
-        for run_n in tqdm(range(n_runs), ascii=' █'):
+        # for run_n in tqdm(range(n_runs), ascii=' █'):
+        for run_n in range(n_runs):
             coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
             coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
 
