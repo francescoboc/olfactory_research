@@ -12,6 +12,7 @@ else:
 os.makedirs(dicts_folder, exist_ok=True)
 
 prob_betas, rate_betas, fpt_betas, rate_betas_com = {}, {}, {}, {}
+rate_betas_com_theo = {} 
 for trust in trusts:
     if final_time == 0:
         hexbin_folder = f'hexbins/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
@@ -38,7 +39,7 @@ for trust in trusts:
         success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
     except:
         data_found = False
-        print(f'Success rate missing for trust {trust}')
+        print(f'Success rate COM missing for trust {trust}')
         break
 
     try:
@@ -48,15 +49,24 @@ for trust in trusts:
         print(f'FPT missing for trust {trust}')
         break
 
+    try:
+        success_rate_com_theo = np.load(f'{hexbin_folder}/com_theo_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
+    except:
+        data_found = False
+        print(f'Success rate COM THEO missing for trust {trust}')
+        break
+
     if data_found:
         prob_betas[trust] = probability
         rate_betas[trust] = success_rate
         rate_betas_com[trust] = success_rate_com
+        rate_betas_com_theo[trust] = success_rate_com_theo
         fpt_betas[trust] = avg_fpt
 
 if data_found:
     np.save(f'{dicts_folder}/prob_betas_gridsize{gridsize}_offset{offset}', prob_betas)
     np.save(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}', rate_betas)
     np.save(f'{dicts_folder}/com_rate_betas_gridsize{gridsize}_offset{offset}', rate_betas_com)
+    np.save(f'{dicts_folder}/com_theo_rate_betas_gridsize{gridsize}_offset{offset}', rate_betas_com_theo)
     np.save(f'{dicts_folder}/fpt_betas_gridsize{gridsize}_offset{offset}', fpt_betas)
     print('Lists saved!')

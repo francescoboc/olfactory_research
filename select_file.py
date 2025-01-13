@@ -5,13 +5,13 @@ import numpy as np
 
 # trust = 0.1
 # trust = 0.2
-# trust = 0.3
+trust = 0.3
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
 # trust = 1.0
 
@@ -48,9 +48,9 @@ sigma = 0
 # sigma = np.pi
 
 # number of agents
-# n_agents = 100
+n_agents = 100
 # n_agents = 20
-n_agents = 10
+# n_agents = 10
 
 # number of realisations
 n_runs = 50

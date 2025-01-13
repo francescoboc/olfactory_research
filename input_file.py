@@ -24,10 +24,10 @@ private_behavior = 'cast_and_surge'
 # trust = 0.3
 # trust = 0.4
 # trust = 0.5
-# trust = 0.6
+trust = 0.6
 # trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
 # trust = 1.0
 
@@ -58,6 +58,11 @@ sigma = 0
 # sigma = np.pi/2
 # sigma = np.pi
 
+# number of agents
+n_agents = 100
+# n_agents = 20
+# n_agents = 10
+
 # number of realisations
 n_runs = 50
 # n_runs = 2
@@ -68,9 +73,6 @@ final_time = 0
 # final_time = 500
 
 final_x = 100
-
-# number of agents
-n_agents = 20
 
 # agent's speed
 speed = 0.2

@@ -1,7 +1,7 @@
 from utils import *
 from select_file import *
 
-dicts_folder = f'beta_dicts/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
+dicts_folder = f'beta_dicts/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
 # load the data dicts
 fpt_betas = np.load(f'{dicts_folder}/fpt_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
@@ -9,7 +9,10 @@ rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offse
 
 print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, r_v={visual_radius}')
 
-bin_coords = np.load(f'{dicts_folder}/bin_coords_gridsize{gridsize}_offset{offset}.npy')
+# create an empty hexbin to get grid structure
+hb = plt.hexbin([], [], gridsize=gridsize, extent=[*bound_x, *bound_y])
+bin_coords = hb.get_offsets()
+plt.close()
 
 straight_line_times = get_straight_line_times(bin_coords, spawn_radius, speed)
 
