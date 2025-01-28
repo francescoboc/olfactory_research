@@ -1,19 +1,21 @@
 from utils import *
 from select_file import *
+from tqdm import tqdm
 
 print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}')
 print(f'trust = {trust:.2f}')
 
 if final_time == 0:
-    com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
+    com_coord_folder = f'com_coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
 else:
-    com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
+    com_coord_folder = f'com_coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
 dt = 1
 
 sim_x_list, sim_y_list = [], []
 theo_x_list, theo_y_list = [], []
 for run_n in range(n_runs):
+# for run_n in tqdm(range(n_runs), ascii=' █'):
     com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
     com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
     # com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
@@ -82,6 +84,10 @@ for run_n in range(n_runs):
     theo_x_list.append(com_x_theo)
     theo_y_list.append(com_y_theo) 
 
+    # save theoretical coordinates in run folder
+    np.save(f'{com_coord_folder}/run{run_n}/com_x_theo.npy', com_x_theo)
+    np.save(f'{com_coord_folder}/run{run_n}/com_y_theo.npy', com_y_theo)
+
     # # plot traj of center of mass from simulation
     # if run_n==0:
     #     plt.plot(com_x, com_y, 'r-', label='simulation')
@@ -93,24 +99,23 @@ for run_n in range(n_runs):
 # calculate average trajectories and their standard deviations
 mean_x_sim = np.mean(truncate_and_stack(sim_x_list),axis=0)
 mean_y_sim = np.mean(truncate_and_stack(sim_y_list),axis=0)
-std_x_sim = np.mean(truncate_and_stack(sim_x_list),axis=0)
-std_y_sim = np.mean(truncate_and_stack(sim_y_list),axis=0)
+std_x_sim = np.std(truncate_and_stack(sim_x_list),axis=0)
+std_y_sim = np.std(truncate_and_stack(sim_y_list),axis=0)
 
-# plt.plot(mean_x_sim, mean_y_sim, 'b-', label='simulation')
-shaded_errorbar(mean_x_sim, mean_y_sim, np.abs(std_y_sim), lab='simulation', c='b', ls='--', m='')
+shaded_errorbar(mean_x_sim, mean_y_sim, std_y_sim, lab='simulation', c='b', ls='--', m='')
 
 mean_x_theo = np.mean(truncate_and_stack(theo_x_list),axis=0)
 mean_y_theo = np.mean(truncate_and_stack(theo_y_list),axis=0)
-std_x_theo = np.mean(truncate_and_stack(theo_x_list),axis=0)
-std_y_theo = np.mean(truncate_and_stack(theo_y_list),axis=0)
+std_x_theo = np.std(truncate_and_stack(theo_x_list),axis=0)
+std_y_theo = np.std(truncate_and_stack(theo_y_list),axis=0)
 
-shaded_errorbar(mean_x_theo, mean_y_theo, np.abs(std_y_theo), lab='theory', c='k', ls='-', m='')
+shaded_errorbar(mean_x_theo, mean_y_theo, std_y_theo, lab='theory', c='k', ls='-', m='')
 
-plt.title(fr'$\beta = {trust}$')
+plt.title(fr'Average trajectory, $\beta = {trust}$')
 plt.xlabel('x')
 plt.ylabel('y')
 plt.legend()
 
-add_decorations()
+# add_decorations()
 
 show_and_check_ipython()

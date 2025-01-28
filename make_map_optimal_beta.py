@@ -3,8 +3,8 @@ from select_file import *
 
 colormap = 'viridis'
 
-dicts_folder = f'beta_dicts/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
-dicts_folder_scrambled = f'beta_dicts/scrambled_agents/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
+dicts_folder = f'beta_dicts/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
+# dicts_folder_scrambled = f'beta_dicts/scrambled_agents/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
 # load the data dicts
 fpt_betas = np.load(f'{dicts_folder}/fpt_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
@@ -95,18 +95,6 @@ plt.title(fr'Highest trust $\beta^*_\rho$ at which $\rho \geq {rate_threshold:.2
 add_decorations()
 
 
-########## PLOT PROB MAP ##########
-plt.figure()
-hb = plt.hexbin([0], [0], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap=cmap)
-
-# set values of hexbin and add colorbar with the correct limits
-hb.set_array(best_trust_prob)
-plt.clim(min(trusts)-0.05, max(trusts)+0.05) 
-plt.colorbar(hb, label=r'$\beta^*_P$', ticks=trusts)
-plt.title(fr'Highest trust $\beta^*_P$ at which $P \geq {prob_threshold:.2f}$')
-add_decorations()
-
-
 ########## PLOT FPT MAP ##########
 plt.figure()
 hb = plt.hexbin([0], [0], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap=cmap)
@@ -118,43 +106,56 @@ plt.colorbar(hb, label=r'$\beta^*_\tau$', ticks=trusts)
 plt.title(r'Trust $\beta^*_\tau}$ at which $\tau$ is minimal')
 add_decorations()
 
-########## PLOT HEATMAPS OF AGREEMENT ##########
-plt.figure()
 
-# plt.plot(best_trust_rate, best_trust_prob, 'o')
-# plt.plot(best_trust_fpt, best_trust_prob, 'o')
-
-# jitter = 0.01
-# x_jittered = best_trust_prob + np.random.uniform(-jitter, jitter, len(best_trust_prob))
-# y_jittered = best_trust_rate + np.random.uniform(-jitter, jitter, len(best_trust_rate))
-# plt.plot(x_jittered, y_jittered, 'o', mfc='blue', mec='none', alpha=0.1)
-
-# compute the 2D histogram (aka heatmap)
-edges = np.arange(0.05, 1.0, 0.1)
-heatmap_rate, _, _ = np.histogram2d(best_trust_prob, best_trust_rate, bins=(edges, edges))
-
-# plot the heatmap
-plt.imshow(heatmap_rate.T, origin='lower', extent=[0.05, 0.95, 0.05, 0.95], cmap='Blues', norm='log')
-plt.colorbar(label='Counts')
-plt.title(fr'Thresholds: $\rho \geq {rate_threshold:.2f}$, $P \geq {prob_threshold:.2f}$')
-text = fr'Total counts ${int(np.sum(heatmap_rate))}$'
-plt.text(0.985, 0.01, text, transform=plt.gca().transAxes, ha='right', va='bottom'), 
-plt.xlabel(r'$\beta^*_P$ ')
-plt.ylabel(r'$\beta^*_\rho$ ')
-plt.xticks(trusts)
-plt.yticks(trusts)
-plt.axis('square')
-
-# # same thing for the fpt
+# ########## PLOT PROB MAP ##########
 # plt.figure()
-# heatmap_fpt, _, _ = np.histogram2d(best_trust_prob, best_trust_fpt, bins=(edges, edges))
-# plt.imshow(heatmap_fpt.T, origin='lower', extent=[0.05, 0.95, 0.05, 0.95], cmap='Blues', norm='log')
+# hb = plt.hexbin([0], [0], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap=cmap)
+# # #
+# # set values of hexbin and add colorbar with the correct limits
+# hb.set_array(best_trust_prob)
+# plt.clim(min(trusts)-0.05, max(trusts)+0.05) 
+# plt.colorbar(hb, label=r'$\beta^*_P$', ticks=trusts)
+# plt.title(fr'Highest trust $\beta^*_P$ at which $P \geq {prob_threshold:.2f}$')
+# add_decorations()
+
+
+# ########## PLOT HEATMAPS OF AGREEMENT ##########
+# plt.figure()
+
+# # plt.plot(best_trust_rate, best_trust_prob, 'o')
+# # plt.plot(best_trust_fpt, best_trust_prob, 'o')
+
+# # jitter = 0.01
+# # x_jittered = best_trust_prob + np.random.uniform(-jitter, jitter, len(best_trust_prob))
+# # y_jittered = best_trust_rate + np.random.uniform(-jitter, jitter, len(best_trust_rate))
+# # plt.plot(x_jittered, y_jittered, 'o', mfc='blue', mec='none', alpha=0.1)
+
+# # compute the 2D histogram (aka heatmap)
+# edges = np.arange(0.05, 1.0, 0.1)
+# heatmap_rate, _, _ = np.histogram2d(best_trust_prob, best_trust_rate, bins=(edges, edges))
+
+# # plot the heatmap
+# plt.imshow(heatmap_rate.T, origin='lower', extent=[0.05, 0.95, 0.05, 0.95], cmap='Blues', norm='log')
 # plt.colorbar(label='Counts')
-# plt.title(fr'Threshold: $P \geq {prob_threshold:.2f}$')
+# plt.title(fr'Thresholds: $\rho \geq {rate_threshold:.2f}$, $P \geq {prob_threshold:.2f}$')
+# text = fr'Total counts ${int(np.sum(heatmap_rate))}$'
+# plt.text(0.985, 0.01, text, transform=plt.gca().transAxes, ha='right', va='bottom'), 
 # plt.xlabel(r'$\beta^*_P$ ')
-# plt.ylabel(r'$\beta^*_\tau$ ')
+# plt.ylabel(r'$\beta^*_\rho$ ')
 # plt.xticks(trusts)
 # plt.yticks(trusts)
 # plt.axis('square')
+
+# # # same thing for the fpt
+# # plt.figure()
+# # heatmap_fpt, _, _ = np.histogram2d(best_trust_prob, best_trust_fpt, bins=(edges, edges))
+# # plt.imshow(heatmap_fpt.T, origin='lower', extent=[0.05, 0.95, 0.05, 0.95], cmap='Blues', norm='log')
+# # plt.colorbar(label='Counts')
+# # plt.title(fr'Threshold: $P \geq {prob_threshold:.2f}$')
+# # plt.xlabel(r'$\beta^*_P$ ')
+# # plt.ylabel(r'$\beta^*_\tau$ ')
+# # plt.xticks(trusts)
+# # plt.yticks(trusts)
+# # plt.axis('square')
 
 show_and_check_ipython()

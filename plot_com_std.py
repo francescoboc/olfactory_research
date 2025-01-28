@@ -5,9 +5,9 @@ print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius
 print(f'trust = {trust:.2f}')
 
 if final_time == 0:
-    com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
+    com_coord_folder = f'com_coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
 else:
-    com_coord_folder = f'com_coordinates/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
+    com_coord_folder = f'com_coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
 std_x_list, std_y_list = [], []
 for run_n in range(n_runs):
@@ -38,6 +38,9 @@ plt.plot(mean_std_x, '--', label=fr'$\beta = {trust}$')
 # plt.plot(std_y_list[0], 'r', label='y')
 
 # plt.title(fr'$\beta = {trust}$')
+
+plt.text(0.5,0.95,fr'$N_{{ag}}={n_agents}$', 
+        ha='center', va='center', transform=plt.gca().transAxes)
 plt.xlabel('Timestep')
 plt.ylabel('Average std over 50 simulations')
 plt.legend()
