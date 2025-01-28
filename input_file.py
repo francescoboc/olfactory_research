@@ -22,12 +22,12 @@ private_behavior = 'cast_and_surge'
 # trust = 0.1
 # trust = 0.2
 # trust = 0.3
-# trust = 0.4
+trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
 # trust = 1.0
 
@@ -49,12 +49,13 @@ rand_casting_steps = 100
 rand_casting_direction = True
 
 # average of initial distribution of angles
-mu = 0
-# mu = np.pi/4
+# mu = 0
+mu = np.pi/4
 # mu = np.pi/2
 
 # std of initial distribution of angles
 sigma = 0
+# sigma = np.pi/4
 # sigma = np.pi/2
 # sigma = np.pi
 
@@ -70,7 +71,8 @@ final_time = 0
 final_x = 100
 
 # number of agents
-n_agents = 20
+n_agents = 100
+# n_agents = 10
 
 # agent's speed
 speed = 0.2

@@ -28,14 +28,14 @@ for trust in trusts:
         break
 
     try:
-        success_rate_com = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
+        success_rate_com = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
     except:
         data_found = False
         print(f'Success rate missing for trust {trust}')
         break
 
     try:
-        success_rate = np.load(f'{hexbin_folder}/com_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
+        success_rate = np.load(f'{hexbin_folder}/successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
     except:
         data_found = False
         print(f'Success rate missing for trust {trust}')

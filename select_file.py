@@ -1,5 +1,7 @@
 import numpy as np
 
+OVERWRITE = False
+
 # trust parameter
 # trust = 0.0
 
@@ -22,7 +24,7 @@ rate_threshold = 1.0
 prob_threshold = 0.04
 
 # check only center of mass or consider all the agents
-center_of_mass = 1
+center_of_mass = 0
 
 # swarm parameters
 rd = 0.2
@@ -38,19 +40,21 @@ rand_casting_steps = 100
 # rand_casting_steps = 0
 
 # average of initial distribution of angles
-mu = 0
-# mu = np.pi/4
+# mu = 0
+mu = np.pi/4
 # mu = np.pi/2
 
 # standard deviation of initial distribution of angles
 sigma = 0
+# sigma = np.pi/4
+
 # sigma = np.pi/2
 # sigma = np.pi
 
 # number of agents
-# n_agents = 100
+n_agents = 100
 # n_agents = 20
-n_agents = 10
+# n_agents = 10
 
 # number of realisations
 n_runs = 50
