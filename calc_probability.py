@@ -6,6 +6,7 @@ import os
 
 # print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}, n_ag={n_agents}')
 
+data_missing = False
 for trust in trusts:
     if final_time == 0:
         coord_folder = f'../storage/coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
@@ -20,6 +21,10 @@ for trust in trusts:
 
     except:
         print(f'{trust} No probability data found, computing...')
+        data_missing = True
+
+
+    if data_missing or OVERWRITE:
         os.makedirs(hexbin_folder, exist_ok=True)
 
         count_sums = []

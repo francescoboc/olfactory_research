@@ -21,13 +21,18 @@ PID4=$!
 sleep 0.5
 echo '' 
 
-python calc_probability.py &
+python calc_successrate_com_theo.py &
 PID5=$!
 sleep 0.5
 echo '' 
 
+python calc_probability.py &
+PID6=$!
+sleep 0.5
+echo '' 
+
 # Wait for all background processes to complete
-wait $PID1 $PID2 $PID3 $PID4 $PID5
+wait $PID1 $PID2 $PID3 $PID4 $PID5 $PID6
 
 # Run the final Python script after all others are finished
 echo 'Building lists...'

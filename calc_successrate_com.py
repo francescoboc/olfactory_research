@@ -7,6 +7,7 @@ import os
 
 # print(f'mu={mu:.2f}, sigma={sigma:.2f}, final_t={final_time}, v_r={visual_radius}, n_ag={n_agents}')
 
+data_missing = False
 for trust in trusts:
     if final_time == 0:
         coord_folder = f'../storage/coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}/trust{trust}'
@@ -24,20 +25,25 @@ for trust in trusts:
 
     except:
         print(f'{trust} No COM success rate data found, computing...')
+        data_missing = True
+
+    if data_missing or OVERWRITE:
         os.makedirs(hexbin_folder, exist_ok=True)
         os.makedirs(com_coord_folder, exist_ok=True)
 
         # CENTER OF MASS
         count_sums = []
-        # for run_n in tqdm(range(n_runs), ascii=' █'):
-        for run_n in range(n_runs):
+        for run_n in tqdm(range(n_runs), ascii=' █'):
+        # for run_n in range(n_runs):
             try:
-                com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
-                com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
-                com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
-                com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy', allow_pickle=True)
+                # com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
+                # com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
+                # com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
+                # com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy', allow_pickle=True)
+                com_y_std = np.load(f'ad', allow_pickle=True)
+
             except:
-                print('No COM coordinates found, computing...')
+                # print('No COM coordinates found, computing...')
                 coord_x = np.load(f'{coord_folder}/run{run_n}/coord_x.npy', allow_pickle=True).item()
                 coord_y = np.load(f'{coord_folder}/run{run_n}/coord_y.npy', allow_pickle=True).item()
 

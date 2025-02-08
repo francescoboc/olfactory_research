@@ -18,7 +18,7 @@ for trust in trusts:
         try: np.load(f'{com_coord_folder}/run{run_n}/wt_history.npy')
         except: all_good = False
 
-    if all_good: 
+    if all_good and not OVERWRITE: 
         print(f'{trust} wt_history in com_coord_folder already exists for all runs!')
 
     else:
@@ -33,4 +33,3 @@ for trust in trusts:
                 print(f'coord_folder: {coord_folder}')
                 exit()
         print(f'{trust} wt_history copied from coord_folder to com_coord_folder for all runs!')
-
