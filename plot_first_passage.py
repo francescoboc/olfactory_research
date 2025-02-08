@@ -8,9 +8,11 @@ fpt_betas = np.load(f'{dicts_folder}/fpt_betas_gridsize{gridsize}_offset{offset}
 
 avg_fpt = fpt_betas[trust]
 
+normalised = 1
+
 plt.figure()
 
-hb = plt.hexbin([0], [0], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap='cividis')
+hb = plt.hexbin([], [], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap='plasma')
 
 # Create a mask for bins where the x-coordinate is less than x_threshold
 x_threshold = final_x
@@ -22,18 +24,40 @@ avg_fpt = np.ma.masked_where(mask_below_threshold, avg_fpt)
 # noralize the fpts by the straight line path
 for i in range(len(bin_coords)):
     x_s, y_s = bin_coords[i][0], bin_coords[i][1]
-    straight_line_time = np.sqrt((x_s-spawn_radius)**2 + y_s**2)/speed
-    avg_fpt[i] /= straight_line_time
+    straight_line_time = (np.sqrt(x_s**2 + y_s**2)-spawn_radius)/speed
+    # straight_line_time = (np.sqrt(x_s**2 + y_s**2))/speed
+    if normalised:
+        avg_fpt[i] /= straight_line_time
+
+    # mask the bins that are too close to the starting point
+    # if np.sqrt(x_s**2 + y_s**2) < spawn_radius*3.0:
+    if x_s < spawn_radius*2.0:
+        avg_fpt[i] = np.ma.masked
+
+avg_fpt = np.ma.masked_where( avg_fpt < 1, avg_fpt)
+# avg_fpt[np.where( (avg_fpt.data < 1) & ~avg_fpt.mask )]=1
+
+# TODO gli esagoni troppo vicino alla sorgente soffrono di un problema di normalizzazione:
+#     lo straight-line time non è preciso li perchè non so da dove calcolarlo...
+#     dal centro dello spawn? dal centro ma sottraendo il raggio?
+
+# # TODO non si capisce bene se plottiamo l'inverse time
+# avg_fpt[np.where( (avg_fpt.data <= 1) & ~avg_fpt.mask )]=1
+# avg_fpt = 1/avg_fpt
+
+# avg_fpt = np.log(avg_fpt)
 
 # Update the hexbin plot to show first passage times
 hb.set_array(avg_fpt)
 
 # Calculate the distance to each hexbin center and find the closest bin to the source
-x, y = l_x, h_y
-bin_coords = hb.get_offsets()
-distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
-bin_idx = np.argmin(distances)
-fpt_source = avg_fpt[bin_idx]
+try:
+    x, y = l_x, h_y
+    bin_coords = hb.get_offsets()
+    distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
+    bin_idx = np.argmin(distances)
+    fpt_source = avg_fpt[bin_idx]
+except: pass
 
 try:
     x1, y1 = l_x1, h_y1
@@ -42,42 +66,35 @@ try:
     fpt_source1 = avg_fpt[bin_idx1]
 except: pass
 
-plt.colorbar(hb, label='Normalised average first passage time')
+# plt.clim(np.min(avg_fpt), np.max(avg_fpt)) 
+plt.clim(1.0, np.max(avg_fpt)) 
 
-plt.plot(x, y, 'or')
-plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+2, f'{fpt_source:.2f}', ha='center', va='bottom', c='r')
+if normalised:
+    cbar = plt.colorbar(hb, label=r'Average normalised first passage time $\tau$')
+
+else:
+    cbar = plt.colorbar(hb, label=r'Average first passage time $\tau$')
+
+try:
+    plt.plot(x, y, 'or')
+    plt.text(bin_coords[bin_idx,0], bin_coords[bin_idx,1]+2, f'{fpt_source:.2f}', ha='center', va='bottom', c='r')
+except: pass
 
 try:
     plt.plot(x1, y1, 'sr')
     plt.text(bin_coords[bin_idx1,0], bin_coords[bin_idx1,1]+2, f'{fpt_source1:.2f}', ha='center', va='bottom', c='r')
 except: pass
 
-# Ensure the color limits are set according to first passage time
-plt.clim(np.min(avg_fpt), np.max(avg_fpt)) 
+# current_ticks = cbar.get_ticks()  # Get existing ticks
+# print(current_ticks)
+# current_ticks = np.delete(current_ticks, 0)
+# current_ticks = np.delete(current_ticks, -1)
+# updated_ticks = np.append(current_ticks, 1.0) 
+# print(updated_ticks)
+# cbar.set_ticks(updated_ticks)  # Set the updated ticks
 
 plt.title(rf'$\beta={trust}$')
-plt.axhline(0, c='r', lw=1, ls='--', alpha=1.0)
-plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=False, color='r', ls='--', alpha=1.0) )
 
-arrow_length = 5
-hl = 1.5 
-dx = arrow_length * np.cos(mu)
-dy = arrow_length * np.sin(mu)
-plt.arrow(0, 0, dx, dy, head_width=1.5, head_length=hl, width=0.4, fc='w', ec='w', zorder=2)
-
-if sigma > 0:
-    import matplotlib.patches as patches
-    up = np.degrees(mu) - np.degrees(sigma) / 2 
-    dwn = np.degrees(mu) + np.degrees(sigma) / 2 
-    wedge = patches.Wedge((0, 0), arrow_length+hl, up, dwn, color='w', alpha=0.3, zorder=1)
-    plt.gca().add_patch(wedge)
-
-plt.axis('scaled')
-
-plt.xlim(*bound_x)
-plt.ylim(*bound_y)
-
-# plt.gca().invert_xaxis()
-# plt.savefig(f'beta{trust}.png')
+add_decorations()
 
 show_and_check_ipython()

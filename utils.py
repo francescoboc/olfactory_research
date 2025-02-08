@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import ConvexHull
 import platform
+import alphashape
 
 # detect if running on cluster or laptop
 if platform.node() == 'swift': on_cluster = False
@@ -78,11 +79,9 @@ def normalised(vector):
     if norm != 0: return vector/norm
     else: return vector
 
-def get_convexhull(hb, pr):
+def get_concave_hull(hb, pr, alpha=0.5, max_alpha=5.0, step=0.5):
     probs = hb.get_array()
     bin_centers = hb.get_offsets()
-
-    hulls, points = [], []
 
     # find indices of bins above threshold
     if pr==1: selected_bins = probs >= pr
@@ -95,8 +94,23 @@ def get_convexhull(hb, pr):
     # use ConvexHull to find the outermost boundary around the non-zero bins
     points = np.column_stack([selected_xs, selected_ys])
 
-    hull = ConvexHull(points)
+    # hull = ConvexHull(points)
 
+    if len(points) < 3:
+        return None, points  # Not enough points to form a shape
+
+    # Try to find a valid concave hull by adjusting alpha
+    hull = alphashape.alphashape(points, alpha)
+    
+    while (hull is None or hull.is_empty) and alpha <= max_alpha:
+        alpha += step
+        hull = alphashape.alphashape(points, alpha)
+    
+    # If all attempts fail, return convex hull
+    if hull is None or hull.is_empty:
+        hull = alphashape.alphashape(points, alpha=None)  # Convex hull fallback
+
+    print(alpha)
     return hull, points
 
 def get_closest_bin(bin_coords, l_x, h_y):
@@ -105,6 +119,7 @@ def get_closest_bin(bin_coords, l_x, h_y):
     distances = np.sqrt((bin_coords[:, 0] - x)**2 + (bin_coords[:, 1] - y)**2)
     bin_idx = np.argmin(distances)
     return bin_idx
+
 
 def get_straight_line_times(bin_coords, spawn_radius, speed):
     straight_line_times = []
@@ -115,21 +130,23 @@ def get_straight_line_times(bin_coords, spawn_radius, speed):
 
 def add_decorations():
     from select_file import spawn_radius, mu, sigma, bound_x, bound_y
-    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=True, color='w', ls='', alpha=1, lw=0) )
-    plt.axhline(0, c='r', lw=1, ls='--', alpha=0.7)
-    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=False, color='r', ls='--', alpha=0.7, lw=1) )
+    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=True, color='w', ls='', alpha=1, lw=0, zorder=2) )
+    plt.axhline(0, c='r', lw=1, ls='--', alpha=0.7, zorder=3)
+    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=False, color='r', ls='--', alpha=0.7, lw=1, zorder=3) )
 
     arrow_length = 5
-    hl = 1.5 
+    hl = 3 
+    hw = 3
+    w = 0.6
     dx = arrow_length * np.cos(mu)
     dy = arrow_length * np.sin(mu)
-    plt.arrow(0, 0, dx, dy, head_width=1.5, head_length=hl, width=0.4, fc='k', ec='k', zorder=2)
+    plt.arrow(0, 0, dx, dy, head_width=hw, head_length=hl, width=w, fc='k', ec='k', zorder=4)
 
     if sigma > 0:
         import matplotlib.patches as patches
         up = np.degrees(mu) - np.degrees(sigma) / 2 
         dwn = np.degrees(mu) + np.degrees(sigma) / 2 
-        wedge = patches.Wedge((0, 0), arrow_length+hl, up, dwn, color='k', alpha=0.3, zorder=1)
+        wedge = patches.Wedge((0, 0), arrow_length+hl, up, dwn, color='k', alpha=0.3, zorder=3)
         plt.gca().add_patch(wedge)
 
     plt.axis('scaled')

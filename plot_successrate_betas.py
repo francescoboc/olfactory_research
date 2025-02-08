@@ -48,7 +48,7 @@ for trust in trusts:
 
 ax.legend(title=r'Trust parameter $\beta$', ncol=2)
 
-ax.set_title(fr'Contour: $P \geq {pr}$, Fixed final time')
+ax.set_title(fr'Contour: $\rho \geq {pr}$, Fixed final time')
 
 add_decorations()
 
