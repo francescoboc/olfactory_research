@@ -136,7 +136,14 @@ class Simulation:
             if self.final_time == 0:
                 x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
                 # if min(x_coordinates) >= self.final_x:
-                if min(x_coordinates) >= self.swarm.source_coordinates[0]:
+
+                if len(x_coordinates)>0:
+                    if min(x_coordinates) >= self.swarm.source_coordinates[0]:
+                        break
+
+                # if x_coordinates is an empty sequence, all agents are out
+                else:
+                    print(f'All agents are out of the box!')
                     break
 
             # otherwise, check if we reached final_time
