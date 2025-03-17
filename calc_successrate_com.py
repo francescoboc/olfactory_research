@@ -36,11 +36,10 @@ for trust in trusts:
         for run_n in tqdm(range(n_runs), ascii=' █'):
         # for run_n in range(n_runs):
             try:
-                # com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
-                # com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
-                # com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
-                # com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy', allow_pickle=True)
-                com_y_std = np.load(f'ad', allow_pickle=True)
+                com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
+                com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
+                com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
+                com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy', allow_pickle=True)
 
             except:
                 # print('No COM coordinates found, computing...')

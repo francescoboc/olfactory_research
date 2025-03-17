@@ -18,17 +18,19 @@ private_behavior = 'cast_and_surge'
 
 # trust parameter
 # trust = 0.0
+# trust = 0.01
 
 # trust = 0.1
-# trust = 0.2
+trust = 0.2
 # trust = 0.3
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
+# trust = 0.99
 # trust = 1.0
 
 # swarm parameters
@@ -36,17 +38,17 @@ rd = 0.2
 spawn_radius = 25*rd 
 
 # visual_radius = 0
-visual_radius = 5*rd
-# visual_radius = 100*spawn_radius
+# visual_radius = 5*rd
+visual_radius = 100*spawn_radius
 
 olfactoy_radius = rd
 
 # random initial casting clock
 rand_casting_steps = 100
-# rand_casting_steps = 20
+# rand_casting_steps = 10
 # rand_casting_steps = 0
 
-rand_casting_direction = True
+rand_casting_direction = 1
 
 # average of initial distribution of angles
 mu = 0
@@ -61,7 +63,7 @@ sigma = 0
 
 # number of agents
 n_agents = 100
-# n_agents = 20
+# n_agents = 50
 # n_agents = 10
 
 # number of realisations
@@ -69,8 +71,9 @@ n_runs = 50
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to reach final_x)
-final_time = 0
-# final_time = 500
+# final_time = 100
+# final_time = 300
+final_time = 600
 
 final_x = 100
 
@@ -104,5 +107,5 @@ sensing_noise = 0.0 # eta
 wind_noise = 0.0 
 
 source_coordinates = [75, 0]
-source_coordinates = [50, 0]
+# source_coordinates = [50, 0]
 reach_radius = visual_radius

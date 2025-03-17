@@ -11,7 +11,7 @@ else:
 # load the data dict
 rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 
-pr = 0.0
+pr = 1.0
 
 fig, ax = plt.subplots()
 fig1, ax1 = plt.subplots()
@@ -33,18 +33,43 @@ for trust in trusts:
 
     plt.close(fig1)
 
-    hull, points = get_convexhull(hb, pr)
 
-    s=0
-    for simplex in hull.simplices:
-        xs = points[simplex, 0]
-        ys = points[simplex, 1]
+    hull, points = get_concave_hull(hb, pr)
 
-        if s==0: ax.plot(xs, ys, c=colors[i], lw=1, label=trust)
-        else: ax.plot(xs, ys, c=colors[i], lw=1)
+    lab = trust
 
-        s+=1
+    # Check if 'hull' has 'geoms' attribute (MultiPolygon case)
+    if hasattr(hull, "geoms"):  
+        hulls = hull.geoms  # Extract individual polygons
+    else:  
+        hulls = [hull]  # Treat as a single polygon
+
+    # Iterate over all hulls (handles both single and multi-polygon cases)
+    h=0
+    for poly in hulls:
+        if hasattr(poly, "exterior"):  # Ensure it has an exterior boundary
+            exterior_coords = np.array(poly.exterior.coords)  # Get boundary points
+            if h==0: plt.plot(exterior_coords[:, 0], exterior_coords[:, 1], c=colors[i], lw=1, label=lab)
+            else: plt.plot(exterior_coords[:, 0], exterior_coords[:, 1], c=colors[i], lw=1)
+            h+=1
     i+=1
+
+
+
+
+
+    # hull, points = get_concave_hull(hb, pr)
+
+    # s=0
+    # for simplex in hull.simplices:
+    #     xs = points[simplex, 0]
+    #     ys = points[simplex, 1]
+
+    #     if s==0: ax.plot(xs, ys, c=colors[i], lw=1, label=trust)
+    #     else: ax.plot(xs, ys, c=colors[i], lw=1)
+
+    #     s+=1
+    # i+=1
 
 ax.legend(title=r'Trust parameter $\beta$', ncol=2)
 

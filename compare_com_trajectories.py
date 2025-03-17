@@ -15,6 +15,7 @@ dt = 1
 sim_x_list, sim_y_list = [], []
 theo_x_list, theo_y_list = [], []
 for run_n in range(n_runs):
+# for run_n in range(3,4):
 # for run_n in tqdm(range(n_runs), ascii=' █'):
     com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
     com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
@@ -74,8 +75,10 @@ for run_n in range(n_runs):
     new_x, new_y = com_x[0].copy(), com_y[0].copy()
     for t in range(len(x_t)):
         angle = theta_theo[t]
-        new_x += normv_mean*np.cos(angle)
-        new_y += normv_mean*np.sin(angle)
+        new_x += normvs[t]*np.cos(angle)
+        new_y += normvs[t]*np.sin(angle)
+        # new_x += normv_mean*np.cos(angle)
+        # new_y += normv_mean*np.sin(angle)
         com_x_theo.append(new_x)
         com_y_theo.append(new_y)
 
