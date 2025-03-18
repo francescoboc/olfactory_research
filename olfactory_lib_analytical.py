@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import random, os, h5py
+from tqdm import tqdm
 
 # hack to prevent raising KeyboardInterrupt when stopping the script with ctrl-c
 # https://stackoverflow.com/questions/7073268/remove-traceback-in-python-on-ctrl-c
@@ -86,7 +87,8 @@ class Simulation:
         time_step = 0
         count = 0
 
-        while True:
+        # while True:
+        for time_step in tqdm(range(self.tot_time_steps)):
             # update the swarm
             self.swarm.update(time_step)
             # agent_removed, success = self.swarm.update(time_step)
@@ -95,8 +97,8 @@ class Simulation:
             if self.cloud is not None:
                 self.cloud.update()
 
-            # update global time step 
-            time_step += 1
+            # # update global time step 
+            # time_step += 1
 
             # # remove patches from axes in case an agent was removed
             # if self.real_time_plot and agent_removed:
@@ -131,16 +133,16 @@ class Simulation:
             #     break
 
 
-            # if final_time is 0, check if the last agent passed the final_x point
-            if self.final_time == 0:
-                x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
-                if min(x_coordinates) >= self.final_x:
-                    break
+            # # if final_time is 0, check if the last agent passed the final_x point
+            # if self.final_time == 0:
+            #     x_coordinates = [agent.coordinates[0] for agent in self.swarm.agents]
+            #     if min(x_coordinates) >= self.final_x:
+            #         break
 
-            # otherwise, check if we reached final_time
-            else:
-                if time_step == self.tot_time_steps: 
-                    break
+            # # otherwise, check if we reached final_time
+            # else:
+            #     if time_step == self.tot_time_steps: 
+            #         break
 
             # if all agents are out of the simulation box, stop
             if not self.swarm.agents: 
