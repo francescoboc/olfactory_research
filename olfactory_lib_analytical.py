@@ -54,7 +54,7 @@ class Simulation:
             else:
                 self.axes = plt.subplot(aspect='equal', adjustable='box', xlim=(-10, self.swarm.length), ylim=(-self.swarm.height/2, self.swarm.height/2))
 
-            self.axes.add_patch( plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2) )
+            # self.axes.add_patch( plt.Circle(self.swarm.spawn_center, self.swarm.spawn_radius, fill=False, color='k', ls='--', alpha=0.2) )
             # self.axes.add_patch( plt.Circle(self.swarm.source_coordinates, 0.3, color='k') )
 
             # add patches for source and spawn circle 
@@ -74,8 +74,9 @@ class Simulation:
                 # agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[color_id], label=index)
                 agent_point = plt.Circle(agent.coordinates, 0.1, color=colors[3], label=index)
                 # visual_circle = plt.Circle(agent.coordinates, self.swarm.visual_radius, fill=False, color=colors[color_id], alpha=0.1)
-                visual_circle = plt.Circle(agent.coordinates, self.swarm.visual_radius, fill=False, color=colors[3], alpha=0.1)
-                self.axes.add_patch(agent_point); self.axes.add_patch(visual_circle)
+                # visual_circle = plt.Circle(agent.coordinates, self.swarm.visual_radius, fill=False, color=colors[3], alpha=0.1)
+                self.axes.add_patch(agent_point) 
+                # self.axes.add_patch(visual_circle)
                 index += 1
                 if index >= len(colors): index = 0
             plt.axis('off')
@@ -113,7 +114,7 @@ class Simulation:
                     self.odor_image.set_data(self.cloud.odor>self.swarm.threshold)
                 # self.odor_image.set_data(self.cloud.odor)
                 plt.title(rf'Time = {np.round(time_step*self.swarm.dt, 2)}')
-                # self.axes.plot(self.swarm.center_of_mass[0],self.swarm.center_of_mass[1],'.r',ms=1)
+                self.axes.plot(self.swarm.center_of_mass[0],self.swarm.center_of_mass[1],'.k',ms=1)
                 if self.save_frames: plt.savefig(f'frames/frame{time_step}.png')
                 plt.pause(self.pause_time)
 
@@ -375,14 +376,14 @@ class Swarm:
 
             # salva la norma del denominatore (xi) nella storia
             # TODO attenzione perchè ho tolto la norma da qui!! la faccio poi in post
-            self.xi_history[agent.label].append(agent.combined_velocity)
+            # self.xi_history[agent.label].append(agent.combined_velocity)
 
-            # ora calcoliamo alpha
-            sum_vel_alpha = np.array([0, 0])
-            for agent_j in self.agents:
-                if agent_j != agent:
-                    sum_vel_alpha = sum_vel_alpha + agent_j.combined_velocity
-            self.alpha_history[agent.label].append(norm(sum_vel_alpha))
+            # # ora calcoliamo alpha
+            # sum_vel_alpha = np.array([0, 0])
+            # for agent_j in self.agents:
+            #     if agent_j != agent:
+            #         sum_vel_alpha = sum_vel_alpha + agent_j.combined_velocity
+            # self.alpha_history[agent.label].append(norm(sum_vel_alpha))
 
         self.wt_history.append(sum_vel/self.n_agents)
 

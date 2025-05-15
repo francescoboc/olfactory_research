@@ -14,7 +14,7 @@ else:
 com_y_std_list, com_y_list = [], []
 
 # for run_n in range(n_runs):
-run_n = 9
+run_n = 0
 
 com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
 com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy', allow_pickle=True)
@@ -76,6 +76,24 @@ for t in range(timesteps):
     y_cs_hist.append(y_cs)
  # ----------- ----------- ----------- ----------- -----------
 
+
+# x_an, y_an = [0], [0]
+# for T in range(1,timesteps-101):
+#     x_an.append(trust*speed*T)
+#     y_an.append(y_an[T-1] + dt*(1-trust)*wt[T][1])
+
+# plt.plot( com_x, com_y, label=r'simulation')
+# plt.plot( x_an, y_an, label=r'theory')
+# plt.ylabel('y')
+# plt.xlabel('x')
+
+# # plt.plot( com_x, label=r'simulation')
+# # plt.plot( x_an, label=r'theory')
+# # plt.xlabel('t')
+# # plt.ylabel('x')
+
+
+
 y_cs_2 = []
 for T in range(timesteps - 100):
 
@@ -105,7 +123,7 @@ plt.plot( com_y**2,
         label=r'$ \langle y_i(t) \rangle^2 $')
 
 plt.legend()
-plt.xlabel('timestep')
+# plt.xlabel('timestep')
 # plt.ylabel(r'$\sigma_y^2$')
 plt.title(rf'$\beta={trust}$')
 

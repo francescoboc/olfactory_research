@@ -49,22 +49,22 @@ os.makedirs(coord_folder, exist_ok=True)
 # np.save(f'{coord_folder}/log', log)
 
 run_n = 0
+
 sim = run_simulation(run_n)
-os.makedirs(f'{coord_folder}/run{run_n}', exist_ok=True)
-np.save(f'{coord_folder}/run{run_n}/com_history', sim.swarm.com_history)
+# os.makedirs(f'{coord_folder}/run{run_n}', exist_ok=True)
+# np.save(f'{coord_folder}/run{run_n}/com_history', sim.swarm.com_history)
 
 # com_history = np.load(f'{coord_folder}/run{run_n}/com_history.npy')
 
 # plt.figure()
-# # timesteps = len(sim.swarm.com_history)
-# timesteps = len(com_history)
-# # v_x_b = [sim.swarm.com_history[t][0] for t in range(timesteps)]
-# v_x_b = [com_history[t][0] for t in range(timesteps)]
-# plt.plot(range(timesteps), v_x_b)
-# plt.axhline(trust*speed, c='k', ls='--')
-# # plt.axis('equal')
+# timesteps = len(sim.swarm.com_history)
+timesteps = len(sim.swarm.com_history)
+v_x_b = [sim.swarm.com_history[t][0] for t in range(timesteps)]
+plt.plot(range(timesteps), np.gradient(v_x_b))
+plt.axhline(trust*speed, c='k', ls='--')
+# plt.axis('equal')
 
-# # TODO plott vxb (e vyb) per tempi lunghi a N = 10 100 1000 (10k)?
+show_and_check_ipython()
 
 # fig_xi, ax_xi = plt.subplots()
 # # fig_alpha, ax_alpha = plt.subplots()

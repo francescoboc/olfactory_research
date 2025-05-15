@@ -14,9 +14,8 @@ dt = 1
 
 sim_x_list, sim_y_list = [], []
 theo_x_list, theo_y_list = [], []
-for run_n in range(n_runs):
-# for run_n in range(3,4):
-# for run_n in tqdm(range(n_runs), ascii=' █'):
+# for run_n in range(n_runs):
+for run_n in tqdm(range(n_runs), ascii=' █'):
     com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
     com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
     # com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
@@ -37,7 +36,8 @@ for run_n in range(n_runs):
         # th = np.arctan2(y_t[i], x_t[i])
         theta_com.append(th)
 
-    normv_mean = np.mean(normvs)
+    # normv_mean = np.mean(normvs)
+    normv_mean = trust*speed
 
     # normv_std = np.std(normvs)
 
@@ -114,10 +114,14 @@ std_y_theo = np.std(truncate_and_stack(theo_y_list),axis=0)
 
 shaded_errorbar(mean_x_theo, mean_y_theo, std_y_theo, lab='theory', c='k', ls='-', m='')
 
+# plt.plot(np.gradient(mean_x_sim))
+# plt.plot(com_x)
+
 plt.title(fr'Average trajectory, $\beta = {trust}$')
 plt.xlabel('x')
 plt.ylabel('y')
 plt.legend()
+# plt.axis('equal')
 
 # add_decorations()
 
