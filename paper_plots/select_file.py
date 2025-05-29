@@ -39,14 +39,16 @@ rand_casting_steps = 100
 # rand_casting_steps = 0
 
 # average of initial distribution of angles
-# mu = 0
+mu = 0
 # mu = np.pi/4
-mu = np.pi/2
+
+# mu = np.pi/2
 
 # standard deviation of initial distribution of angles
-sigma = 0
+# sigma = 0
+sigma = np.pi/2
+
 # sigma = np.pi/4
-# sigma = np.pi/2
 
 # sigma = np.pi
 

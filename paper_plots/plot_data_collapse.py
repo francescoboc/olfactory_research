@@ -52,7 +52,7 @@ for i, dt  in enumerate(dts):
     folder = f'data_collapse/results/thr{threshold}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
     filename = f'dt{dt}'
     reach_times = pd.read_pickle(f'{folder}/{filename}.pkl')
-    # print(reach_times.attrs)
+    print(reach_times.attrs)
 
     trusts = np.array(reach_times.index)
 
