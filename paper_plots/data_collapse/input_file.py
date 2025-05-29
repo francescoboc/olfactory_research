@@ -1,14 +1,18 @@
 import numpy as np 
 
+def linrange(start, stop, step, round_decimals=2):
+    num = int(np.round((stop - start) / step)) + 1
+    return np.round(np.linspace(start, stop, num), round_decimals)
+
 # plotting parameters 
-real_time_plot = True
+real_time_plot = False
 save_frames = False
 save_gif = False
 pause_time = 0.001
 # pause_time = 0.5
 
 # if parallel is true, we scan several values of trust
-parallel = False
+parallel = True
 n_threads = 10
 n_samples = 10
 
@@ -36,8 +40,9 @@ reach_radius = 1.0
 shifts = np.linspace(0, 3, 6)*spawn_radius
 shift = shifts[0]
 
-sigma = np.pi/20
-# sigma = np.pi/3
+# sigma = np.pi/20
+sigma = np.pi/2
+
 mus = np.linspace(1, 3/2, 6)*np.pi
 mu = mus[0]
  
@@ -52,16 +57,16 @@ threshold = 1.0
 n_agents = 100
 # n_agents = 1
 
-# trust values to check in the parallel run
-trust_init = 0.5
-trust_final = 0.9
-trust_step = 0.1
+# # trust values to check in the parallel run
+# trust_init = 0.5
+# trust_final = 0.9
+# trust_step = 0.1
 
-# trust_init = 0.9
-# trust_final = 0.99
-# trust_step = 0.01
+trust_init = 0.8
+trust_final = 0.99
+trust_step = 0.01
 
-trusts = np.round(np.arange(trust_init, trust_final + trust_step, trust_step),2) 
+trusts = linrange(trust_init, trust_final, trust_step,2) 
 
 # max number of simulations to do to try reaching n_samples
 # limit = int(n_samples*10)
@@ -80,7 +85,10 @@ odor_delta_x = 0.1
 # method = 'kernel'; dt = 0.01
 # method = 'no_kernel'; dt = decision_time
 method = 'no_kernel'
-dt = 1.0
+# dt = 1.0
+# dt = 0.5
+# dt = 0.2
+dt = 0.1
 
 # distance from the source
 lx = 50
@@ -93,7 +101,8 @@ sensing_noise = 0.0 # eta
 wind_noise = 0.0 
 
 # v0
-speed = 0.2 
+# speed = 0.2 
+speed = 0.5
 # speed = 1.0 
 
 # spawn position and source coordinates 
@@ -101,5 +110,5 @@ spawn_center = [length/1.5, height/2 + shift]
 source_coordinates = [spawn_center[0]-lx, height/2]
 
 # define folder and filename
-folder = f'results/thr{threshold}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
+folder = f'results/thr{threshold}/sigma{sigma:.2f}/speed{speed}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
 filename = f'dt{dt}'
