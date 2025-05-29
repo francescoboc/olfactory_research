@@ -3,10 +3,10 @@ import numpy as np
 # trust parameter
 # trust = 0.0
 
-# trust = 0.1
+trust = 0.1
 # trust = 0.2
 # trust = 0.3
-trust = 0.4
+# trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
@@ -39,9 +39,9 @@ rand_casting_steps = 100
 # rand_casting_steps = 0
 
 # average of initial distribution of angles
-mu = 0
+# mu = 0
 # mu = np.pi/4
-# mu = np.pi/2
+mu = np.pi/2
 
 # standard deviation of initial distribution of angles
 sigma = 0

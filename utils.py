@@ -37,7 +37,7 @@ plt.rc('savefig', format='pdf')
 plt.rc('savefig', directory='/mnt/c/Users/franc/Dropbox/papero_1_olfactory/img')
 
 # parameters for plotting the cloud
-margin = 10
+margin = 15
 colormap='GnBu'
 
 def print_attributes(dataframe):

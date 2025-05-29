@@ -48,7 +48,7 @@ for t in range(100000):
 from select_file import *
 col = 0
 # for trust in [0.1,0.3,0.5,0.7,0.9]:
-for trust in [0.9]:
+for trust in [0.5]:
 
     # SIMULATIONS:
     if final_time == 0:
@@ -63,14 +63,15 @@ for trust in [0.9]:
     # if trust == 0.1: timesteps = len(com_x_std)
     timesteps = len(com_x_std)
 
-    plt.plot(com_y_std**2, label=fr'$\beta={trust}$', c=colors[col])
+    # plt.plot(com_y_std**2, label=fr'$\beta={trust}$, simulation', c=colors[col])
 
     # THEORY:
     y_cs_2 = []
     for t in range(timesteps):
         int_s = 0
         for tau in range(100):
-            int_s += (y_cs_hist[t+tau] + y_cs_hist[tau])**2
+            # int_s += (y_cs_hist[t+tau] + y_cs_hist[tau])**2
+            int_s += (y_cs_hist[t+tau] - y_cs_hist[tau])**2
         y_cs_2.append(int_s)
     y_cs_2 = np.array(y_cs_2)/100
 
@@ -80,7 +81,8 @@ for trust in [0.9]:
 
     y_cs_2 += (spawn_radius/2)**2
 
-    plt.plot(y_cs_2, c=colors[col], ls='--')
+    # plt.plot(y_cs_2, label=fr'$\beta={trust}$, theory', c=colors[col], ls='--')
+    plt.plot(y_cs_2, label=fr'$\beta={trust}$, theory', ls='--')
 
     col += 1
 

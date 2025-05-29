@@ -44,7 +44,7 @@ axins = inset_axes(ax,
                    width="40%",  # width relative to parent
                    height="40%",  # height relative to parent
                    loc='upper left',  # ignored if bbox_to_anchor used
-                   bbox_to_anchor=(0.075, -0.04, 1.0, 1.0),  # (x0, y0, width, height)
+                   bbox_to_anchor=(0.055, -0.03, 1.0, 1.0),  # (x0, y0, width, height)
                    bbox_transform=ax.transAxes,)
                    # borderpad=2.0)
 
@@ -52,7 +52,7 @@ for i, dt  in enumerate(dts):
     folder = f'data_collapse/results/thr{threshold}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
     filename = f'dt{dt}'
     reach_times = pd.read_pickle(f'{folder}/{filename}.pkl')
-    print(reach_times.attrs)
+    # print(reach_times.attrs)
 
     trusts = np.array(reach_times.index)
 
@@ -82,10 +82,12 @@ for i, dt  in enumerate(dts):
 
     # shaded_errorbar((1-trusts)/dt, mean_times_avg, mean_times_std, lab= fr'$dt={dt}$')
 
-axins.set_xlim(0, 0.18)
-axins.set_ylim(0.8, 1.6)
+# axins.set_xlim(0, 0.18)
+# axins.set_ylim(0.8, 1.6)
+axins.set_xlim(0, 0.35)
+axins.set_ylim(0.7, 3.7)
 axins.tick_params(axis='both', which='both', labelsize=14)
-axins.set_xticks([0,0.05,0.1,0.15])
+axins.set_xticks([0,0.1,0.2,0.3])
 
 # Collega il box allo zoom
 mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5", alpha=0.5)

@@ -20,7 +20,7 @@ private_behavior = 'cast_and_surge'
 # trust = 0.0
 # trust = 0.01
 
-trust = 0.1
+# trust = 0.1
 # trust = 0.2
 # trust = 0.3
 # trust = 0.4
@@ -28,7 +28,7 @@ trust = 0.1
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
-# trust = 0.9
+trust = 0.9
 
 # trust = 0.99
 # trust = 1.0
@@ -38,8 +38,8 @@ rd = 0.2
 spawn_radius = 25*rd 
 
 # visual_radius = 0
-# visual_radius = 5*rd
-visual_radius = 100*spawn_radius
+visual_radius = 5*rd
+# visual_radius = 100*spawn_radius
 
 olfactoy_radius = rd
 
@@ -68,13 +68,13 @@ n_agents = 100
 # n_agents = 2000
 
 # number of realisations
-n_runs = 50
+n_runs = 1
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to reach final_x)
 # final_time = 100
-# final_time = 1000
-final_time = 5000
+final_time = 1000
+# final_time = 5000
 
 final_x = 100
 
