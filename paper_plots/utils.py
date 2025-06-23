@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.spatial import ConvexHull
 import platform
 import alphashape
+from tqdm import tqdm as base_tqdm
 
 square_figsize = (6,4.8)
 square_figsize_reduced = (6,4.28)
@@ -215,3 +216,7 @@ def truncate_and_stack(array_list):
     
     # Truncate all arrays to the shortest length and stack
     return np.stack([arr[:min_length] for arr in array_list])
+
+def tqdm(iterable=None, *args, **kwargs):
+    kwargs.setdefault('ascii', ' █')
+    return base_tqdm(iterable, *args, **kwargs)

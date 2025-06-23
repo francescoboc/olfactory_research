@@ -50,7 +50,8 @@ for trust in trusts:
         break
 
     try:
-        success_rate_com_theo = np.load(f'{hexbin_folder}/com_theo_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
+        # success_rate_com_theo = np.load(f'{hexbin_folder}/com_theo_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
+        success_rate_com_theo = np.load(f'{hexbin_folder}/com_fulltheo_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
     except:
         data_found = False
         print(f'Success rate COM THEO missing for trust {trust}')
@@ -67,6 +68,7 @@ if data_found:
     np.save(f'{dicts_folder}/prob_betas_gridsize{gridsize}_offset{offset}', prob_betas)
     np.save(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}', rate_betas)
     np.save(f'{dicts_folder}/com_rate_betas_gridsize{gridsize}_offset{offset}', rate_betas_com)
-    np.save(f'{dicts_folder}/com_theo_rate_betas_gridsize{gridsize}_offset{offset}', rate_betas_com_theo)
+    # np.save(f'{dicts_folder}/com_theo_rate_betas_gridsize{gridsize}_offset{offset}', rate_betas_com_theo)
+    np.save(f'{dicts_folder}/com_fulltheo_rate_betas_gridsize{gridsize}_offset{offset}', rate_betas_com_theo)
     np.save(f'{dicts_folder}/fpt_betas_gridsize{gridsize}_offset{offset}', fpt_betas)
     print('Lists saved!')

@@ -3,6 +3,7 @@ from utils import *
 from select_file import *
 from tqdm import tqdm
 import os
+import matplotlib.patches as mpatches
 
 dt = 1
 
@@ -16,7 +17,7 @@ for trust in trusts:
         com_coord_folder = f'com_coordinates/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_time{final_time}/trust{trust}'
 
     try:
-        success_rate = np.load(f'{hexbin_folder}/com_theo_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
+        success_rate = np.load(f'{hexbin_folder}/com_fulltheo_successrate_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True)
 
         print(f'{trust} COM success rate data already exists!')
 
@@ -32,8 +33,8 @@ for trust in trusts:
         count_sums = []
         sim_x_list, sim_y_list = [], []
         theo_x_list, theo_y_list = [], []
-        # for run_n in tqdm(range(n_runs), ascii=' █'):
-        for run_n in range(n_runs):
+        for run_n in tqdm(range(n_runs), ascii=' █'):
+        # for run_n in range(n_runs):
             try:
                 com_x_theo = np.load(f'{com_coord_folder}/run{run_n}/com_x_theo.npy', allow_pickle=True)
                 com_y_theo = np.load(f'{com_coord_folder}/run{run_n}/com_y_theo.npy', allow_pickle=True)
@@ -103,9 +104,13 @@ for trust in trusts:
                 np.save(f'{com_coord_folder}/run{run_n}/com_y_theo.npy', com_y_theo)
 
 
-            # NB if these are not available, just run calc_successrate_com first!
-            com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
-            com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy', allow_pickle=True)
+            # # NB if these are not available, just run calc_successrate_com first!
+            # com_x_std = np.load(f'{com_coord_folder}/run{run_n}/com_x_std.npy', allow_pickle=True)
+            # com_y_std = np.load(f'{com_coord_folder}/run{run_n}/com_y_std.npy', allow_pickle=True)
+
+            # use theoretical std
+            com_y_std = np.load(f'{com_coord_folder}/com_y_std_teho.npy', allow_pickle=True)
+            com_x_std = spawn_radius/2
 
             # create an empty hexbin to get grid structure
             hb = plt.hexbin([], [], gridsize=gridsize, extent=[*bound_x, *bound_y])
@@ -117,10 +122,14 @@ for trust in trusts:
             bin_values = np.zeros(len(hex_centers_x))
 
             # loop through each timestep to build ellipses
+            # min_tsteps = min(len(com_y_std), len(com_x_theo))
             for t in range(len(com_x_theo)):
+            # for t in range(len(com_y_std)):
+            # for t in range(min_tsteps):
                 # parameters of the ellipse
                 x0, y0 = com_x_theo[t], com_y_theo[t]
-                a, b = com_x_std[t]*2, com_y_std[t]*2
+                # a, b = com_x_std[t]*2, com_y_std[t]*2
+                a, b = com_x_std*2, com_y_std[t]*2
 
                 # check which hexbin centers fall within the ellipse
                 inside_ellipse = ((hex_centers_x - x0) / a) ** 2 + ((hex_centers_y - y0) / b) ** 2 <= 1
@@ -140,5 +149,4 @@ for trust in trusts:
         total_sum = np.sum(count_sums, axis=0)
         success_rate = total_sum/n_runs
 
-        success_rate.dump(f'{hexbin_folder}/com_theo_successrate_gridsize{gridsize}_offset{offset}.npy')
-
+        success_rate.dump(f'{hexbin_folder}/com_fulltheo_successrate_gridsize{gridsize}_offset{offset}.npy')

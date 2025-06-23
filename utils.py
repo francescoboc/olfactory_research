@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.spatial import ConvexHull
 import platform
 import alphashape
+from tqdm import tqdm as base_tqdm
 
 # detect if running on cluster or laptop
 if platform.node() == 'swift': on_cluster = False
@@ -159,3 +160,7 @@ def truncate_and_stack(array_list):
     
     # Truncate all arrays to the shortest length and stack
     return np.stack([arr[:min_length] for arr in array_list])
+
+def tqdm(iterable=None, *args, **kwargs):
+    kwargs.setdefault('ascii', ' █')
+    return base_tqdm(iterable, *args, **kwargs)

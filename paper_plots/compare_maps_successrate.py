@@ -1,6 +1,8 @@
 from utils import *
 from select_file import *
 
+visual_radius = 100*spawn_radius
+
 def calc_best_trust(rate_betas):
     # convert the dictionaries into masked arrays, preserving masks
     rate_map_stacked = np.ma.stack(list(rate_betas.values()), axis=1)
@@ -50,22 +52,30 @@ def plot_best_trust_map(best_trust_rate, subtitle):
 
     add_decorations(30)
 
-colormap = 'viridis_r'
+# colormap = 'viridis_r'
+colormap = 'viridis'
 
 dicts_folder = f'../beta_dicts/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
 # load the data dicts
 rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 rate_betas_com = np.load(f'{dicts_folder}/com_rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
-rate_betas_com_theo = np.load(f'{dicts_folder}/com_theo_rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
+# rate_betas_com_theo = np.load(f'{dicts_folder}/com_theo_rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
+rate_betas_com_theo = np.load(f'{dicts_folder}/com_fulltheo_rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 
 best_trust_rate = calc_best_trust(rate_betas)
 best_trust_rate_com = calc_best_trust(rate_betas_com)
 best_trust_rate_com_theo = calc_best_trust(rate_betas_com_theo)
 
-plot_best_trust_map(best_trust_rate, 'Real trajectories')
+# plot_best_trust_map(best_trust_rate, 'Real trajectories')
+plot_best_trust_map(best_trust_rate, 'Simulation')
+
 # plot_best_trust_map(best_trust_rate_com, 'Real COM traj + real std ellipse')
-plot_best_trust_map(best_trust_rate_com_theo, 'Theo COM traj + real std ellipse')
+# plot_best_trust_map(best_trust_rate_com_theo, 'Theo COM traj + real std ellipse')
+# plot_best_trust_map(best_trust_rate_com_theo, 'Theo COM traj + theo std ellipse')
+plot_best_trust_map(best_trust_rate_com_theo, 'Theory')
+
+# TODO check the inverse of non-predicted points: points that exists in the theoretical map but NOT in the real one
 
 ########## PLOT HEATMAP OF AGREEMENT ##########
 plt.figure()
@@ -120,7 +130,7 @@ total_points = np.count_nonzero(~np.isnan(best_trust_rate))
 
 plt.title(r'Agreement of $\beta^*_\rho$ ')
 plt.xlabel('Real trajectories')
-plt.ylabel('Theo COM traj + real std ellipse')
+plt.ylabel('Theo COM traj + theo std ellipse')
 plt.xticks(trusts)
 plt.yticks(trusts)
 plt.axis('square')
