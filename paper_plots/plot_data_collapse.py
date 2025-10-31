@@ -1,6 +1,10 @@
 from utils import *
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
+plt.rcParams['font.size'] = 16
+plt.rcParams['legend.fontsize'] = 14 
+plt.rcParams['figure.constrained_layout.use'] = True
+
 sigma = np.pi/2
 # sigma = 0
 
@@ -37,10 +41,10 @@ wind_noise = 0.0
 
 dts = [1.0, 0.5, 0.2, 0.1]
 
-if speed == 0.2:
-    dts = [0.5, 0.2, 0.1]
-elif speed == 0.5:
-    dts = [1.0, 0.2, 0.1]
+# if speed == 0.2:
+#     dts = [0.5, 0.2, 0.1]
+# elif speed == 0.5:
+#     dts = [1.0, 0.2, 0.1]
 
 lx = 50
 # speed = 0.2 # v0
@@ -50,7 +54,8 @@ if visual_radius == 10*rd:
     dts = [1.0, 0.5, 0.1]
 
 
-fig, ax = plt.subplots()  # crea figura e asse principali
+fig, ax = plt.subplots(figsize=square_figsize)  # crea figura e asse principali
+fig.set_size_inches(4.5, 4.5)
 
 axins = inset_axes(ax,
                    width="40%",  # width relative to parent
@@ -61,8 +66,8 @@ axins = inset_axes(ax,
                    # borderpad=2.0)
 
 for i, dt  in enumerate(dts):
-    folder = f'data_collapse/results/thr{threshold}/sigma{sigma:.2f}/speed{speed}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
-    # folder = f'data_collapse/results/thr{threshold}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
+    # folder = f'data_collapse/results/thr{threshold}/sigma{sigma:.2f}/speed{speed}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
+    folder = f'data_collapse/results/thr{threshold}/vr{visual_radius}_N{n_agents}_sr{spawn_radius}'
     filename = f'dt{dt}'
     reach_times = pd.read_pickle(f'{folder}/{filename}.pkl')
     # print(reach_times.attrs)

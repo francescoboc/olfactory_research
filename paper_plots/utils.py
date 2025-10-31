@@ -23,18 +23,16 @@ plt.rcParams['lines.markerfacecolor'] = 'none'
 plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['errorbar.capsize'] = 2
 plt.rcParams['legend.fancybox'] = False
-# plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.constrained_layout.use'] = True
 
 plt.rcParams['legend.fontsize'] = 15 
 plt.rcParams['legend.title_fontsize'] = 12
 
-# plt.rcParams['legend.handlelength'] = 1
-# plt.rcParams['legend.handletextpad'] = 0.5
+plt.rcParams['legend.handlelength'] = 1.25
+plt.rcParams['legend.handletextpad'] = 0.5
 
 plt.rc('text', usetex=True)
 plt.rcParams['font.size'] = 16
-
-plt.rcParams['figure.constrained_layout.use'] = True
 
 save_directory = '/mnt/c/Users/franc/Dropbox/papero_1_olfactory/img/'
 
@@ -182,33 +180,70 @@ def get_straight_line_times(bin_coords, spawn_radius, speed):
         straight_line_times.append(np.sqrt((x_s-spawn_radius)**2 + y_s**2)/speed)
     return straight_line_times
 
-def add_decorations(reduce_bounds = 0.0):
-    from select_file import spawn_radius, mu, sigma, bound_x, bound_y
-    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=True, color='w', ls='', alpha=1, lw=0, zorder=2) )
-    plt.axhline(0, c='r', lw=1, ls='--', alpha=0.7, zorder=3)
-    plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=False, color='r', ls='--', alpha=0.7, lw=1, zorder=3) )
 
-    arrow_length = 5
-    hl = 3 
-    hw = 3
-    w = 0.6
+def add_decorations(reduce_bounds=0.0, white_circle=True, color='r', ax=None, arrow_length = 5, hl = 3, hw = 3, w = 0.6):
+    from select_file import spawn_radius, mu, sigma, bound_x, bound_y
+    import matplotlib.patches as patches
+
+    if ax is None:
+        ax = plt.gca()
+
+    if white_circle:
+        ax.add_patch(patches.Circle((0, 0), spawn_radius, fill=True, color='w',
+                                    ls='', alpha=1, lw=0, zorder=2))
+
+    ax.axhline(0, c=color, lw=1, ls='--', alpha=0.7, zorder=3)
+    ax.add_patch(patches.Circle((0, 0), spawn_radius, fill=False, color=color,
+                                ls='--', alpha=0.7, lw=1, zorder=3))
+
     dx = arrow_length * np.cos(mu)
     dy = arrow_length * np.sin(mu)
-    plt.arrow(0, 0, dx, dy, head_width=hw, head_length=hl, width=w, fc='k', ec='k', zorder=4)
+    ax.arrow(0, 0, dx, dy, head_width=hw, head_length=hl, width=w,
+             fc='k', ec='k', zorder=4)
 
     if sigma > 0:
-        import matplotlib.patches as patches
-        up = np.degrees(mu) - np.degrees(sigma) / 2 
-        dwn = np.degrees(mu) + np.degrees(sigma) / 2 
-        wedge = patches.Wedge((0, 0), arrow_length+hl, up, dwn, color='k', alpha=0.3, zorder=3)
-        plt.gca().add_patch(wedge)
+        up = np.degrees(mu) - np.degrees(sigma) 
+        dwn = np.degrees(mu) + np.degrees(sigma) 
+        wedge = patches.Wedge((0, 0), arrow_length + hl, up, dwn,
+                              color='k', alpha=0.3, zorder=3)
+        ax.add_patch(wedge)
 
-    plt.axis('scaled')
+    ax.set_aspect('equal', adjustable='box')
 
-    bound_x = np.array(bound_x) + [reduce_bounds, -reduce_bounds]
-    bound_y = np.array(bound_y) + [reduce_bounds, -reduce_bounds]
-    plt.gca().set_xlim(*bound_x)
-    plt.gca().set_ylim(*bound_y)
+    bx = np.array(bound_x) + [reduce_bounds, -reduce_bounds]
+    by = np.array(bound_y) + [reduce_bounds, -reduce_bounds]
+    ax.set_xlim(*bx)
+    ax.set_ylim(*by)
+
+
+# def add_decorations(reduce_bounds = 0.0, white_circle=True, color='r'):
+#     from select_file import spawn_radius, mu, sigma, bound_x, bound_y
+#     if white_circle:
+#         plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=True, color='w', ls='', alpha=1, lw=0, zorder=2) )
+#     plt.axhline(0, c=color, lw=1, ls='--', alpha=0.7, zorder=3)
+#     plt.gca().add_patch( plt.Circle((0,0), spawn_radius, fill=False, color=color, ls='--', alpha=0.7, lw=1, zorder=3) )
+
+#     arrow_length = 5
+#     hl = 3 
+#     hw = 3
+#     w = 0.6
+#     dx = arrow_length * np.cos(mu)
+#     dy = arrow_length * np.sin(mu)
+#     plt.arrow(0, 0, dx, dy, head_width=hw, head_length=hl, width=w, fc='k', ec='k', zorder=4)
+
+#     if sigma > 0:
+#         import matplotlib.patches as patches
+#         up = np.degrees(mu) - np.degrees(sigma) / 2 
+#         dwn = np.degrees(mu) + np.degrees(sigma) / 2 
+#         wedge = patches.Wedge((0, 0), arrow_length+hl, up, dwn, color='k', alpha=0.3, zorder=3)
+#         plt.gca().add_patch(wedge)
+
+#     plt.axis('scaled')
+
+#     bound_x = np.array(bound_x) + [reduce_bounds, -reduce_bounds]
+#     bound_y = np.array(bound_y) + [reduce_bounds, -reduce_bounds]
+#     plt.gca().set_xlim(*bound_x)
+#     plt.gca().set_ylim(*bound_y)
 
 def truncate_and_stack(array_list):
     # Find the length of the shortest array

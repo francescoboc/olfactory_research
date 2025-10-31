@@ -23,6 +23,10 @@ com_x = np.load(f'{com_coord_folder}/run{run_n}/com_x.npy', allow_pickle=True)
 com_y = np.load(f'{com_coord_folder}/run{run_n}/com_y.npy', allow_pickle=True)
 wt = np.load(f'{com_coord_folder}/run{run_n}/wt_history.npy', allow_pickle=True)
 
+# theoretical
+com_y_std_theo = np.load(f'{com_coord_folder}/com_y_std_teho.npy', allow_pickle=True)
+
+
 timesteps = len(com_x_std) +100
 
 # com_y_std_list.append(com_y_std**2) 
@@ -116,11 +120,11 @@ y_cs_2 = np.array(y_cs_2)
 # y_cs_2 += spawn_radius/2
 y_cs_2 += (spawn_radius/2)**2
 
-plt.plot(y_cs_2 - com_y**2, 
-        c='k', label=r'$\langle y_{CS}^2 \rangle - \langle y_i(t) \rangle^2 $')
+# plt.plot(y_cs_2 - com_y**2, 
+#         c='k', label=r'$\langle y_{CS}^2 \rangle - \langle y_i(t) \rangle^2 $')
 
-plt.plot( com_y**2, 
-        label=r'$ \langle y_i(t) \rangle^2 $')
+# plt.plot( com_y**2, 
+#         label=r'$ \langle y_i(t) \rangle^2 $')
 
 plt.legend()
 # plt.xlabel('timestep')

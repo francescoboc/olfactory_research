@@ -27,15 +27,16 @@ private_behavior = 'cast_and_surge'
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
-trust = 0.8
-# trust = 0.9
+# trust = 0.8
+trust = 0.9
 
 # trust = 0.99
 # trust = 1.0
 
 # swarm parameters
 rd = 0.2
-spawn_radius = 25*rd 
+# spawn_radius = 25*rd 
+spawn_radius = 5*rd 
 
 # visual_radius = 0
 # visual_radius = 5*rd
@@ -44,41 +45,42 @@ visual_radius = 100*spawn_radius
 olfactoy_radius = rd
 
 # random initial casting clock
-rand_casting_steps = 100
+# rand_casting_steps = 100
 # rand_casting_steps = 10
-# rand_casting_steps = 0
+rand_casting_steps = 0
 
-rand_casting_direction = 1
+rand_casting_direction = 0
 
 # average of initial distribution of angles
-mu = 0
-# mu = np.pi/4
+# mu = 0
+mu = np.pi/4
 
 # mu = np.pi/2
 
 # std of initial distribution of angles
-# sigma = 0
-sigma = np.pi/2
+sigma = 0
+# sigma = np.pi/2
 
 # sigma = np.pi/4
 # sigma = np.pi
 
 # number of agents
+n_agents = 2
 # n_agents = 10
-n_agents = 100
+# n_agents = 100
 # n_agents = 1000
-# n_agents = 2000
 
 # number of realisations
 n_runs = 50
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to reach final_x)
-final_time = 0
-# final_time = 1000
+# final_time = 0
+final_time = 1000
 # final_time = 5000
 
-final_x = 100
+# final_x = 100
+final_x = 1000
 
 # agent's speed
 speed = 0.2

@@ -1,36 +1,34 @@
 from utils import *
 from select_file import *
 
+plt.rcParams['figure.constrained_layout.use'] = True
 filename = rf'performance_maps/map_rho_angle{mu:.2f}_std{sigma:.2f}_beta{trust}.png'
-savefig = True
+savefig = 1
 
 dicts_folder = f'../beta_dicts/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/final_x{final_x}'
 
 # load the data dict
 rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
+# rate_betas = np.load(f'{dicts_folder}/com_fulltheo_betav0_rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 
 success_rate = rate_betas[trust]
 
+# success_rate = np.load(f'{hexbin_folder}/com_fulltheo_betav0_successrate_gridsize{gridsize}_offset{offset}.npy' , allow_pickle=True)
+
 plt.figure()
-
 hb = plt.hexbin([], [], gridsize=gridsize, extent=[*bound_x, *bound_y], cmap='plasma')
-
 # create a mask for bins where the x-coordinate is less than a threshold
 x_threshold = final_x
 bin_coords = hb.get_offsets()  
 x_edges, y_edges = bin_coords.T
 mask_below_threshold = x_edges > x_threshold
 success_rate[mask_below_threshold] = 0
-
 hb.set_array(success_rate)
-
 # hb.set_clim(np.min(success_rate), np.max(success_rate))  
 hb.set_clim(0,1)  
-
 # set background (non-explored parts of space) same color as min of colorbar
 cb = plt.colorbar(hb, label=r'Average succcess rate $\rho$')
 plt.gca().set_facecolor(cb.cmap(0))
-
 plt.title(rf'$\beta={trust}$')
 
 # # calculate the distance to each hexbin center and find the closest bin to the source

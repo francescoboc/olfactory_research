@@ -1,6 +1,8 @@
 from utils import *
 from select_file import *
 
+plt.rcParams['figure.constrained_layout.use'] = True
+
 def get_success_rate_source(trust, x, y):
     rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 
@@ -28,9 +30,9 @@ def get_first_passage_source(trust, x, y):
 
     return fpt_source/straight_line_time
 
-# variable = 'shift'
+variable = 'shift'
 # variable = 'angle'
-variable = 'sigma'
+# variable = 'sigma'
 
 filename = rf'perf_{variable}_infiniterange.pdf'
 savefig = True

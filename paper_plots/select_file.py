@@ -1,5 +1,7 @@
 import numpy as np
 
+OVERWRITE = False
+
 # trust parameter
 # trust = 0.0
 
@@ -10,13 +12,13 @@ import numpy as np
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
-trust = 0.8
-# trust = 0.9
+# trust = 0.8
+trust = 0.9
 
 # trust = 1.0
 
 trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-# trusts = [0.1, 0.3, 0.5, 0.7, 0.9]
+# trusts = [trust]
 
 # set the thresholds for the success rate and presence probability
 rate_threshold = 0.95
@@ -30,13 +32,15 @@ rd = 0.2
 spawn_radius = 25*rd 
 
 # visual_radius = 0
-visual_radius = 5*rd
-# visual_radius = 100*spawn_radius
+# visual_radius = 5*rd
+visual_radius = 100*spawn_radius
 
 # random initial casting clock
 rand_casting_steps = 100
 # rand_casting_steps = 20
 # rand_casting_steps = 0
+
+rand_casting_direction = 1
 
 # average of initial distribution of angles
 mu = 0
@@ -45,8 +49,8 @@ mu = 0
 # mu = np.pi/2
 
 # standard deviation of initial distribution of angles
-sigma = 0
-# sigma = np.pi/2
+# sigma = 0
+sigma = np.pi/2
 
 # sigma = np.pi/4
 # sigma = np.pi
@@ -58,7 +62,6 @@ n_agents = 100
 
 # number of realisations
 n_runs = 50
-# n_runs = 2
 
 # final_time = 500
 final_time = 0
@@ -97,3 +100,13 @@ hex_radius = width / (gridsize * np.sqrt(3))
 
 # agent's speed
 speed = 0.2
+
+private_behavior = 'cast_and_surge'
+olfactoy_radius = rd
+sensing_noise = 0.0 # eta
+length, height = 500, 500
+wind_noise = 0.0 
+decision_time = 1
+memory_time = decision_time
+threshold = np.inf
+method = 'no_kernel'; dt = decision_time
