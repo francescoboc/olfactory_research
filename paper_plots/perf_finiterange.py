@@ -1,9 +1,19 @@
 from utils import *
 from select_file import *
 
-# variable = 'shift'
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['legend.fontsize'] = 14 
+plt.rcParams['legend.title_fontsize'] = 12
+
+# trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+# simulation without odor
+no_odor = 0
+
+variable = 'shift'
 # variable = 'angle'
-variable = 'sigma'
+# variable = 'sigma'
 
 filename = rf'perf_{variable}_finiterange.pdf'
 savefig = True
@@ -16,7 +26,8 @@ fig, (ax1, ax2) = plt.subplots(1, 2)
 fig.set_size_inches(7, 3.5)
 
 if variable == 'shift':
-    iterable = [0, 10, 16, 20]
+    # iterable = [0, 10, 16, 20]
+    iterable = [0]
     l_x = 75
     mu = 0
     sigma = 0
@@ -36,8 +47,6 @@ elif variable == 'sigma':
     h_y = 0 
     mu = 0
     legend_title=r'STD $\sigma$'
-
-trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
 color_fpt = colors[0]
 color_rate = colors[3]
@@ -59,7 +68,12 @@ for item in iterable:
     for trust in trusts:
 
         source_coordinates = [l_x, h_y]
-        fpt_folder = f'../first_passages/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/source_coord{source_coordinates[0]}_{source_coordinates[1]}/trust{trust:.1f}'
+
+        if no_odor:
+            fpt_folder = f'../first_passages/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/source_coord{source_coordinates[0]}_{source_coordinates[1]}/trust{trust}'
+        else:
+            fpt_folder = f'../first_passages_odor/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/source_coord{source_coordinates[0]}_{source_coordinates[1]}/trust{trust}'
+
         try:
             reach_times = np.load(f'{fpt_folder}/reach_times.npy')
 
@@ -104,9 +118,12 @@ ax1.legend(title=legend_title)
 ax1.set_xlabel(r'Trust $\beta$')
 ax2.set_xlabel(r'Trust $\beta$')
 
+ax1.set_xticks([0.25, 0.5, 0.75])
+ax2.set_xticks([0.25, 0.5, 0.75])
+
 # ax1.set_title('Finite visual range')
 # ax1.text(0.5, 0.95, 'Finite visual range', transform=ax1.transAxes, va='top', ha='center')
         
 show_and_check_ipython()
 
-if savefig: fig.savefig(save_directory + filename)
+# if savefig: fig.savefig(save_directory + filename)

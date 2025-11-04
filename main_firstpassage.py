@@ -46,7 +46,10 @@ print(f'source coord = {source_coordinates[0]}, {source_coordinates[1]}')
 # os.makedirs(coord_folder, exist_ok=True)
 
 # coord_folder = f'../storage/first_passages/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/source_coord{source_coordinates[0]}_{source_coordinates[1]}/trust{trust}'
-fpt_folder = f'first_passages/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/source_coord{source_coordinates[0]}_{source_coordinates[1]}/trust{trust}'
+if no_odor:
+    fpt_folder = f'first_passages/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/source_coord{source_coordinates[0]}_{source_coordinates[1]}/trust{trust}'
+else:
+    fpt_folder = f'first_passages_odor/n_agents{n_agents}/vr{visual_radius}/mu{mu:.2f}_sigma{sigma:.2f}_randsteps{rand_casting_steps}/source_coord{source_coordinates[0]}_{source_coordinates[1]}/trust{trust}'
 
 os.makedirs(fpt_folder, exist_ok=True)
 

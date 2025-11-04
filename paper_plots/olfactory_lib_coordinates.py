@@ -250,14 +250,8 @@ class Swarm:
             # spawn each agent randomly in the circle
             radius = self.spawn_radius*np.sqrt(rng.random())
             theta = rng.random()*2*np.pi
-            # rand_x = self.spawn_center[0]+radius*np.cos(theta)
-            # rand_y = self.spawn_center[1]+radius*np.sin(theta)
-            if n_ag==0:
-                rand_x = 0.0
-                rand_y = 0.0
-            else:
-                rand_x = 1.0
-                rand_y = 1.0
+            rand_x = self.spawn_center[0]+radius*np.cos(theta)
+            rand_y = self.spawn_center[1]+radius*np.sin(theta)
             new_agent = Agent(n_ag, [rand_x, rand_y], self.speed, self.trust, self.wind_noise, self.decision_time, self.rand_casting_steps, self.rand_casting_direction, self.dt, self.mu, self.sigma)
             self.agents.append(new_agent)
             self.coord_x[n_ag] = [rand_x]
