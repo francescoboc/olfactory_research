@@ -613,6 +613,9 @@ class Cloud_turbulent:
         if read_h5: self.odor = np.array(self.data['odor'][str(self.current_frame_id)])
         else: self.odor = self._odor_frames[self.current_frame_id]
 
+        # flippa tutto il campo rispetto all'asse verticale
+        self.odor = np.flip(self.odor, axis=1)
+
         # extract number of points of the field
         self.npoints_y, self.npoints_x = self.odor.shape
 
@@ -626,8 +629,11 @@ class Cloud_turbulent:
         self.y_values = np.arange(self.npoints_y)*self.delta_y
 
         # calculate the shifts to match the box dimensions and source position
-        original_source_coordinates = (self.x_max/8, self.y_max/2) #hardcoded
-        self.horizontal_shift = source_coordinates[0] - original_source_coordinates[0]
+        original_source_coordinates = (self.x_max/7, self.y_max/2) #hardcoded
+
+        # self.horizontal_shift = source_coordinates[0] - original_source_coordinates[0]
+        self.horizontal_shift = -original_source_coordinates[0]
+
         self.vertical_shift = source_coordinates[1] - original_source_coordinates[1]
 
         # for n in range(self.total_frames):
@@ -644,6 +650,9 @@ class Cloud_turbulent:
         else:
             self.odor = self._odor_frames[self.current_frame_id]
             # self.odor = self.avg_odor
+
+        # flippa tutto il campo rispetto all'asse verticale
+        self.odor = np.flip(self.odor, axis=1)
 
         if self.current_frame_id < self.total_frames-1: self.current_frame_id += 1
         else: self.current_frame_id = 0

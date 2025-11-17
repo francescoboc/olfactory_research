@@ -676,4 +676,3 @@ class Cloud_turbulent:
 
         if self.current_frame_id < self.total_frames-1: self.current_frame_id += 1
         else: self.current_frame_id = 0
-

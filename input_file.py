@@ -8,38 +8,39 @@ save_gif = 0
 pause_time = 0.001
 
 # perform a test run without saving data
-dry_run = 0
+dry_run = False
 
 # simulation without odor
-no_odor = 0
+no_odor = False
 
 private_behavior = 'cast_and_surge'
 # private_behavior = 'biased_rw'
 
 # trust parameter
 # trust = 0.0
-# trust = 0.01
 
 # trust = 0.1
 # trust = 0.2
 # trust = 0.3
-trust = 0.4
+# trust = 0.4
 # trust = 0.5
 # trust = 0.6
 # trust = 0.7
 # trust = 0.8
 # trust = 0.9
 
-# trust = 0.99
 # trust = 1.0
+
+import sys
+trust = float(sys.argv[1])
 
 # swarm parameters
 rd = 0.2
 spawn_radius = 25*rd 
 
 # visual_radius = 0
-visual_radius = 5*rd
-# visual_radius = 100*spawn_radius
+# visual_radius = 5*rd
+visual_radius = 100*spawn_radius
 
 olfactoy_radius = rd
 
@@ -53,13 +54,11 @@ rand_casting_direction = 1
 # average of initial distribution of angles
 mu = 0
 # mu = np.pi/4
-
 # mu = np.pi/2
 
 # std of initial distribution of angles
 sigma = 0
 # sigma = np.pi/2
-
 # sigma = np.pi/4
 
 # number of agents
@@ -67,13 +66,14 @@ sigma = 0
 n_agents = 100
 
 # number of realisations
-n_runs = 50
+# n_runs = 50
+n_runs = 1
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to reach final_x)
-# final_time = 0
-# final_time = 1000
-final_time = 5000
+final_time = 0
+# final_time = 5000
+# final_time = 50000
 
 # final_x = 100
 final_x = 1000
@@ -108,9 +108,11 @@ sensing_noise = 0.0 # eta
 wind_noise = 0.0 
 
 l_x = 75
+
 l_y = 0
 # l_y = 10
 # l_y = 16
 # l_y = 20
+
 source_coordinates = [l_x, l_y]
 reach_radius = visual_radius
