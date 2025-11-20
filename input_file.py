@@ -31,6 +31,8 @@ private_behavior = 'cast_and_surge'
 
 # trust = 1.0
 
+# trusts = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
 import sys
 trust = float(sys.argv[1])
 
@@ -66,8 +68,7 @@ sigma = 0
 n_agents = 100
 
 # number of realisations
-# n_runs = 50
-n_runs = 1
+n_runs = 50
 
 # max simulation time 
 # (if 0 the simulation will wait for all the agents to reach final_x)
@@ -76,7 +77,6 @@ final_time = 0
 # final_time = 50000
 
 # final_x = 100
-final_x = 1000
 
 # agent's speed
 speed = 0.2
@@ -109,10 +109,13 @@ wind_noise = 0.0
 
 l_x = 75
 
-l_y = 0
-# l_y = 10
+# l_y = 0
+l_y = 8
 # l_y = 16
 # l_y = 20
 
+final_x = l_x*2
+
 source_coordinates = [l_x, l_y]
-reach_radius = visual_radius
+# reach_radius = visual_radius
+reach_radius = 5*rd

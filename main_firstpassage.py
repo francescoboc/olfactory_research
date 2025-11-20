@@ -27,6 +27,7 @@ def run_simulation(n):
     # sim.run()
     # return sim
 
+# for trust in trusts:
 # read h5 flow file (on the cluster) or not
 if platform.node() == 'swift': read_h5 = False
 elif platform.node() == 'e4-seminara.csita.unige.local': read_h5 = True
