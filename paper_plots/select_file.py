@@ -11,9 +11,9 @@ OVERWRITE = False
 # trust = 0.4
 # trust = 0.5
 # trust = 0.6
-# trust = 0.7
+trust = 0.7
 # trust = 0.8
-trust = 0.9
+# trust = 0.9
 
 # trust = 1.0
 
@@ -43,14 +43,14 @@ rand_casting_steps = 100
 rand_casting_direction = 1
 
 # average of initial distribution of angles
-mu = 0
-# mu = np.pi/4
+# mu = 0
+mu = np.pi/4
 
 # mu = np.pi/2
 
 # standard deviation of initial distribution of angles
-# sigma = 0
-sigma = np.pi/2
+sigma = 0
+# sigma = np.pi/2
 
 # sigma = np.pi/4
 # sigma = np.pi

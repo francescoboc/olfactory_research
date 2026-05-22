@@ -2,13 +2,13 @@ from utils import tc
 import numpy as np 
 
 # plotting parameters 
-real_time_plot = 0
+real_time_plot = True
 save_frames = 0
 save_gif = 0
 pause_time = 0.001
 
 # perform a test run without saving data
-dry_run = False
+dry_run = True
 
 # simulation without odor
 no_odor = False
@@ -19,7 +19,7 @@ private_behavior = 'cast_and_surge'
 # trust parameter
 # trust = 0.0
 
-# trust = 0.1
+trust = 0.1
 # trust = 0.2
 # trust = 0.3
 # trust = 0.4
@@ -33,16 +33,16 @@ private_behavior = 'cast_and_surge'
 
 # trusts = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
-import sys
-trust = float(sys.argv[1])
+# import sys
+# trust = float(sys.argv[1])
 
 # swarm parameters
 rd = 0.2
 spawn_radius = 25*rd 
 
 # visual_radius = 0
-# visual_radius = 5*rd
-visual_radius = 100*spawn_radius
+visual_radius = 5*rd
+# visual_radius = 100*spawn_radius
 
 olfactoy_radius = rd
 
@@ -109,8 +109,8 @@ wind_noise = 0.0
 
 l_x = 75
 
-# l_y = 0
-l_y = 8
+l_y = 0
+# l_y = 8
 # l_y = 16
 # l_y = 20
 

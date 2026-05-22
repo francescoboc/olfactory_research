@@ -1,15 +1,25 @@
 from utils import *
 from select_file import *
 
+from matplotlib.cm import get_cmap
+from matplotlib.colors import Normalize
+
+# trusts = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+trusts = [ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+# Supponiamo che 'labels' sia una lista di stringhe (una per curva)
+N = len(trusts)
+
+# Colormap discretizzata
+cmap = get_cmap('rainbow', N)   # o qualsiasi colormap
+norm = Normalize(vmin=0, vmax=N-1)
+
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['legend.fontsize'] = 14 
 plt.rcParams['legend.title_fontsize'] = 12
 
-# trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-trusts = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-
 # simulation without odor
-no_odor = 0
+no_odor = 1
 
 variable = 'shift'
 # variable = 'angle'
@@ -17,6 +27,10 @@ variable = 'shift'
 
 filename = rf'perf_{variable}_finiterange.pdf'
 savefig = True
+
+visual_radius = 5*rd
+# visual_radius = 100*spawn_radius
+print(f'r_v={visual_radius}')
 
 # fig, ax1 = plt.subplots(figsize=square_figsize)
 # fig, ax1 = plt.subplots()
@@ -26,8 +40,9 @@ fig, (ax1, ax2) = plt.subplots(1, 2)
 fig.set_size_inches(7, 3.5)
 
 if variable == 'shift':
-    # iterable = [0, 10, 16, 20]
-    iterable = [0]
+    iterable = [0, 10, 16, 20]
+    # iterable = np.arange(0,21,2)
+    # iterable = [0]
     l_x = 75
     mu = 0
     sigma = 0
@@ -39,7 +54,7 @@ elif variable == 'angle':
     l_x = 75
     h_y = 0 
     sigma = 0
-    legend_title=r'Angle $\theta$'
+    legend_title=r'Mean $\mu$'
 elif variable == 'sigma':
     iterable = [0, np.pi/4, np.pi/2]
     labels=['$0$', '$\pi/4$', '$\pi/2$']
@@ -50,9 +65,6 @@ elif variable == 'sigma':
 
 color_fpt = colors[0]
 color_rate = colors[3]
-
-visual_radius = 5*rd
-print(f'r_v={visual_radius}')
 
 c=0
 
@@ -102,6 +114,9 @@ for item in iterable:
     shaded_errorbar(trusts_plot, fpts, yerr=(std_below, std_above), ls='-', color=colors[c], marker=markers[c], ax=ax1, label=labels[c])
     ax2.plot(trusts_plot, rates, ls='--', color=colors[c], marker=markers[c], label=labels[c])
 
+    # shaded_errorbar(trusts_plot, fpts, yerr=(std_below, std_above), ls='-', ax=ax1, label=labels[c], color = cmap(norm(c)))
+    # ax2.plot(trusts_plot, rates, ls='--', label=labels[c], color = cmap(norm(c)))
+
     c+=1
 
 ax1.axhline(1, lw=0.5, c='k', ls='-', alpha=0.6, zorder=0)
@@ -114,16 +129,40 @@ ax2.set_ylabel(r'Success rate $\rho$')
 margin = 0.03
 ax2.set_ylim(-margin, 1+margin)
 
-ax1.legend(title=legend_title)
-ax1.set_xlabel(r'Trust $\beta$')
-ax2.set_xlabel(r'Trust $\beta$')
+# ax2.legend(title=legend_title, loc='lower left')
+ax1.legend(title=legend_title, loc='upper center')
+# ax1.set_xlabel(r'Trust $\beta$')
+# ax2.set_xlabel(r'Trust $\beta$')
 
 ax1.set_xticks([0.25, 0.5, 0.75])
 ax2.set_xticks([0.25, 0.5, 0.75])
 
 # ax1.set_title('Finite visual range')
 # ax1.text(0.5, 0.95, 'Finite visual range', transform=ax1.transAxes, va='top', ha='center')
-        
+
+
+# from matplotlib.cm import ScalarMappable
+# from matplotlib.colors import BoundaryNorm
+
+# # boundaries per N colori: N+1 bordi
+# boundaries = np.linspace(-0.5, N - 0.5, N + 1)
+# norm = BoundaryNorm(boundaries, cmap.N)
+
+# # centri dei bin
+# centers = 0.5 * (boundaries[:-1] + boundaries[1:])
+
+# sm = ScalarMappable(norm=norm, cmap=cmap)
+# sm.set_array([])
+
+# cbar = fig.colorbar(sm, ax=[ax1, ax2], pad=0.02)
+
+# # ✔ tick al centro esatto
+# cbar.set_ticks(centers)
+# cbar.set_ticklabels(labels)
+
+# cbar.set_label(r"Shift $H$")
+
+
 show_and_check_ipython()
 
 # if savefig: fig.savefig(save_directory + filename)

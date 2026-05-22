@@ -5,7 +5,6 @@ plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['legend.fontsize'] = 14 
 plt.rcParams['legend.title_fontsize'] = 12
 
-
 def get_success_rate_source(trust, x, y):
     rate_betas = np.load(f'{dicts_folder}/rate_betas_gridsize{gridsize}_offset{offset}.npy', allow_pickle=True).item()
 

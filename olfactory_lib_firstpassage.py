@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import random, os, h5py
+from scipy.interpolate import interp1d
 
 # hack to prevent raising KeyboardInterrupt when stopping the script with ctrl-c
 # https://stackoverflow.com/questions/7073268/remove-traceback-in-python-on-ctrl-c
@@ -609,7 +610,7 @@ class Agent:
             self.crosswind_clock += 1
 
 class Cloud_turbulent:
-    def __init__(self, path, read_h5, source_coordinates, delta_x):
+    def __init__(self, path, read_h5, source_coordinates, delta_x, scale_y=1):
         self.read_h5 = read_h5
         self.path = path
 
@@ -625,6 +626,25 @@ class Cloud_turbulent:
         # extract number of frames
         if read_h5: self.total_frames = len(list(self.data.items())[0][1].keys()) 
         else: self.total_frames = len(self._odor_frames) 
+
+
+        # >>> stretching lungo y se richiesto <<<
+        if not self.read_h5 and scale_y != 1.0:
+            frames, ny, nx = self._odor_frames.shape
+
+            ny_new = int(ny * scale_y)
+
+            y_old = np.arange(ny)
+            y_new = np.linspace(0, ny - 1, ny_new)
+
+            stretched = np.zeros((frames, ny_new, nx), dtype=self._odor_frames.dtype)
+
+            for i in range(frames):
+                f = interp1d(y_old, self._odor_frames[i], axis=0, kind='linear')
+                stretched[i] = f(y_new)
+
+            self._odor_frames = stretched  # aggiorna lo storage
+
 
         # initialise the first frame randomly
         self.current_frame_id = rng.randint(0, self.total_frames-1) 

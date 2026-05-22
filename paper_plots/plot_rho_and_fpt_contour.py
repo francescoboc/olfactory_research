@@ -132,12 +132,12 @@ for i, tr in enumerate(taus_list):
         if coords is None or len(coords) == 0:
             continue
         if h == 0:
-            plt.plot(coords[:, 0], coords[:, 1], c=colors[i], lw=1, label=lab)
+            plt.plot(coords[:, 0], coords[:, 1], c=colors[i], lw=2, label=lab)
         else:
-            plt.plot(coords[:, 0], coords[:, 1], c=colors[i], lw=1)
+            plt.plot(coords[:, 0], coords[:, 1], c=colors[i], lw=2)
 
-# plt.legend(title=r'FPT')
-plt.legend(fontsize=15)
+plt.legend(fontsize=15, loc='upper left')
+# plt.legend(fontsize=15)
 
 if mu == 0 and sigma == 0:
     l_y = [0,10,16,20]

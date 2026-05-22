@@ -5,6 +5,8 @@ import os
 from matplotlib.patches import RegularPolygon
 from scipy.spatial import cKDTree  # Fast spatial indexing
 
+n_runs = 1
+
 # Function to check if a point is inside a hexagon
 def is_point_in_hexagon(x, y, hex_center):
     hexagon = RegularPolygon(hex_center, numVertices=6, radius=hex_radius, orientation=np.radians(30))
@@ -98,4 +100,7 @@ for trust in trusts:
         stacked_fpt_bins = np.ma.vstack(fpt_bins_runs)
         avg_fpt = np.ma.mean(stacked_fpt_bins, axis=0)
 
-        avg_fpt.dump(f'{hexbin_folder}/avg_fpt_gridsize{gridsize}_offset{offset}.npy')
+        if n_runs == 50:
+            avg_fpt.dump(f'{hexbin_folder}/avg_fpt_gridsize{gridsize}_offset{offset}.npy')
+        else:
+            avg_fpt.dump(f'{hexbin_folder}/avg_fpt_gridsize{gridsize}_offset{offset}_nruns{n_runs}.npy')

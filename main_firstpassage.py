@@ -11,7 +11,7 @@ def run_simulation(n):
     initialise_rng(seed)
     # create objects
     if no_odor: cloud = None
-    else: cloud = Cloud_turbulent(path, read_h5, source_coordinates, odor_delta_x)
+    else: cloud = Cloud_turbulent(path, read_h5, source_coordinates, odor_delta_x, scale_y=0.5)
     swarm = Swarm(private_behavior, n_agents, spawn_radius, speed, visual_radius, 
             olfactoy_radius, sensing_noise, wind_noise, trust, length, height, 
             source_coordinates, reach_radius, 
